@@ -1,5 +1,7 @@
 # BaldurRL: instructions for coding agents
 
+Prefer stable abstractions and implementations expected to survive future milestones when doing so adds little complexity. Do not overengineer speculative future functionality solely to avoid hypothetical rewrites.
+
 ## Project goal and current milestone
 
 BaldurRL's long-term goal is an autonomous agent capable of completing Baldur's Gate 3. The current milestone, **M0**, is intentionally smaller: train and evaluate an agent in a simplified 1v1 Level 2 Fighter-vs-Goblin combat simulator. Do not implement future milestones unless explicitly requested.
@@ -48,7 +50,7 @@ The agent chooses actions. The environment coordinates episodes, turns, legality
 - Use Python type hints; prefer simple dataclasses and functions.
 - Avoid speculative abstractions and unnecessary dependencies.
 - Keep functions small and testable. Write deterministic tests whenever possible.
-- Use supplied seeded RNG objects, not global randomness, for combat rules.
+- Use caller-supplied `numpy.random.Generator` instances, not global randomness, for combat rules.
 - Do not print inside reusable mechanics functions.
 - Do not silently catch programming errors or prematurely optimize.
 

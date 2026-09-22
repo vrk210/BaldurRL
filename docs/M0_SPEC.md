@@ -51,9 +51,11 @@ Roll `1d20` using a supplied RNG:
 - Natural 20: automatic hit and critical hit.
 - Otherwise: hit if `d20 + attack_bonus >= defender.armor_class`.
 
+`AttackResult.total_attack` records `d20_roll + attack_bonus` even for natural 1 and natural 20; those natural-roll rules still decide whether the attack hits.
+
 Normal damage is `damage_dice_count` rolls of a `damage_die_size` die, plus `damage_bonus` (for example, `1d8 + 3`). A critical hit doubles the **number of damage dice**, not the static bonus (for example, `2d8 + 3`). Damage cannot reduce HP below zero.
 
-All stochastic behavior uses an RNG supplied by the environment or caller. Core combat mechanics must not use global randomness.
+All stochastic behavior uses a `numpy.random.Generator` supplied by the environment or caller. `Generator.integers(low, high)` has an exclusive upper bound: use `integers(1, 21)` for a d20, `integers(1, die_size + 1)` for damage dice, and `integers(1, 11)` for Second Wind's d10. Mechanics return ordinary Python `int` values, not NumPy integer scalars. Core combat mechanics must not use global randomness.
 
 ## Turn lifecycle
 
