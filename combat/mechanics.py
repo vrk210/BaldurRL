@@ -35,7 +35,6 @@ def resolve_attack(attacker: Character, defender: Character, rng: Generator) -> 
     hit = critical or (d20_roll != 1 and total_attack >= defender.armor_class)
     if not hit:
         return AttackResult(d20_roll=d20_roll, hit=False, critical=False, damage=0, total_attack=total_attack)
-
     rolled_damage = roll_damage(attacker, rng, critical=critical)
     damage = min(defender.hp, rolled_damage)
     defender.hp -= damage

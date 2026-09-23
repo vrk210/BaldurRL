@@ -67,7 +67,6 @@ def make_goblin(**overrides: int) -> Goblin:
 def test_natural_one_misses_despite_large_attack_bonus() -> None:
     fighter = make_fighter(attack_bonus=100)
     goblin = make_goblin()
-
     result = resolve_attack(fighter, goblin, fixed_rng(1))
 
     assert result.d20_roll == 1
@@ -207,7 +206,6 @@ def test_second_wind_cannot_be_used_without_bonus_action() -> None:
 
 def test_action_surge_restores_action_and_is_once_per_encounter() -> None:
     fighter = make_fighter(action_available=False)
-
     use_action_surge(fighter)
 
     assert fighter.action_available
