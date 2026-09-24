@@ -30,7 +30,7 @@ The simulator therefore uses **semantic state and semantic actions**, rather tha
 | --- | --- | --- |
 | `combat/characters.py` | Entity state: `Character`, `Fighter`, `Goblin`; known `Action` IDs, not copied ability definitions | Rewards, turn loops, policies, attack-resolution orchestration |
 | `combat/actions.py` | Semantic action intent: `ATTACK`, `SECOND_WIND`, `ACTION_SURGE`, `END_TURN` | Execution rules |
-| `combat/resources.py` | `Resource` enum and `ResourcePool` counts; shared affordability, atomic spending, and setting counts | Effect-specific legality or effects |
+| `combat/resources.py` | `Resource` enum and `ResourcePool` counts; shared affordability, atomic spending, gaining, and setting counts | Effect-specific legality or effects |
 | `combat/damage.py` | Immutable `DamageSpec(dice_count, die_size, bonus)` | Rolls or damage application |
 | `combat/abilities.py` | Immutable `AbilitySpec(action, costs, target)` definitions and shared M0 catalog; excludes `END_TURN` | Execution methods or turn control |
 | `combat/mechanics.py` | Game rules: dice rolls, attack resolution, damage, healing, critical hits, Action Surge | Rewards or policy choice |
@@ -48,7 +48,7 @@ abilities + characters → mechanics → environment → agents/evaluation
 
 Avoid circular dependencies. Characters must not import ability execution or the RL environment. Mechanics must not import trained agents. Agents must not implement combat formulas. The environment must call mechanics rather than duplicate their rules. Generic resource affordability uses `ResourcePool.has`; living-target and missing-HP rules stay with the corresponding mechanics. `can_use_ability` checks known IDs and costs, not full effect-specific legality. `END_TURN` stays in environment turn control.
 
-For M0, `BaldurCombatEnv.step()` handles exactly one Fighter decision. It dispatches mechanics and returns immediately for Fighter abilities; `END_TURN` alone triggers the automatic Goblin attack and round advance. Legal-action masks stay separate from the seven-field `float32` Box observation. The action space is an explicit four-index Discrete space. Rewards use an injectable callable receiving immutable before/after state snapshots; the default is terminal-only. The environment alone owns episode completion and the round-50 truncation limit.
+For M0, `BaldurCombatEnv.step()` handles exactly one Fighter decision. It dispatches mechanics and returns immediately for Fighter abilities; `END_TURN` alone triggers the automatic Goblin attack and round advance. Legal-action masks stay separate from the seven-field `float32` Box observation. The action space is an explicit four-index Discrete space. Rewards use an injectable callable receiving an immutable before snapshot, the selected semantic `Action`, an immutable after snapshot, and termination/truncation flags; the default is terminal-only. The environment alone owns episode completion and the round-50 truncation limit.
 
 ## Future BG3 integration
 

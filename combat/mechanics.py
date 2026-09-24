@@ -81,6 +81,6 @@ def use_second_wind(fighter: Fighter, rng: Generator) -> int:
 
 
 def use_action_surge(fighter: Fighter) -> None:
-    """Spend Action Surge to make one action available."""
+    """Spend Action Surge to grant one additional Action."""
     _spend_ability(fighter, Action.ACTION_SURGE)
-    fighter.resources.set(Resource.ACTION, 1)
+    fighter.resources.gain(Resource.ACTION)

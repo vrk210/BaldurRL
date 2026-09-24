@@ -37,7 +37,7 @@ known_abilities: frozenset[Action]
 
 `DamageSpec` is immutable and contains `dice_count: int`, `die_size: int`, and `bonus: int`. It replaces three separate character damage fields.
 
-`ResourcePool` stores nonnegative integer counts keyed by `Resource`. M0 uses exactly `ACTION`, `BONUS_ACTION`, `SECOND_WIND`, and `ACTION_SURGE`. Missing entries count as zero. Callers use `get`, `has`, `spend`, and `set`; an unaffordable spend fails without changing any count.
+`ResourcePool` stores nonnegative integer counts keyed by `Resource`. M0 uses exactly `ACTION`, `BONUS_ACTION`, `SECOND_WIND`, and `ACTION_SURGE`. Missing entries count as zero. Callers use `get`, `has`, `spend`, `gain`, and `set`; an unaffordable spend fails without changing any count. `gain` adds a nonnegative amount to the current count.
 
 Initial Fighter resources are `ACTION = 1`, `BONUS_ACTION = 1`, `SECOND_WIND = 1`, `ACTION_SURGE = 1`. At the start of each normal Fighter turn, set `ACTION = 1` and `BONUS_ACTION = 1`. Second Wind and Action Surge are once-per-encounter resources and do not refresh each turn. The Goblin has no additional class-specific state; its initial resource pool has `ACTION = 1` for its attack, and that Action refreshes at the start of each normal Goblin turn so it can follow its fixed policy every turn.
 
@@ -57,7 +57,7 @@ Exactly four actions exist:
 | --- | --- | --- |
 | `ATTACK` | Fighter knows it; `ACTION >= 1`; `goblin.alive` | Spend `ACTION: 1`; resolve attack. |
 | `SECOND_WIND` | Fighter knows it; `BONUS_ACTION >= 1`; `SECOND_WIND >= 1`; `fighter.hp < fighter.max_hp` | Spend `BONUS_ACTION: 1` and `SECOND_WIND: 1`; heal `1d10 + 2`, capped at `max_hp`. The `+2` is for the M0 Level 2 Fighter. |
-| `ACTION_SURGE` | Fighter knows it; `ACTION_SURGE >= 1` | Spend `ACTION_SURGE: 1`; set `ACTION = 1`. This may restore a consumed action but does not stack above one Action in M0. |
+| `ACTION_SURGE` | Fighter knows it; `ACTION_SURGE >= 1` | Spend `ACTION_SURGE: 1`; gain one additional `ACTION`. The Fighter can have up to two Actions in M0. |
 | `END_TURN` | `fighter.alive` and `goblin.alive` | End Fighter turn; automatically execute Goblin turn. |
 
 Every selected action must be legal at the moment of selection. No other actions exist.
@@ -97,7 +97,7 @@ Fighter turn begins
   → next Fighter turn
 ```
 
-Valid sequences, subject to legality at each step: `ATTACK → ACTION_SURGE → ATTACK → END_TURN`; `SECOND_WIND → ATTACK → END_TURN`.
+Valid sequences, subject to legality at each step: `ATTACK → ACTION_SURGE → ATTACK → END_TURN`; `ACTION_SURGE → ATTACK → ATTACK → END_TURN`; `SECOND_WIND → ATTACK → END_TURN`.
 
 Round 1 is the first Fighter/Goblin round. `END_TURN` causes exactly one Goblin Attack if both live. If combat continues after that attack, the round completes: increment `round_number`, refresh only Fighter `ACTION` and `BONUS_ACTION`, and begin the next Fighter turn. The Goblin's `ACTION` is made available at the start of its fixed turn. No turn resource refresh occurs after victory or defeat.
 
@@ -110,7 +110,7 @@ Round 1 is the first Fighter/Goblin round. `END_TURN` causes exactly one Goblin 
 - Death ends the episode immediately after the attack that caused it; a Fighter victory needs no subsequent `END_TURN`.
 - Do not add damage or healing rewards, turn penalties, resource bonuses, or other reward shaping. The objective is to win; shaping may be tested later.
 
-The default `terminal_reward(before, after, terminated, truncated)` callable implements these rewards. `before` and `after` are separate immutable snapshots of Fighter HP, Goblin HP, round number, and Fighter resource counts. A different reward callable may be injected into the environment later without changing combat transitions or mechanics. No shaping function is currently implemented.
+The default `terminal_reward(before, action, after, terminated, truncated)` callable implements these rewards. `action` is the semantic Fighter `Action` selected for this step; the terminal reward does not use it. `before` and `after` are separate immutable snapshots of Fighter HP, Goblin HP, round number, and Fighter resource counts. A different reward callable may be injected into the environment later without changing combat transitions or mechanics. No shaping function is currently implemented.
 
 ## M0 observation and info
 
@@ -126,7 +126,7 @@ The observation is one unnormalized `numpy.float32` `spaces.Box` vector in this 
 6 round_number
 ```
 
-HP ranges from zero to the preset maximum. Each listed resource count is zero or one in M0. Round number ranges from 1 to 50. Constant preset statistics (maximum HP, AC, attack bonuses, damage dice, and known ability IDs) are omitted. Numerical normalization is not used. The agent may know normal Goblin statistics but never future RNG outcomes.
+HP ranges from zero to the preset maximum. Fighter Action count ranges from zero to two; each other listed resource count is zero or one in M0. Round number ranges from 1 to 50. Constant preset statistics (maximum HP, AC, attack bonuses, damage dice, and known ability IDs) are omitted. Numerical normalization is not used. The agent may know normal Goblin statistics but never future RNG outcomes.
 
 The separate `info` dictionary reports current round, semantic action name (or `None` on reset), Fighter HP, and Goblin HP. Attack steps also report the relevant `AttackResult` fields, with Goblin attack details under a separate key after `END_TURN`. `info` is diagnostic, not part of the policy observation.
 

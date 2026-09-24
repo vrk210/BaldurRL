@@ -29,6 +29,8 @@ def test_reset_spaces_and_explicit_ordering() -> None:
     )
     assert isinstance(env.action_space, spaces.Discrete) and env.action_space.n == 4
     assert isinstance(env.observation_space, spaces.Box)
+    assert env.observation_space.low[1] == 0
+    assert env.observation_space.high[1] == 2
     assert observation.shape == (7,) and observation.dtype == np.float32
     np.testing.assert_array_equal(observation, [20, 1, 1, 1, 1, 15, 1])
     assert env.observation_space.contains(observation)
@@ -56,6 +58,29 @@ def test_mask_and_each_fighter_decision_is_one_step() -> None:
     assert info["action"] == "SECOND_WIND" and info["healed"] > 0
     assert observation[0] > 10 and observation[5] < 15 and observation[6] == 1
     assert observation[2] == 0 and observation[3] == 0
+
+
+def test_action_surge_allows_two_attacks_in_same_fighter_turn() -> None:
+    env = BaldurCombatEnv()
+    observation, _ = env.reset(seed=0)
+    assert observation[1] == 1
+
+    observation, _, terminated, truncated, _ = env.step(2)
+    assert observation[1] == 2
+    assert env.observation_space.contains(observation)
+    assert not terminated and not truncated
+
+    for expected_actions in (1, 0):
+        observation, _, terminated, truncated, info = env.step(0)
+        assert info["action"] == "ATTACK"
+        assert "fighter_attack" in info
+        assert observation[1] == expected_actions
+        assert observation[0] == 20
+        assert observation[6] == 1
+        assert "goblin_attack" not in info
+        assert env.goblin.resources.get(Resource.ACTION) == 1
+
+    assert terminated and not truncated
 
 
 def test_end_turn_runs_one_goblin_attack_and_refreshes_per_turn_resources() -> None:
@@ -125,23 +150,33 @@ def test_seeded_action_sequence_is_reproducible() -> None:
             break
 
 
-def test_reward_callable_receives_immutable_before_and_after_snapshots() -> None:
-    seen: list[tuple[RewardSnapshot, RewardSnapshot, bool, bool]] = []
+def test_reward_callable_receives_semantic_action_and_immutable_snapshots() -> None:
+    seen: list[tuple[RewardSnapshot, Action, RewardSnapshot, bool, bool]] = []
 
-    def reward_fn(before: RewardSnapshot, after: RewardSnapshot, terminated: bool, truncated: bool) -> float:
-        seen.append((before, after, terminated, truncated))
+    def reward_fn(
+        before: RewardSnapshot, action: Action, after: RewardSnapshot, terminated: bool, truncated: bool
+    ) -> float:
+        seen.append((before, action, after, terminated, truncated))
         return 0.25
 
     env = BaldurCombatEnv(reward_fn=reward_fn)
     env.reset(seed=0)
     _, reward, _, _, _ = env.step(0)
     assert reward == 0.25
-    before, after, terminated, truncated = seen[0]
+    before, action, after, terminated, truncated = seen[0]
+    assert action is Action.ATTACK
     assert before.goblin_hp == 15 and after.goblin_hp < before.goblin_hp
     assert before.fighter_resources[0] == 1 and after.fighter_resources[0] == 0
     assert not terminated and not truncated
     with pytest.raises(FrozenInstanceError):
         before.goblin_hp = 0
+
+    _, reward, _, _, _ = env.step(2)
+    assert reward == 0.25
+    surge_before, surge_action, surge_after, _, _ = seen[1]
+    assert surge_action is Action.ACTION_SURGE
+    assert surge_before.fighter_resources[0] == 0
+    assert surge_after.fighter_resources[0] == 1
 
 
 def test_round_fifty_truncates_without_round_fifty_one() -> None:

@@ -190,11 +190,11 @@ def test_second_wind_unique_effect(starting_hp: int, d10: int, restored: int, en
 
 
 @pytest.mark.parametrize("starting_action", [0, 1])
-def test_action_surge_restores_one_action(starting_action: int) -> None:
+def test_action_surge_adds_one_action(starting_action: int) -> None:
     actor = fighter()
     actor.resources.set(Resource.ACTION, starting_action)
     use_action_surge(actor)
-    assert actor.resources.get(Resource.ACTION) == 1
+    assert actor.resources.get(Resource.ACTION) == starting_action + 1
     assert actor.resources.get(Resource.ACTION_SURGE) == 0
     with pytest.raises(ValueError, match="ACTION_SURGE is not legal"):
         use_action_surge(actor)
@@ -213,6 +213,19 @@ def test_resource_pool_rejects_negative_and_spends_atomically() -> None:
         pool.set(Resource.ACTION, -1)
     with pytest.raises(ValueError, match="negative"):
         pool.has({Resource.ACTION: -1})
+
+
+def test_resource_pool_gain_adds_without_allowing_negative_amounts() -> None:
+    pool = ResourcePool({Resource.ACTION: 1})
+    pool.gain(Resource.ACTION)
+    assert pool.get(Resource.ACTION) == 2
+    pool.gain(Resource.SECOND_WIND, 2)
+    assert pool.get(Resource.SECOND_WIND) == 2
+    pool.gain(Resource.ACTION, 0)
+    assert pool.get(Resource.ACTION) == 2
+    with pytest.raises(ValueError, match="negative"):
+        pool.gain(Resource.ACTION, -1)
+    assert pool.get(Resource.ACTION) == 2
 
 
 def test_seeded_rng_and_python_int_boundaries() -> None:

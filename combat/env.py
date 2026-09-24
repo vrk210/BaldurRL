@@ -37,11 +37,11 @@ class RewardSnapshot:
     fighter_resources: tuple[int, int, int, int]
 
 
-RewardFunction = Callable[[RewardSnapshot, RewardSnapshot, bool, bool], float]
+RewardFunction = Callable[[RewardSnapshot, Action, RewardSnapshot, bool, bool], float]
 
 
 def terminal_reward(
-    before: RewardSnapshot, after: RewardSnapshot, terminated: bool, truncated: bool
+    before: RewardSnapshot, action: Action, after: RewardSnapshot, terminated: bool, truncated: bool
 ) -> float:
     """M0's sparse win/loss reward; truncation and intermediate steps score zero."""
     if terminated and after.goblin_hp == 0:
@@ -70,7 +70,7 @@ class BaldurCombatEnv(gym.Env[np.ndarray, int]):
         self.action_space = spaces.Discrete(len(M0_ACTIONS))
         self.observation_space = spaces.Box(
             low=np.array([0, 0, 0, 0, 0, 0, 1], dtype=np.float32),
-            high=np.array([_FIGHTER_MAX_HP, 1, 1, 1, 1, _GOBLIN_MAX_HP, MAX_ROUNDS], dtype=np.float32),
+            high=np.array([_FIGHTER_MAX_HP, 2, 1, 1, 1, _GOBLIN_MAX_HP, MAX_ROUNDS], dtype=np.float32),
             dtype=np.float32,
         )
         self.fighter: Fighter | None = None
@@ -140,7 +140,7 @@ class BaldurCombatEnv(gym.Env[np.ndarray, int]):
                     self._begin_fighter_turn()
 
         after = self._reward_snapshot()
-        reward = float(self.reward_fn(before, after, self._terminated, self._truncated))
+        reward = float(self.reward_fn(before, semantic_action, after, self._terminated, self._truncated))
         info = self._get_info(semantic_action)
         if fighter_attack is not None:
             info["fighter_attack"] = asdict(fighter_attack)

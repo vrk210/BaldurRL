@@ -36,6 +36,11 @@ class ResourcePool:
         for resource, cost in costs.items():
             self._amounts[resource] = self.get(resource) - cost
 
+    def gain(self, resource: Resource, amount: int = 1) -> None:
+        if amount < 0:
+            raise ValueError("Resource gains cannot be negative")
+        self._amounts[resource] = self.get(resource) + amount
+
     def set(self, resource: Resource, amount: int) -> None:
         if amount < 0:
             raise ValueError("Resource counts cannot be negative")
