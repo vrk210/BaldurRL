@@ -1,6 +1,10 @@
 """Character state for combat."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+from .actions import Action
+from .damage import DamageSpec
+from .resources import Resource, ResourcePool
 
 
 @dataclass
@@ -10,9 +14,9 @@ class Character:
     hp: int
     armor_class: int
     attack_bonus: int
-    damage_dice_count: int
-    damage_die_size: int
-    damage_bonus: int
+    damage: DamageSpec
+    resources: ResourcePool = field(default_factory=ResourcePool)
+    known_abilities: frozenset[Action] = frozenset()
 
     @property
     def alive(self) -> bool:
@@ -21,12 +25,20 @@ class Character:
 
 @dataclass
 class Fighter(Character):
-    action_available: bool = True
-    bonus_action_available: bool = True
-    second_wind_available: bool = True
-    action_surge_available: bool = True
+    resources: ResourcePool = field(default_factory=lambda: ResourcePool({
+        Resource.ACTION: 1,
+        Resource.BONUS_ACTION: 1,
+        Resource.SECOND_WIND: 1,
+        Resource.ACTION_SURGE: 1,
+    }))
+    known_abilities: frozenset[Action] = frozenset({
+        Action.ATTACK,
+        Action.SECOND_WIND,
+        Action.ACTION_SURGE,
+    })
 
 
 @dataclass
 class Goblin(Character):
-    pass
+    resources: ResourcePool = field(default_factory=lambda: ResourcePool({Resource.ACTION: 1}))
+    known_abilities: frozenset[Action] = frozenset({Action.ATTACK})

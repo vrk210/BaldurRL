@@ -22,28 +22,33 @@ ML code should eventually work through the same conceptual environment interface
           termination / metadata
 ```
 
-The simulator therefore uses **semantic state and semantic actions**, rather than mouse coordinates or UI-specific behavior. This is a direction for later milestones, not an implemented interface.
+The simulator therefore uses **semantic state and semantic actions**, rather than mouse coordinates or UI-specific behavior. This is a direction for later milestones, not an implemented interface. Keep the object graph shallow: characters store stats, resource counts, and known ability IDs; shared ability definitions live outside characters; mechanics remain functions.
 
 ## Module responsibilities
 
 | Module | Owns | Must not own |
 | --- | --- | --- |
-| `combat/characters.py` | Entity state: `Character`, `Fighter`, `Goblin` | Rewards, turn loops, policies, attack-resolution orchestration |
+| `combat/characters.py` | Entity state: `Character`, `Fighter`, `Goblin`; known `Action` IDs, not copied ability definitions | Rewards, turn loops, policies, attack-resolution orchestration |
 | `combat/actions.py` | Semantic action intent: `ATTACK`, `SECOND_WIND`, `ACTION_SURGE`, `END_TURN` | Execution rules |
+| `combat/resources.py` | `Resource` enum and `ResourcePool` counts; shared affordability, atomic spending, and setting counts | Effect-specific legality or effects |
+| `combat/damage.py` | Immutable `DamageSpec(dice_count, die_size, bonus)` | Rolls or damage application |
+| `combat/abilities.py` | Immutable `AbilitySpec(action, costs, target)` definitions and shared M0 catalog; excludes `END_TURN` | Execution methods or turn control |
 | `combat/mechanics.py` | Game rules: dice rolls, attack resolution, damage, healing, critical hits, Action Surge | Rewards or policy choice |
-| `combat/env.py` | Future coordinator: reset, observations, action masks and legality, turn progression, rewards, termination, truncation | Duplicated combat formulas; call mechanics |
+| `combat/env.py` | Gymnasium coordinator: reset, flat observation encoding, action-index mapping and masks, one Fighter decision per step, fixed Goblin turn, reward call, termination, truncation | Duplicated combat formulas; call mechanics |
 | `agents/` | Future action-selection policies: `RandomAgent`, `HeuristicAgent`, MaskablePPO | Direct state mutation or combat formulas |
 | `evaluation/` | Future reproducible experiments: win rate, remaining HP, turns to victory, resource usage | Combat rules |
 
 ## Dependency direction
 
 ```text
-actions ──────────────┐
-                      ▼
-characters → mechanics → environment → agents/evaluation
+actions + resources → abilities
+actions + resources + damage → characters
+abilities + characters → mechanics → environment → agents/evaluation
 ```
 
-Avoid circular dependencies. Characters must not import the RL environment. Mechanics must not import trained agents. Agents must not implement combat formulas. The environment must call mechanics rather than duplicate their rules.
+Avoid circular dependencies. Characters must not import ability execution or the RL environment. Mechanics must not import trained agents. Agents must not implement combat formulas. The environment must call mechanics rather than duplicate their rules. Generic resource affordability uses `ResourcePool.has`; living-target and missing-HP rules stay with the corresponding mechanics. `can_use_ability` checks known IDs and costs, not full effect-specific legality. `END_TURN` stays in environment turn control.
+
+For M0, `BaldurCombatEnv.step()` handles exactly one Fighter decision. It dispatches mechanics and returns immediately for Fighter abilities; `END_TURN` alone triggers the automatic Goblin attack and round advance. Legal-action masks stay separate from the seven-field `float32` Box observation. The action space is an explicit four-index Discrete space. Rewards use an injectable callable receiving immutable before/after state snapshots; the default is terminal-only. The environment alone owns episode completion and the round-50 truncation limit.
 
 ## Future BG3 integration
 

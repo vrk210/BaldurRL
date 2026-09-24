@@ -18,6 +18,9 @@ This is an implementation reference, not a general BG3 wiki. Labels mean:
 - Second Wind and Action Surge are once-per-encounter abilities.
 - Fighter is Level 2.
 - Initial rewards are terminal win/loss only.
+- M0 represents actions, bonus actions, Second Wind, and Action Surge as integer resources. Action Surge sets available Action to one rather than stacking another Action.
+- The fixed M0 preset values are Fighter 20 HP / AC 16 / +5 attack / 1d8+3 damage and Goblin 15 HP / AC 15 / +4 attack / 1d6+2 damage. These are simulator presets, not `VERIFIED_BG3` stat blocks.
+- One environment step is one Fighter decision. The fixed Goblin attack happens only after `END_TURN`; round 50 truncates if neither combatant has died.
 
 ### CURRENT_COMBAT_RULE (M0 only)
 
@@ -32,6 +35,7 @@ These are M0 implementation rules; this section does not claim they have been in
 - Fighter resources: Action, Bonus Action, Second Wind, Action Surge.
 - `ATTACK` consumes Action. `SECOND_WIND` consumes Bonus Action and heals `1d10 + 2` in M0.
 - `ACTION_SURGE` restores an Action and becomes unavailable afterward.
+- The Fighter knows `ATTACK`, `SECOND_WIND`, and `ACTION_SURGE`; the Goblin knows `ATTACK`. Shared immutable ability definitions describe costs and targets. Resource affordability alone does not establish living-target or missing-HP legality.
 
 ## Future BG3 instrumentation: TODO_VERIFY
 
