@@ -52,6 +52,9 @@ For M0, `BaldurCombatEnv.step()` handles exactly one Fighter decision. It dispat
 
 `RandomAgent` is the first baseline policy. It chooses uniformly from the legal-action mask using its own seeded NumPy generator; the environment's separate seeded generator handles combat rolls. The evaluation harness runs policies over explicit environment episode seeds (by default `0..9999`) and reports win rate as the primary baseline metric, along with outcomes, final HP, rounds, and action usage. Run it with `python -m evaluation.evaluate`.
 
+For decision-level inspection, evaluation can write one JSONL record per episode. Each record contains the outcome and every Fighter decision with the observation, legal-action mask, chosen action, reward, next observation, termination flags, and diagnostic `info` (including attack rolls). A run card records the policy or model, exact episode seeds, field and action names, aggregate metrics, and loss seeds. This is evaluation data only; it does not change the policy observation or combat transitions. Training also saves traces and a run card for its final evaluation. Use a separate seed range for final comparison because periodic model selection already uses the training run's evaluation seeds.
+`evaluation.compare` compares two run cards evaluated on the same seeds and reports losses and the first trace divergence. Later dice rolls can differ after policies choose different actions, so the report does not attribute outcome differences solely to that first decision.
+
 ## Future BG3 integration
 
 ```text
