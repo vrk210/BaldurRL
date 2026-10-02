@@ -2,7 +2,7 @@
 
 This is an implementation reference, not a general BG3 wiki. Labels mean:
 
-- **VERIFIED_BG3:** A mechanic or API fact explicitly checked against BG3 documentation or observed game behavior. Record its source where practical. No BG3 fact is marked verified here yet.
+- **VERIFIED_BG3 / VERIFIED_API:** A mechanic or API fact explicitly checked against BG3 documentation or observed game behavior. Record its source where practical. An API's documented existence does not prove its live behavior in our encounters.
 - **M0_SIMPLIFICATION:** A deliberate prototype choice that may differ from full BG3.
 - **TODO_VERIFY:** Possible BG3 behavior or API detail requiring verification before implementation.
 
@@ -37,9 +37,22 @@ These are M0 implementation rules; this section does not claim they have been in
 - `ACTION_SURGE` grants an additional Action and becomes unavailable afterward.
 - The Fighter knows `ATTACK`, `SECOND_WIND`, and `ACTION_SURGE`; the Goblin knows `ATTACK`. Shared immutable ability definitions describe costs and targets. Resource affordability alone does not establish living-target or missing-HP legality.
 
-## Future BG3 instrumentation: TODO_VERIFY
+## BG3 observation APIs: VERIFIED_API
 
-Investigate Osiris events, queries, and calls; Script Extender / Lua; entity/component state; combat turn events; HP state; spell/ability use; action resources; and legal-action extraction. The exact API mapping is **TODO_VERIFY** unless explicitly documented as verified elsewhere in this repository.
+The [BG3 Osiris API reference](https://docs.baldursgate3.game) and [Script Extender API documentation](https://github.com/Norbyte/bg3se/blob/main/Docs/API.md) support these API facts. Live encounter behavior and exact identifiers remain separate verification tasks in [BG3_INTEGRATION.md](BG3_INTEGRATION.md).
+
+- [GetHitpoints](https://docs.baldursgate3.game/index.php?title=GetHitpoints) and [GetMaxHitpoints](https://docs.baldursgate3.game/index.php?title=GetMaxHitpoints) query current and maximum HP.
+- [CombatStarted](https://docs.baldursgate3.game/index.php?title=CombatStarted), [CombatEnded](https://docs.baldursgate3.game/index.php?title=CombatEnded), [EnteredCombat](https://docs.baldursgate3.game/index.php?title=EnteredCombat), [CombatRoundStarted](https://docs.baldursgate3.game/index.php?title=CombatRoundStarted), [TurnStarted](https://docs.baldursgate3.game/index.php?title=TurnStarted), and [TurnEnded](https://docs.baldursgate3.game/index.php?title=TurnEnded) provide combat and turn lifecycle events. [CombatGetActiveEntity](https://docs.baldursgate3.game/index.php?title=CombatGetActiveEntity) is an active-entity query; it does not by itself enumerate all participants.
+- [GetPosition](https://docs.baldursgate3.game/index.php?title=GetPosition) returns world coordinates, with Y vertical; [GetDistanceTo](https://docs.baldursgate3.game/index.php?title=GetDistanceTo) queries distance between objects.
+- [GetActionResourceValuePersonal](https://docs.baldursgate3.game/index.php?title=GetActionResourceValuePersonal) queries a named resource using a resource level and returns a numeric amount. Exact names for our abilities still need live verification.
+- [HasSpell](https://docs.baldursgate3.game/index.php?title=HasSpell) checks ownership; [CanShowSpellForCharacter](https://docs.baldursgate3.game/index.php?title=CanShowSpellForCharacter) checks visibility. Script Extender documents `SpellBook.Spells` entity access in its [API guide](https://github.com/Norbyte/bg3se/blob/main/Docs/API.md).
+- [UsingSpell](https://docs.baldursgate3.game/index.php?title=UsingSpell), [UsingSpellOnTarget](https://docs.baldursgate3.game/index.php?title=UsingSpellOnTarget), and [UsingSpellAtPosition](https://docs.baldursgate3.game/index.php?title=UsingSpellAtPosition) expose spell/ability IDs. The targeted event exposes caster and target IDs.
+- [AttackedBy](https://docs.baldursgate3.game/index.php?title=AttackedBy) exposes defender, attacker, damage amount/type, and StoryActionID. The same documentation states regular attacks are handled internally as spells. [MissedBy](https://docs.baldursgate3.game/index.php?title=MissedBy) and [CriticalHitBy](https://docs.baldursgate3.game/index.php?title=CriticalHitBy) events exist.
+- Script Extender documents [ECS/entity-component access and `Ext.IO.LoadFile` / `Ext.IO.SaveFile`](https://github.com/Norbyte/bg3se/blob/main/Docs/API.md).
+
+### TODO_VERIFY in a live game
+
+Exact Action and Bonus Action resource IDs; Second Wind and Action Surge ability IDs and resource representation; basic attack spell ID; armor-class ECS field; alive/dead/downed representation; event ordering and StoryActionID correlation reliability; complete UI action legality. None of these identifiers or structures is promoted to `VERIFIED_API`.
 
 ## M1A, M1B, and M2 simulator choices
 

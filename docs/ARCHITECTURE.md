@@ -65,18 +65,10 @@ For decision-level inspection, evaluation can write one JSONL record per episode
 
 ## Future BG3 integration
 
+The platform-neutral [integration contract](BG3_INTEGRATION.md) separates rich BG3 facts from policy observations:
+
 ```text
-BG3
- │
- ├── Osiris events / queries
- ├── Script Extender / Lua / entity state
- └── action execution
-          │
-          ▼
-       BG3Adapter
-          │
-          ▼
-same semantic observations/actions used by simulator
+BG3 collection → integration snapshots/events → observation adapter → policy vector
 ```
 
-The intended policy input is abstract combat state, not UI input. Human-play data should eventually be converted into the same semantic state/action representation. The exact BG3 bridge and API mapping are **TODO_VERIFY**; do not design them yet.
+The collection harness preserves BG3 entity, ability, and resource IDs. The adapter later chooses fields and maps IDs for M0, M1, M2, or richer policies. The harness must not emit the current PPO vector directly. The `integration/` package is independent of `combat/`, Gymnasium, and training code; `combat/` does not import it. The current simulator evaluation JSONL traces remain a separate format containing already encoded observations and masks. BG3 collection, observation adaptation, and action execution are not implemented yet.
