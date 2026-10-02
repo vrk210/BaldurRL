@@ -8,3 +8,4 @@ class Action(Enum):
     SECOND_WIND = auto()
     ACTION_SURGE = auto()
     END_TURN = auto()
+    CLEAVE = auto()

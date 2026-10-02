@@ -41,15 +41,27 @@ These are M0 implementation rules; this section does not claim they have been in
 
 Investigate Osiris events, queries, and calls; Script Extender / Lua; entity/component state; combat turn events; HP state; spell/ability use; action resources; and legal-action extraction. The exact API mapping is **TODO_VERIFY** unless explicitly documented as verified elsewhere in this repository.
 
-## Future game mechanics: TODO_VERIFY / outside M0
+## M1A, M1B, and M2 simulator choices
 
-Initiative; movement and movement distance; jumping; range; line of sight; terrain; elevation; advantage/disadvantage; saving throws; status effects; spell slots; concentration; items; potions; multiple attacks; multiple enemies; multiple party members; death saving throws; short rests; long rests; class-specific resources; enemy AI abilities.
+### SIMULATOR_SIMPLIFICATION
+
+- M1A samples enemy HP, AC, attack bonus, die size, and damage bonus independently at reset. These ranges are for policy-learning experiments and are not verified BG3 creature distributions.
+- M1B uses two enemy slots in fixed melee range. Living enemies attack in slot order after Fighter `END_TURN`.
+- M2 Cleave is a once-per-encounter ability represented by a single resource. This models a short-rest-recharge weapon ability for the simulator; the encounter does not implement rests.
+- M2 Cleave makes a separate normal attack roll against each living enemy and deals half of resolved weapon damage on a hit, floored with minimum one. This calculation is an explicit simulator simplification, not a verified complete BG3 Cleave implementation.
+- M1A, M1B, and baseline M2 use terminal rewards. The M2 reward experiment adds bounded progress from Fighter damage during training only.
+
+No new behavior in this section is labeled `VERIFIED_BG3`.
+
+## Future game mechanics: TODO_VERIFY / outside the implemented stages
+
+Initiative; movement and movement distance; jumping; range; line of sight; terrain; elevation; advantage/disadvantage; saving throws; status effects; spell slots; concentration; items; potions; multiple attacks beyond the specified enemy slots; multiple party members; death saving throws; actual short rests; long rests; other class-specific resources; enemy AI abilities.
 
 Listing a topic here does **not** authorize its implementation. These are future research and design questions.
 
 ## Rule for additions
 
-1. Label new knowledge `VERIFIED_BG3`, `M0_SIMPLIFICATION`, or `TODO_VERIFY`.
+1. Label new knowledge `VERIFIED_BG3`, `M0_SIMPLIFICATION`, `SIMULATOR_SIMPLIFICATION`, or `TODO_VERIFY`.
 2. Cite or describe the source of verified mechanics where practical.
 3. Never silently promote `TODO_VERIFY` material into implementation behavior.
 4. Update `M0_SPEC.md` if a mechanic becomes part of the current environment.

@@ -42,12 +42,14 @@ def compare_run_cards(first_path: Path, second_path: Path) -> dict[str, Any]:
     second_card, second_episodes = _read_run(second_path)
     seeds = first_card["episode_seeds"]
     if (
-        len(seeds) != len(set(seeds))
+        first_card.get("stage", "m0") != second_card.get("stage", "m0")
+        or first_card["action_names"] != second_card["action_names"]
+        or len(seeds) != len(set(seeds))
         or seeds != second_card["episode_seeds"]
         or set(seeds) != set(first_episodes)
         or set(seeds) != set(second_episodes)
     ):
-        raise ValueError("Run cards must contain the same episode seeds and complete traces")
+        raise ValueError("Run cards must have the same episode seeds, stage, actions, and complete traces")
 
     outcome_counts = {"both_won": 0, "first_only_won": 0, "second_only_won": 0, "neither_won": 0}
     loss_cases = []

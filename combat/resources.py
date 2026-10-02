@@ -10,6 +10,7 @@ class Resource(Enum):
     BONUS_ACTION = auto()
     SECOND_WIND = auto()
     ACTION_SURGE = auto()
+    CLEAVE = auto()
 
 
 @dataclass

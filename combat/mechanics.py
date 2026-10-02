@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from numpy.random import Generator
 
-from .abilities import M0_ABILITIES
+from .abilities import M2_ABILITIES
 from .actions import Action
 from .characters import Character, Fighter, Goblin
 from .resources import Resource
@@ -32,17 +32,19 @@ def roll_damage(attacker: Character, rng: Generator, critical: bool = False) -> 
 
 def can_use_ability(actor: Character, action: Action) -> bool:
     """Check known ability and shared resource costs, not effect-specific rules."""
-    spec = M0_ABILITIES.get(action)
+    spec = M2_ABILITIES.get(action)
     return spec is not None and action in actor.known_abilities and actor.resources.has(spec.costs)
 
 
 def _spend_ability(actor: Character, action: Action) -> None:
     if not can_use_ability(actor, action):
         raise ValueError(f"{action.name} is not legal")
-    actor.resources.spend(M0_ABILITIES[action].costs)
+    actor.resources.spend(M2_ABILITIES[action].costs)
 
 
-def resolve_attack(attacker: Character, defender: Character, rng: Generator) -> AttackResult:
+def resolve_attack(
+    attacker: Character, defender: Character, rng: Generator, *, damage_divisor: int = 1
+) -> AttackResult:
     """Resolve one attack and apply any damage to the defender's HP."""
     d20_roll = roll_d20(rng)
     total_attack = d20_roll + attacker.attack_bonus
@@ -51,7 +53,8 @@ def resolve_attack(attacker: Character, defender: Character, rng: Generator) -> 
     if not hit:
         return AttackResult(d20_roll=d20_roll, hit=False, critical=False, damage=0, total_attack=total_attack)
     rolled_damage = roll_damage(attacker, rng, critical=critical)
-    damage = min(defender.hp, rolled_damage)
+    scaled_damage = rolled_damage if damage_divisor == 1 else max(1, rolled_damage // damage_divisor)
+    damage = min(defender.hp, scaled_damage)
     defender.hp -= damage
     return AttackResult(d20_roll=d20_roll, hit=True, critical=critical, damage=damage, total_attack=total_attack)
 
@@ -84,3 +87,14 @@ def use_action_surge(fighter: Fighter) -> None:
     """Spend Action Surge to grant one additional Action."""
     _spend_ability(fighter, Action.ACTION_SURGE)
     fighter.resources.gain(Resource.ACTION)
+
+
+def use_cleave(fighter: Fighter, enemies: tuple[Goblin, ...], rng: Generator) -> tuple[AttackResult | None, ...]:
+    """Spend one Cleave and attack each living enemy with halved resolved damage."""
+    if not any(enemy.alive for enemy in enemies):
+        raise ValueError("CLEAVE is not legal")
+    _spend_ability(fighter, Action.CLEAVE)
+    return tuple(
+        resolve_attack(fighter, enemy, rng, damage_divisor=2) if enemy.alive else None
+        for enemy in enemies
+    )

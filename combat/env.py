@@ -63,6 +63,15 @@ class BaldurCombatEnv(gym.Env[np.ndarray, int]):
     """One step applies exactly one Fighter decision."""
 
     metadata = {"render_modes": []}
+    stage = "m0"
+    action_names = tuple(action.name for action in M0_ACTIONS)
+    observation_fields = OBSERVATION_FIELDS
+
+    @property
+    def decisions(self) -> tuple[Any, ...]:
+        from .stages import DecisionSpec
+
+        return tuple(DecisionSpec(action) for action in M0_ACTIONS)
 
     def __init__(self, reward_fn: RewardFunction = terminal_reward) -> None:
         super().__init__()

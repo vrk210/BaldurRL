@@ -33,3 +33,10 @@ M0_ABILITIES: Mapping[Action, AbilitySpec] = MappingProxyType({
     ),
     Action.ACTION_SURGE: AbilitySpec(Action.ACTION_SURGE, {Resource.ACTION_SURGE: 1}, TargetType.SELF),
 })
+
+M2_ABILITIES: Mapping[Action, AbilitySpec] = MappingProxyType({
+    **M0_ABILITIES,
+    Action.CLEAVE: AbilitySpec(
+        Action.CLEAVE, {Resource.ACTION: 1, Resource.CLEAVE: 1}, TargetType.ENEMY
+    ),
+})

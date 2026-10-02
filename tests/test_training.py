@@ -1,6 +1,8 @@
 """Masked-env wrapper and tiny MaskablePPO training smoke tests."""
 
 import json
+from importlib import import_module
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -29,18 +31,52 @@ def test_masked_env_reports_matching_masks() -> None:
     env.close()
 
 
-def test_vec_env_masks_match_maskableppo_path() -> None:
+@pytest.mark.parametrize("vec", ["dummy", "subproc"])
+def test_vec_env_masks_match_maskableppo_path(vec: str) -> None:
     from sb3_contrib.common.maskable.utils import get_action_masks
 
-    vec_env = make_vec_env(n_envs=2, seed=11, vec="dummy")
-    vec_env.reset()
-    masks = get_action_masks(vec_env)
-    assert masks.shape == (2, 4)
-    expected = [
-        env.get_wrapper_attr("action_masks")().tolist() for env in vec_env.envs
-    ]
-    assert masks.tolist() == expected
-    vec_env.close()
+    try:
+        vec_env = make_vec_env(n_envs=2, seed=11, vec=vec)
+    except PermissionError as exc:
+        if vec == "subproc" and "Operation not permitted" in str(exc):
+            pytest.skip("Sandbox blocks the AF_UNIX socket required by SubprocVecEnv")
+        raise
+    try:
+        vec_env.reset()
+        masks = get_action_masks(vec_env)
+        assert masks.shape == (2, 4)
+        expected = vec_env.env_method("action_masks")
+        assert masks.tolist() == [mask.tolist() for mask in expected]
+        assert masks[:, 0].all() and masks[:, 3].all()
+    finally:
+        vec_env.close()
+
+
+def test_eval_frequency_counts_vectorized_timesteps_once_per_threshold(
+    tmp_path, monkeypatch
+) -> None:
+    from sb3_contrib import MaskablePPO
+
+    training_module = import_module("train")
+    evaluated_at: list[int] = []
+
+    def fake_evaluate(policy, seeds, *, stage):
+        evaluated_at.append(policy.model.num_timesteps)
+        assert list(seeds) == [1000]
+        assert stage == "m0"
+        return SimpleNamespace(win_rate=0.5, mean_rounds=3.0, mean_fighter_hp=10.0)
+
+    monkeypatch.setattr(training_module, "evaluate", fake_evaluate)
+    vec_env = make_vec_env(n_envs=4, seed=4, vec="dummy")
+    try:
+        model = MaskablePPO(
+            "MlpPolicy", vec_env, n_steps=8, batch_size=16, n_epochs=1, seed=4
+        )
+        callback = M0EvalCallback([1000], eval_freq=10, best_model_path=tmp_path / "best.zip")
+        model.learn(total_timesteps=32, callback=callback)
+        assert evaluated_at == [12, 20, 32]
+    finally:
+        vec_env.close()
 
 
 def test_eval_callback_saves_best_model(tmp_path) -> None:
@@ -80,7 +116,18 @@ def test_train_smoke_writes_artifacts(tmp_path) -> None:
     assert (tmp_path / "final_eval_traces.jsonl").exists()
     assert (tmp_path / "final_run_card.json").exists()
     assert (tmp_path / "best_model.zip").exists()
+    metadata = json.loads((tmp_path / "training_metadata.json").read_text())
+    assert metadata["stage"] == "m0"
+    assert metadata["reward_mode"] == "terminal"
+    assert metadata["actual_timesteps"] >= 128
+    assert metadata["training_seconds"] > 0
     assert payload["episodes"] == 4
     assert 0.0 <= payload["win_rate"] <= 1.0
     assert json.loads((tmp_path / "final_eval.json").read_text()) == payload
     assert json.loads((tmp_path / "final_run_card.json").read_text())["summary"] == payload
+
+
+def test_damage_reward_is_restricted_to_m2() -> None:
+    with pytest.raises(SystemExit):
+        parse_args(["--stage", "m1b", "--reward", "damage"])
+    assert parse_args(["--stage", "m2", "--reward", "damage"]).reward == "damage"

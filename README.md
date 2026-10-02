@@ -2,6 +2,19 @@
 
 BaldurRL is a project for training an agent to play Baldur's Gate 3. In progress
 
+## Simulator stages
+
+M0 is the fixed 1v1 regression baseline. M1A varies one opponent's statistics. M1B has two opponents and target choice. M2 adds a one-use simplified Cleave. See [M0 specification](docs/M0_SPEC.md) and [stage specifications](docs/STAGES_SPEC.md).
+
+Train or evaluate by stage:
+
+```bash
+.venv/bin/python train.py --stage m1b --seed 0 --timesteps 200000 --save-dir runs/m1b_ppo_s0
+.venv/bin/python -m evaluation.evaluate --stage m1b --agent heuristic --seed-start 3000 --episodes 1000 --trace-dir runs/m1b_heldout/heuristic
+```
+
+The M1A, M1B, and M2 baseline training reward is terminal win/loss. M2 also supports an isolated `--reward damage` training experiment after the terminal baseline is established. Evaluation reports combat outcomes on explicit environment seeds.
+
 ## Inspecting decisions
 
 Evaluate a saved policy on a fresh seed range and write a run card plus one JSONL trace per episode:

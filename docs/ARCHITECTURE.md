@@ -38,6 +38,14 @@ The simulator therefore uses **semantic state and semantic actions**, rather tha
 | `agents/` | Action-selection policies, beginning with `RandomAgent` | Direct state mutation or combat formulas |
 | `evaluation/` | Reproducible seeded episodes and external metrics: win rate, final HP, rounds, action usage | Combat rules |
 
+## Stage progression
+
+M0 remains the fixed 1v1 regression environment specified in `M0_SPEC.md`. The later stages are specified in `STAGES_SPEC.md`: M1A varies one opponent's stats; M1B has two fixed melee enemy slots and explicit target decisions; M2 adds one-use Cleave. A small stage factory selects an environment for training and evaluation. Each environment publishes action labels and observation field names in index order so traces and run cards do not encode M0 assumptions.
+
+Gym action indices represent decisions. A decision carries a semantic `Action` and, for a targeted attack, an enemy slot index. Target selection is separate from the shared ability identity. The environment owns target legality, turn order, outcomes, and reward selection; mechanics still own attack and ability effects. Character state holds resources and known abilities. Agents receive only the flat observation and action mask and return an index.
+
+All three later stages use terminal win/loss reward for their main comparison. M2 also supports an isolated bounded damage-shaping training experiment. External evaluation always measures combat outcomes and behavior on seeded episodes, independent of the training reward scheme.
+
 ## Dependency direction
 
 ```text
