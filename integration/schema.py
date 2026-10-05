@@ -103,6 +103,7 @@ class GameSnapshot:
     def to_dict(self) -> dict[str, Any]:
         """Return JSON-compatible primitives and arrays in stable field order."""
         return {
+            "record_type": "snapshot",
             "schema_version": self.schema_version,
             "sequence": self.sequence,
             "timestamp_ms": self.timestamp_ms,
@@ -184,6 +185,7 @@ class GameEvent:
     def to_dict(self) -> dict[str, Any]:
         """Return JSON-compatible primitives in stable field order."""
         return {
+            "record_type": "event",
             "schema_version": self.schema_version,
             "sequence": self.sequence,
             "timestamp_ms": self.timestamp_ms,
