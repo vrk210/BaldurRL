@@ -31,7 +31,7 @@ BG3
 
 The harness captures rich semantic facts from the real game. It does **not** emit M0's seven-value PPO observation or infer simulator resources. An observation adapter will later choose what each policy sees and map raw BG3 IDs to policy concepts. Preserve entity, ability, and resource IDs supplied by BG3 until that boundary. Unknown facts remain `None`, an empty tuple when enumeration is incomplete, or `Legality.UNKNOWN`; do not fill them with simulator presets. The current `evaluation/evaluate.py` JSONL trace is a separate simulator format with flat vectors, masks, and diagnostic `info`.
 
-`integration/schema.py` is a platform-neutral contract, independent of Gymnasium and the simulator. `GameSnapshot` answers **what is true now**; `GameEvent` answers **what just happened**. A snapshot contains no event history. Both carry `schema_version = 1` and a collector-assigned `sequence`. The future collector must increase sequence across its emitted records to preserve order; timestamp milliseconds are optional. `to_dict()` emits JSON-compatible primitives and arrays, with enum values as lowercase strings and unknown values as JSON `null`. This task does not define a collector, reader, adapter, or command path.
+`integration/schema.py` is a platform-neutral contract, independent of Gymnasium and the simulator. `GameSnapshot` answers **what is true now**; `GameEvent` answers **what just happened**. A snapshot contains no event history. Both carry `schema_version = 1` and a collector-assigned `sequence`. The future collector must increase sequence across its emitted records to preserve order; timestamp milliseconds are optional. `to_dict()` emits JSON-compatible primitives and arrays, with enum values as lowercase strings and unknown values as JSON `null`. Python serialization, reading, inspection, and interval reconstruction are implemented; collection, policy adaptation, and action execution are future work.
 
 `CombatSnapshot.participant_ids` may be empty until participant enumeration works. `EntitySnapshot.armor_class`, `alive`, and `position` may remain unknown if unavailable at capture time. `AbilitySnapshot.visible` does not assert usability. A candidate decision describes ability and target intent; `LEGAL` means a source establishes current legality, `ILLEGAL` means a source establishes rejection, and `UNKNOWN` means available evidence is insufficient. `legality_source` and `legality_reason` preserve that evidence. Ability ownership plus apparent resources do not reconstruct BG3 UI legality in general: target validity, range, line of sight, status, and other conditions can matter. Do not label such a candidate legal solely from ownership and resources.
 
@@ -57,17 +57,55 @@ The APIs expose StoryActionID, but actual event ordering and correlation in our 
 ## First file bridge
 
 ```text
-BG3 Script Extender Lua
+BG3 Script Extender Lua (NOT IMPLEMENTED)
         │
         │ Ext.IO.SaveFile
         ▼
 JSON snapshot/event files
         │
         ▼
-Python file watcher / reader
+RecordDirectoryReader (IMPLEMENTED)
+        │
+        ▼
+GameSnapshot / GameEvent stream
+        │
+        ▼
+SnapshotInterval reconstruction
+        │
+        ▼
+Later H1 demonstration assembly (NOT IMPLEMENTED)
 ```
 
-[Script Extender documents `Ext.IO.SaveFile` and `Ext.IO.LoadFile`](https://github.com/Norbyte/bg3se/blob/main/Docs/API.md). The first implementation should favor correctness and inspectability over low latency. File location, safe read behavior, naming, and polling cadence require live tests. This contract does not implement the watcher or sockets/networking.
+[Script Extender documents `Ext.IO.SaveFile` and `Ext.IO.LoadFile`](https://github.com/Norbyte/bg3se/blob/main/Docs/API.md). File location, safe read behavior, naming, and polling cadence require live tests. Temp-file/rename behavior remains `TODO_VERIFY` on Windows. The Python reader uses simple polling through repeated `read_new()` calls; it does not watch the filesystem asynchronously.
+
+### Version 1 wire record
+
+Each `.json` file contains one top-level record. The existing v1 `GameSnapshot.to_dict()` and `GameEvent.to_dict()` now include a stable `record_type` discriminator; this is a v1 clarification made before any live producer exists. The rest of the fields remain at the top level, without an envelope:
+
+```json
+{"record_type": "snapshot", "schema_version": 1, "sequence": 1, "timestamp_ms": null, "controlled_entity_id": "player-1", "combat": null, "entities": [], "candidate_decisions": []}
+```
+
+```json
+{"record_type": "event", "schema_version": 1, "sequence": 2, "timestamp_ms": null, "kind": "ability_used_on_target", "combat_id": null, "round_number": null, "actor_id": "player-1", "target_id": "enemy-1", "ability_id": "ability-basic-attack", "target_position": null, "story_action_id": null, "damage": null, "damage_type": null, "critical": null}
+```
+
+The IDs above are **synthetic test IDs**, not discovered BG3 IDs. `integration.serialization.parse_record()` rejects unsupported versions, unknown types and fields, and malformed nested values. Optional facts may be omitted or `null`; omitted collections default to empty arrays. Required fields are `record_type`, `schema_version`, and positive integer `sequence`, plus `kind` for events. Nested entities require `entity_id`; resources require `resource_id` and `amount`; abilities require `ability_id`; candidates require `ability_id`, `target_kind`, and `legality`. Enum values are lowercase strings. Schema v1 uses no simulator defaults.
+
+The eventual Lua producer only needs to choose the next monotonically increasing sequence, populate `schema_version` and `record_type`, serialize one snapshot or event, and write one JSON file into the record directory. It does not need PPO, Gymnasium, reward, or observation encoding.
+
+### Python use
+
+```text
+python -m integration.mock_h0 /tmp/baldurrl-h0
+python -m integration.inspect /tmp/baldurrl-h0
+```
+
+`RecordDirectoryReader(directory, start_sequence=1).read_new()` emits each record once and stops at a missing sequence, retaining later records until another poll. Use `start_sequence` when attaching to a stream that starts after 1. `read_all()` returns all available records sorted by embedded sequence; `validate_all()` reports gaps for offline inspection. Duplicate IDs and invalid JSON or schema records raise errors naming the offending file. Record files are treated as immutable after a successful read.
+
+`reconstruct_intervals()` creates a `SnapshotInterval(before, events, after)` between consecutive snapshots. An interval is **not necessarily one decision**. Trailing events after the last snapshot remain in the raw stream and are not placed in a completed interval. `controlled_action()` checks only ability-use events whose `actor_id` matches the requested entity; it returns `None` for no match and raises `AmbiguousActionError` for multiple matches. It does not infer rewards, legal actions, or policy labels.
+
+**IMPLEMENTED (Python H0):** schema, serialization/parser, sequence-aware directory reader, interval reconstruction, inspection CLI, synthetic fixture. **NOT IMPLEMENTED / WINDOWS:** Script Extender producer, Osiris subscriptions, real BG3 resource and spell IDs, participant enumeration, legal-action reconstruction, action execution. All live-verification checklist items below remain open.
 
 ## Windows live-verification checklist
 
@@ -145,7 +183,7 @@ H0 only records; it does not control the game. Success means:
 7. Emit another snapshot after resolution.
 8. Record Goblin turn/events.
 9. Record death/combat end.
-10. Read emitted JSON in Python and reconstruct an ordered event/snapshot trace.
+10. Read emitted JSON in Python and reconstruct an ordered event/snapshot trace (Python side implemented with synthetic records; live verification pending).
 
 Later stages, described here only:
 
@@ -154,4 +192,4 @@ Later stages, described here only:
 - **H3 — Python → BG3 command execution.**
 - **H4 — BG3-backed Gymnasium adapter.**
 
-The schema is designed so a future demonstration record can be assembled as `snapshot_before + candidate/legal decisions + human chosen action + outcome events + snapshot_after`. This can support behavior cloning, DAgger-style human correction, and simulator/BG3 validation later. This task implements none of those pipelines.
+The schema is designed so a future demonstration record can be assembled as `snapshot_before + candidate/legal decisions + human chosen action + outcome events + snapshot_after`. This can support behavior cloning, DAgger-style human correction, and simulator/BG3 validation later. The Python H0 tools do not assemble demonstrations or verify live event semantics.
