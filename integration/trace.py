@@ -44,8 +44,19 @@ def reconstruct_intervals(records: Iterable[Record]) -> tuple[SnapshotInterval, 
 
 
 def controlled_action(interval: SnapshotInterval, controlled_entity_id: str) -> GameEvent | None:
-    """Return one plausible human action; flag multiple without guessing."""
+    """Select one correlated action event without changing the raw interval."""
     matches = tuple(event for event in interval.events if event.actor_id == controlled_entity_id and event.kind in _ACTION_KINDS)
-    if len(matches) > 1:
+    if not matches:
+        return None
+    if len(matches) == 1:
+        return matches[0]
+    action_ids = {event.story_action_id for event in matches}
+    if None in action_ids or len(action_ids) != 1:
         raise AmbiguousActionError(f"Multiple action events for {controlled_entity_id}: sequences {tuple(event.sequence for event in matches)}")
-    return matches[0] if matches else None
+    by_kind = {kind: tuple(event for event in matches if event.kind is kind) for kind in _ACTION_KINDS}
+    if by_kind[EventKind.ABILITY_USED_ON_TARGET] and by_kind[EventKind.ABILITY_USED_AT_POSITION]:
+        raise AmbiguousActionError(f"Target and position events conflict for {controlled_entity_id}: sequences {tuple(event.sequence for event in matches)}")
+    for kind in (EventKind.ABILITY_USED_ON_TARGET, EventKind.ABILITY_USED_AT_POSITION, EventKind.ABILITY_USED):
+        if by_kind[kind]:
+            return by_kind[kind][0]
+    raise AssertionError("Action event set unexpectedly empty")

@@ -23,14 +23,15 @@ def mock_records() -> tuple[Record, ...]:
 
     return (
         snapshot(1, 20, 15, "player-1"),
-        event(2, EventKind.ABILITY_USED_ON_TARGET, actor_id="player-1", target_id="enemy-1", ability_id="ability-basic-attack", story_action_id=100),
-        event(3, EventKind.DAMAGE, actor_id="player-1", target_id="enemy-1", damage=5, story_action_id=100),
-        snapshot(4, 20, 10, "player-1"),
-        event(5, EventKind.TURN_ENDED, actor_id="player-1"),
-        event(6, EventKind.ABILITY_USED_ON_TARGET, actor_id="enemy-1", target_id="player-1", ability_id="ability-enemy-attack", story_action_id=101),
-        event(7, EventKind.MISS, actor_id="enemy-1", target_id="player-1", story_action_id=101),
-        snapshot(8, 20, 10, "player-1"),
-        event(9, EventKind.COMBAT_ENDED),
+        event(2, EventKind.ABILITY_USED, actor_id="player-1", ability_id="ability-basic-attack", story_action_id=100),
+        event(3, EventKind.ABILITY_USED_ON_TARGET, actor_id="player-1", target_id="enemy-1", ability_id="ability-basic-attack", story_action_id=100),
+        event(4, EventKind.DAMAGE, actor_id="player-1", target_id="enemy-1", damage=5, story_action_id=100),
+        snapshot(5, 20, 10, "player-1"),
+        event(6, EventKind.TURN_ENDED, actor_id="player-1"),
+        event(7, EventKind.ABILITY_USED_ON_TARGET, actor_id="enemy-1", target_id="player-1", ability_id="ability-enemy-attack", story_action_id=101),
+        event(8, EventKind.MISS, actor_id="enemy-1", target_id="player-1", story_action_id=101),
+        snapshot(9, 20, 10, "player-1"),
+        event(10, EventKind.COMBAT_ENDED),
     )
 
 
