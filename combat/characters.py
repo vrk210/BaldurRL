@@ -1,6 +1,8 @@
 """Character state for combat."""
 
 from dataclasses import dataclass, field
+from types import MappingProxyType
+from typing import Mapping
 
 from .actions import Action
 from .damage import DamageSpec
@@ -17,10 +19,19 @@ class Character:
     damage: DamageSpec
     resources: ResourcePool = field(default_factory=ResourcePool)
     known_abilities: frozenset[Action] = frozenset()
+    turn_refresh: Mapping[Resource, int] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
 
     @property
     def alive(self) -> bool:
         return self.hp > 0
+
+
+def refresh_turn_resources(actor: Character) -> None:
+    """Restore per-turn resources at the start of the actor's turn."""
+    for resource, amount in actor.turn_refresh.items():
+        actor.resources.set(resource, amount)
 
 
 @dataclass
@@ -36,9 +47,18 @@ class Fighter(Character):
         Action.SECOND_WIND,
         Action.ACTION_SURGE,
     })
+    turn_refresh: Mapping[Resource, int] = field(
+        default_factory=lambda: MappingProxyType({
+            Resource.ACTION: 1,
+            Resource.BONUS_ACTION: 1,
+        })
+    )
 
 
 @dataclass
 class Goblin(Character):
     resources: ResourcePool = field(default_factory=lambda: ResourcePool({Resource.ACTION: 1}))
     known_abilities: frozenset[Action] = frozenset({Action.ATTACK})
+    turn_refresh: Mapping[Resource, int] = field(
+        default_factory=lambda: MappingProxyType({Resource.ACTION: 1})
+    )

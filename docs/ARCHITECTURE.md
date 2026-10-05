@@ -28,7 +28,9 @@ The simulator therefore uses **semantic state and semantic actions**, rather tha
 
 | Module | Owns | Must not own |
 | --- | --- | --- |
-| `combat/characters.py` | Entity state: `Character`, `Fighter`, `Goblin`; known `Action` IDs, not copied ability definitions | Rewards, turn loops, policies, attack-resolution orchestration |
+| `combat/characters.py` | Entity state: `Character`, `Fighter`, `Goblin`; known `Action` IDs, per-turn `turn_refresh` mapping, not copied ability definitions | Rewards, turn loops, policies, attack-resolution orchestration |
+| `combat/actors.py` | Stable `Side`/`ActorRef` addresses and `CombatRoster` ally/enemy organization | Combat rules, rewards, turn advancement |
+| `combat/turns.py` | Deterministic `TurnManager`: order, current actor, round, wrap detection, dead-actor skipping | Dice, HP mutation, rewards, policies, attacks |
 | `combat/actions.py` | Semantic action intent: `ATTACK`, `SECOND_WIND`, `ACTION_SURGE`, `END_TURN` | Execution rules |
 | `combat/resources.py` | `Resource` enum and `ResourcePool` counts; shared affordability, atomic spending, gaining, and setting counts | Effect-specific legality or effects |
 | `combat/damage.py` | Immutable `DamageSpec(dice_count, die_size, bonus)` | Rolls or damage application |

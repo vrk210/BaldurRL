@@ -8,10 +8,12 @@ import numpy as np
 from gymnasium import spaces
 
 from .actions import Action
-from .characters import Fighter, Goblin
+from .actors import ActorRef, CombatRoster, Side
+from .characters import Fighter, Goblin, refresh_turn_resources
 from .damage import DamageSpec
 from .mechanics import AttackResult, can_use_ability, use_action_surge, use_attack, use_second_wind
 from .resources import Resource
+from .turns import TurnManager
 
 
 MAX_ROUNDS = 50
@@ -84,6 +86,9 @@ class BaldurCombatEnv(gym.Env[np.ndarray, int]):
         )
         self.fighter: Fighter | None = None
         self.goblin: Goblin | None = None
+        self.roster: CombatRoster | None = None
+        self.turns: TurnManager | None = None
+        self._controlled_refs = frozenset({ActorRef(Side.ALLY, 0)})
         self.round_number = 1
         self._terminated = False
         self._truncated = False
@@ -97,6 +102,10 @@ class BaldurCombatEnv(gym.Env[np.ndarray, int]):
         self.round_number = 1
         self._terminated = False
         self._truncated = False
+        self.roster = CombatRoster(allies=(self.fighter,), enemies=(self.goblin,))
+        self.turns = TurnManager(
+            (ActorRef(Side.ALLY, 0), ActorRef(Side.ENEMY, 0)), round_number=1
+        )
         self._begin_fighter_turn()
         return self._get_observation(), self._get_info(action=None)
 
@@ -116,6 +125,8 @@ class BaldurCombatEnv(gym.Env[np.ndarray, int]):
 
     def step(self, action: int) -> tuple[np.ndarray, float, bool, bool, dict[str, Any]]:
         fighter, goblin = self._characters()
+        roster = self._roster()
+        turns = self._turns()
         if self._terminated or self._truncated:
             raise RuntimeError("Episode ended; call reset() before step()")
         if not self.action_space.contains(action):
@@ -132,20 +143,27 @@ class BaldurCombatEnv(gym.Env[np.ndarray, int]):
 
         if semantic_action is Action.ATTACK:
             fighter_attack = use_attack(fighter, goblin, self.np_random)
-            self._terminated = not goblin.alive
+            self._terminated = roster.side_defeated(Side.ALLY) or roster.side_defeated(Side.ENEMY)
         elif semantic_action is Action.SECOND_WIND:
             healed = use_second_wind(fighter, self.np_random)
         elif semantic_action is Action.ACTION_SURGE:
             use_action_surge(fighter)
         else:
-            goblin.resources.set(Resource.ACTION, 1)
-            goblin_attack = use_attack(goblin, fighter, self.np_random)
-            self._terminated = not fighter.alive
-            if not self._terminated:
-                if self.round_number == MAX_ROUNDS:
+            turns.advance(roster.is_alive)
+            while not self._is_policy_controlled(turns.current):
+                result = self._run_automatic_turn(turns.current)
+                if result is not None:
+                    goblin_attack = result
+                if roster.side_defeated(Side.ALLY) or roster.side_defeated(Side.ENEMY):
+                    self._terminated = True
+                    break
+                _, would_wrap = turns.peek_next(roster.is_alive)
+                if would_wrap and self.round_number == MAX_ROUNDS:
                     self._truncated = True
-                else:
-                    self.round_number += 1
+                    break
+                wrapped = turns.advance(roster.is_alive)
+                if wrapped:
+                    self.round_number = turns.round_number
                     self._begin_fighter_turn()
 
         after = self._reward_snapshot()
@@ -164,10 +182,31 @@ class BaldurCombatEnv(gym.Env[np.ndarray, int]):
             raise RuntimeError("Call reset() before using the environment")
         return self.fighter, self.goblin
 
+    def _roster(self) -> CombatRoster:
+        if self.roster is None:
+            raise RuntimeError("Call reset() before using the environment")
+        return self.roster
+
+    def _turns(self) -> TurnManager:
+        if self.turns is None:
+            raise RuntimeError("Call reset() before using the environment")
+        return self.turns
+
+    def _is_policy_controlled(self, ref: ActorRef) -> bool:
+        return ref in self._controlled_refs
+
+    def _run_automatic_turn(self, ref: ActorRef) -> AttackResult | None:
+        roster = self._roster()
+        attacker = roster.get(ref)
+        target = roster.get(ActorRef(Side.ALLY, 0))
+        if not attacker.alive or not target.alive:
+            return None
+        refresh_turn_resources(attacker)
+        return use_attack(attacker, target, self.np_random)
+
     def _begin_fighter_turn(self) -> None:
         fighter, _ = self._characters()
-        fighter.resources.set(Resource.ACTION, 1)
-        fighter.resources.set(Resource.BONUS_ACTION, 1)
+        refresh_turn_resources(fighter)
 
     def _get_observation(self) -> np.ndarray:
         fighter, goblin = self._characters()

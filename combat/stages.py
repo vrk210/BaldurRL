@@ -8,11 +8,20 @@ import numpy as np
 from gymnasium import spaces
 
 from .actions import Action
-from .characters import Fighter, Goblin
+from .actors import ActorRef, CombatRoster, Side
+from .characters import Fighter, Goblin, refresh_turn_resources
 from .damage import DamageSpec
 from .env import BaldurCombatEnv, MAX_ROUNDS, _new_fighter
-from .mechanics import can_use_ability, use_action_surge, use_attack, use_cleave, use_second_wind
+from .mechanics import (
+    AttackResult,
+    can_use_ability,
+    use_action_surge,
+    use_attack,
+    use_cleave,
+    use_second_wind,
+)
 from .resources import Resource
+from .turns import TurnManager
 
 
 @dataclass(frozen=True)
@@ -77,6 +86,9 @@ class StagedCombatEnv(gym.Env[np.ndarray, int]):
         )
         self.fighter: Fighter | None = None
         self.enemies: tuple[Goblin, ...] = ()
+        self.roster: CombatRoster | None = None
+        self.turns: TurnManager | None = None
+        self._controlled_refs = frozenset({ActorRef(Side.ALLY, 0)})
         self.round_number = 1
         self._terminated = False
         self._truncated = False
@@ -93,6 +105,12 @@ class StagedCombatEnv(gym.Env[np.ndarray, int]):
         self.round_number = 1
         self._terminated = False
         self._truncated = False
+        self.roster = CombatRoster(allies=(self.fighter,), enemies=self.enemies)
+        order = (ActorRef(Side.ALLY, 0),) + tuple(
+            ActorRef(Side.ENEMY, slot) for slot in range(len(self.enemies))
+        )
+        self.turns = TurnManager(order, round_number=1)
+        refresh_turn_resources(self.roster.get(self.turns.current))
         return self._observation(), self._info(None)
 
     def _new_enemy(self, slot: int) -> Goblin:
@@ -107,6 +125,29 @@ class StagedCombatEnv(gym.Env[np.ndarray, int]):
         if self.fighter is None:
             raise RuntimeError("Call reset() before using the environment")
         return self.fighter
+
+    def _roster(self) -> CombatRoster:
+        if self.roster is None:
+            raise RuntimeError("Call reset() before using the environment")
+        return self.roster
+
+    def _turns(self) -> TurnManager:
+        if self.turns is None:
+            raise RuntimeError("Call reset() before using the environment")
+        return self.turns
+
+    def _is_policy_controlled(self, ref: ActorRef) -> bool:
+        return ref in self._controlled_refs
+
+    def _run_automatic_turn(self, ref: ActorRef) -> AttackResult | None:
+        """Refresh and attack ALLY 0; isolated for future target selection."""
+        roster = self._roster()
+        attacker = roster.get(ref)
+        target = roster.get(ActorRef(Side.ALLY, 0))
+        if not attacker.alive or not target.alive:
+            return None
+        refresh_turn_resources(attacker)
+        return use_attack(attacker, target, self.np_random)
 
     def action_masks(self) -> np.ndarray:
         fighter = self._fighter()
@@ -131,6 +172,8 @@ class StagedCombatEnv(gym.Env[np.ndarray, int]):
 
     def step(self, action: int) -> tuple[np.ndarray, float, bool, bool, dict[str, Any]]:
         fighter = self._fighter()
+        roster = self._roster()
+        turns = self._turns()
         if self._terminated or self._truncated:
             raise RuntimeError("Episode ended; call reset() before step()")
         if not self.action_space.contains(action):
@@ -154,28 +197,28 @@ class StagedCombatEnv(gym.Env[np.ndarray, int]):
         elif decision.action is Action.ACTION_SURGE:
             use_action_surge(fighter)
         else:
-            attacks: list[dict[str, Any] | None] = []
-            for enemy in self.enemies:
-                if not fighter.alive:
-                    attacks.append(None)
-                    continue
-                if enemy.alive:
-                    enemy.resources.set(Resource.ACTION, 1)
-                    attacks.append(asdict(use_attack(enemy, fighter, self.np_random)))
-                else:
-                    attacks.append(None)
+            attacks: list[dict[str, Any] | None] = [None] * len(self.enemies)
+            turns.advance(roster.is_alive)
+            while not self._is_policy_controlled(turns.current):
+                ref = turns.current
+                result = self._run_automatic_turn(ref)
+                attacks[ref.slot] = asdict(result) if result is not None else None
+                if roster.side_defeated(Side.ALLY) or roster.side_defeated(Side.ENEMY):
+                    self._terminated = True
+                    break
+                _, would_wrap = turns.peek_next(roster.is_alive)
+                if would_wrap and self.round_number == MAX_ROUNDS:
+                    self._truncated = True
+                    break
+                wrapped = turns.advance(roster.is_alive)
+                if wrapped:
+                    self.round_number = turns.round_number
+                    refresh_turn_resources(roster.get(turns.current))
             info["enemy_attacks"] = attacks
             if len(self.enemies) == 1:
                 info["goblin_attack"] = attacks[0]
-            if fighter.alive:
-                if self.round_number == MAX_ROUNDS:
-                    self._truncated = True
-                else:
-                    self.round_number += 1
-                    fighter.resources.set(Resource.ACTION, 1)
-                    fighter.resources.set(Resource.BONUS_ACTION, 1)
 
-        self._terminated = not fighter.alive or not any(enemy.alive for enemy in self.enemies)
+        self._terminated = roster.side_defeated(Side.ALLY) or roster.side_defeated(Side.ENEMY)
         reward = float((1 if fighter.alive else -1) if self._terminated else 0)
         if self.reward_mode == "damage":
             damage = before_enemy_hp - sum(enemy.hp for enemy in self.enemies)
@@ -202,6 +245,7 @@ class StagedCombatEnv(gym.Env[np.ndarray, int]):
 
     def _info(self, decision: DecisionSpec | None) -> dict[str, Any]:
         fighter = self._fighter()
+        turns = self._turns()
         return {
             "round": self.round_number,
             "action": decision.action.name if decision else None,
@@ -210,6 +254,9 @@ class StagedCombatEnv(gym.Env[np.ndarray, int]):
             "fighter_hp": fighter.hp,
             "enemy_hps": [enemy.hp for enemy in self.enemies],
             "goblin_hp": self.enemies[0].hp,
+            "active_actor_side": turns.current.side.name,
+            "active_actor_slot": turns.current.slot,
+            "turn_order": [f"{ref.side.name}/{ref.slot}" for ref in turns.order],
         }
 
 
