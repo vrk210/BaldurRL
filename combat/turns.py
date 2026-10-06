@@ -13,7 +13,9 @@ class TurnManager:
     calculates rewards, or executes attacks.
     """
 
-    def __init__(self, order: Sequence[ActorRef], round_number: int = 1) -> None:
+    def __init__(
+        self, order: Sequence[ActorRef], round_number: int = 1, *, current: ActorRef | None = None
+    ) -> None:
         items = tuple(order)
         if not items:
             raise ValueError("Turn order must be non-empty")
@@ -22,7 +24,9 @@ class TurnManager:
         if round_number < 1:
             raise ValueError("Round number starts at 1")
         self._order = items
-        self._current_index = 0
+        if current is not None and current not in items:
+            raise ValueError("Current actor must belong to the turn order")
+        self._current_index = 0 if current is None else items.index(current)
         self._round_number = round_number
 
     @property

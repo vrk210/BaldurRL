@@ -12,6 +12,9 @@ indices, masks, rewards, and seeded transitions are unchanged.
 - `TurnManager(order, round_number)`: deterministic order, current actor,
   round number, `peek_next`, and `advance` with dead-actor skipping and
   wrap detection. No dice, HP mutation, rewards, or attacks.
+  An optional keyword `current=ActorRef(...)` restores an actor in the order
+  without advancing the round or refreshing resources. Observation-based
+  [simulation reconstruction](ROLLOUT_PLANNING.md) uses this for partial turns.
 - Controlled vs automatic: the policy decides for refs in
   `controlled_refs` (currently `{ALLY 0}`); `END_TURN` advances the manager
   and runs `_run_automatic_turn` for each following non-controlled ref.

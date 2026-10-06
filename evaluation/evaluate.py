@@ -7,15 +7,12 @@ from dataclasses import dataclass
 from math import sqrt
 from pathlib import Path
 from statistics import mean, pstdev
-from typing import Any, Iterable, Protocol
+from typing import Any, Iterable
 
 import numpy as np
 
 from combat.stages import make_env
-
-
-class Policy(Protocol):
-    def choose_action(self, observation: np.ndarray, action_mask: np.ndarray) -> int: ...
+from agents.policy import Policy
 
 
 _M0_NAMES = ("ATTACK", "SECOND_WIND", "ACTION_SURGE", "END_TURN")
@@ -284,6 +281,7 @@ def write_run_card(
     model_path: str | None = None,
     agent_seed: int | None = None,
     stage: str = "m0",
+    rollout_settings: dict[str, Any] | None = None,
 ) -> None:
     """Save metadata needed to inspect and compare a traced evaluation run."""
     env = make_env(stage)
@@ -307,19 +305,24 @@ def write_run_card(
         "loss_seeds": [result.seed for result in summary.results if result.lost],
         "truncation_seeds": [result.seed for result in summary.results if result.truncated],
     }
+    if rollout_settings is not None:
+        card["rollout_settings"] = rollout_settings
     output_path.write_text(json.dumps(card, indent=2) + "\n", encoding="utf-8")
 
 
 def main() -> None:
     from agents.heuristic_agent import make_heuristic_agent
     from agents.random_agent import RandomAgent
+    from agents.rollout_agent import RolloutAgent
 
     parser = ArgumentParser(description="Evaluate a combat policy")
     parser.add_argument("--stage", choices=["m0", "m1a", "m1b", "m2", "m3", "m4"], default="m0")
     parser.add_argument("--episodes", type=int, default=10_000)
     parser.add_argument("--agent-seed", type=int, default=0)
-    parser.add_argument("--agent", choices=["random", "heuristic", "ppo"], default="random")
-    parser.add_argument("--model", type=str, default=None, help="MaskablePPO checkpoint for --agent ppo")
+    parser.add_argument("--agent", choices=["random", "heuristic", "ppo", "rollout"], default="random")
+    parser.add_argument("--model", type=str, default=None, help="MaskablePPO checkpoint for PPO or rollout PPO")
+    parser.add_argument("--rollout-policy", choices=["heuristic", "ppo"], default="heuristic")
+    parser.add_argument("--rollouts-per-action", type=int, default=32)
     parser.add_argument("--seed-start", type=int, default=0)
     parser.add_argument("--format", choices=["text", "json"], default="text")
     parser.add_argument("--output", type=str, default=None)
@@ -327,7 +330,31 @@ def main() -> None:
     args = parser.parse_args()
 
     agent: Policy
-    if args.agent == "ppo":
+    rollout_settings = None
+    if args.agent == "rollout":
+        if args.rollouts_per_action < 1:
+            parser.error("--rollouts-per-action must be a positive integer")
+        if args.rollout_policy == "ppo":
+            if args.model is None:
+                parser.error("--rollout-policy ppo requires --model")
+            from sb3_contrib import MaskablePPO
+            model = MaskablePPO.load(args.model)
+            continuation_factory = lambda seed: SB3Policy(model, deterministic=True)
+        else:
+            continuation_factory = lambda seed: make_heuristic_agent(args.stage)
+        agent = RolloutAgent(
+            args.stage, continuation_factory=continuation_factory,
+            rollouts_per_action=args.rollouts_per_action, seed=args.agent_seed,
+        )
+        rollout_settings = {
+            "continuation_policy": args.rollout_policy,
+            "rollouts_per_action": args.rollouts_per_action,
+            "planner_seed": args.agent_seed,
+            "objective": "win_probability",
+            "common_random_numbers": True,
+            "tie_break": "continuation_policy_then_action_index",
+        }
+    elif args.agent == "ppo":
         if args.model is None:
             parser.error("--agent ppo requires --model")
         from sb3_contrib import MaskablePPO
@@ -347,8 +374,9 @@ def main() -> None:
             summary=summary,
             trace_file="episodes.jsonl",
             model_path=args.model,
-            agent_seed=args.agent_seed if args.agent == "random" else None,
+            agent_seed=args.agent_seed if args.agent in ("random", "rollout") else None,
             stage=args.stage,
+            rollout_settings=rollout_settings,
         )
     if args.format == "json":
         output = json.dumps(summary.as_dict(), indent=2)
