@@ -63,6 +63,9 @@ Exact Action and Bonus Action resource IDs; Second Wind and Action Surge ability
 - M2 Cleave is a once-per-encounter ability represented by a single resource. This models a short-rest-recharge weapon ability for the simulator; the encounter does not implement rests.
 - M2 Cleave makes a separate normal attack roll against each living enemy and deals half of resolved weapon damage on a hit, floored with minimum one. This calculation is an explicit simulator simplification, not a verified complete BG3 Cleave implementation.
 - M1A, M1B, and baseline M2 use terminal rewards. The M2 reward experiment adds bounded progress from Fighter damage during training only.
+- M3 is a 2v2 simulator stage: two preset Fighters with per-ally Cleave, Second Wind, and Action Surge pools act in fixed `ALLY 0, ALLY 1` order against two M1B-sampled enemies. Combat continues while any ally lives; enemies attack the lowest living ally slot.
+- M3 uses terminal rewards only. Its observation adds `active_actor_index` before fixed ally and enemy slots; evaluation counts a loss only when every ally is dead and reports total remaining ally HP.
+- M4 is the 2v3 counterpart with scaled enemy sampling (HP 12–24, attack +3–+7, damage bonus 2–6; same AC range and damage dice as M1B). These ranges are a first fairness guess placing enemies near Fighter potency, not verified BG3 distributions. M4 uses terminal rewards only.
 
 No new behavior in this section is labeled `VERIFIED_BG3`.
 

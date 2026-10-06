@@ -139,10 +139,13 @@ class EvaluationSummary:
             "second_wind_use_rate": self.second_wind_use_rate,
             "action_surge_use_rate": self.action_surge_use_rate,
         }
-        if "ATTACK_ENEMY_0" in self.action_names:
+        attacks = [(index, int(name.rsplit("_", 1)[-1])) for index, name in enumerate(self.action_names)
+                   if name.startswith("ATTACK_ENEMY_")]
+        if attacks:
             counts = self.action_counts
-            payload["target_attack_counts"] = [counts[0], counts[1]]
-            first_kills = [sum(result.first_kill_slot == index for result in self.results) for index in (0, 1)]
+            payload["target_attack_counts"] = [counts[index] for index, _ in attacks]
+            slots = [slot for _, slot in attacks]
+            first_kills = [sum(result.first_kill_slot == slot for result in self.results) for slot in slots]
             payload["first_kill_counts"] = first_kills
             payload["first_kill_rates"] = [count / self.episodes for count in first_kills]
         if "CLEAVE" in self.action_names:
@@ -245,13 +248,18 @@ def evaluate(
                             "info": info,
                         })
                     observation = next_observation
+                ally_hps = info.get("ally_hps")
                 result = EpisodeResult(
                     seed=int(seed),
                     won=terminated and all(hp == 0 for hp in previous_enemy_hps),
-                    lost=terminated and info["fighter_hp"] == 0,
+                    lost=terminated and (
+                        all(hp == 0 for hp in ally_hps)
+                        if ally_hps is not None
+                        else info["fighter_hp"] == 0
+                    ),
                     truncated=truncated,
                     rounds=info["round"],
-                    fighter_hp=info["fighter_hp"],
+                    fighter_hp=sum(ally_hps) if ally_hps is not None else info["fighter_hp"],
                     action_counts=tuple(action_counts),
                     action_names=action_names,
                     first_kill_slot=first_kill_slot,
@@ -307,7 +315,7 @@ def main() -> None:
     from agents.random_agent import RandomAgent
 
     parser = ArgumentParser(description="Evaluate a combat policy")
-    parser.add_argument("--stage", choices=["m0", "m1a", "m1b", "m2"], default="m0")
+    parser.add_argument("--stage", choices=["m0", "m1a", "m1b", "m2", "m3", "m4"], default="m0")
     parser.add_argument("--episodes", type=int, default=10_000)
     parser.add_argument("--agent-seed", type=int, default=0)
     parser.add_argument("--agent", choices=["random", "heuristic", "ppo"], default="random")

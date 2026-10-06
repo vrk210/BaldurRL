@@ -130,4 +130,8 @@ def test_train_smoke_writes_artifacts(tmp_path) -> None:
 def test_damage_reward_is_restricted_to_m2() -> None:
     with pytest.raises(SystemExit):
         parse_args(["--stage", "m1b", "--reward", "damage"])
+    with pytest.raises(SystemExit):
+        parse_args(["--stage", "m3", "--reward", "damage"])
+    with pytest.raises(SystemExit):
+        parse_args(["--stage", "m4", "--reward", "damage"])
     assert parse_args(["--stage", "m2", "--reward", "damage"]).reward == "damage"

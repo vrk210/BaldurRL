@@ -99,13 +99,69 @@ class M2HeuristicAgent:
         return _first_legal_index(action_mask)
 
 
-def make_heuristic_agent(stage: str) -> HeuristicAgent | M1AHeuristicAgent | M1BHeuristicAgent | M2HeuristicAgent:
+class M3HeuristicAgent:
+    """M2 priorities applied to whichever ally is active."""
+
+    def __init__(self, second_wind_threshold: int = 10) -> None:
+        self.second_wind_threshold = second_wind_threshold
+
+    def choose_action(self, observation: np.ndarray, action_mask: np.ndarray) -> int:
+        if not np.any(action_mask):
+            raise ValueError("No legal actions available")
+        base = 1 + 6 * int(observation[0])
+        hp = int(observation[base])
+        actions = int(observation[base + 1])
+        if action_mask[3] and hp <= self.second_wind_threshold:
+            return 3
+        enemy_0_hp, enemy_1_hp = observation[13], observation[19]
+        if action_mask[2] and enemy_0_hp > 0 and enemy_1_hp > 0:
+            return 2
+        legal_targets = [index for index in (0, 1) if action_mask[index]]
+        if legal_targets:
+            return min(legal_targets, key=lambda index: (observation[13 + 6 * index], index))
+        if action_mask[4] and actions == 0:
+            return 4
+        if action_mask[5]:
+            return 5
+        return _first_legal_index(action_mask)
+
+
+class M4HeuristicAgent:
+    """M3 priorities against three enemies; Cleave while two or more live."""
+
+    def __init__(self, second_wind_threshold: int = 10) -> None:
+        self.second_wind_threshold = second_wind_threshold
+
+    def choose_action(self, observation: np.ndarray, action_mask: np.ndarray) -> int:
+        if not np.any(action_mask):
+            raise ValueError("No legal actions available")
+        base = 1 + 6 * int(observation[0])
+        hp = int(observation[base])
+        actions = int(observation[base + 1])
+        if action_mask[4] and hp <= self.second_wind_threshold:
+            return 4
+        enemy_hps = (observation[13], observation[19], observation[25])
+        if action_mask[3] and sum(h > 0 for h in enemy_hps) >= 2:
+            return 3
+        legal_targets = [index for index in (0, 1, 2) if action_mask[index]]
+        if legal_targets:
+            return min(legal_targets, key=lambda index: (observation[13 + 6 * index], index))
+        if action_mask[5] and actions == 0:
+            return 5
+        if action_mask[6]:
+            return 6
+        return _first_legal_index(action_mask)
+
+
+def make_heuristic_agent(stage: str) -> HeuristicAgent | M1AHeuristicAgent | M1BHeuristicAgent | M2HeuristicAgent | M3HeuristicAgent | M4HeuristicAgent:
     """Select the fixed, untuned priority policy for a stage."""
     agents = {
         "m0": HeuristicAgent,
         "m1a": M1AHeuristicAgent,
         "m1b": M1BHeuristicAgent,
         "m2": M2HeuristicAgent,
+        "m3": M3HeuristicAgent,
+        "m4": M4HeuristicAgent,
     }
     try:
         return agents[stage]()

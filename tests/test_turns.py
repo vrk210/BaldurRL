@@ -12,7 +12,8 @@ from combat.actors import ActorRef, CombatRoster, Side
 from combat.actions import Action
 from combat.characters import Fighter, Goblin, refresh_turn_resources
 from combat.damage import DamageSpec
-from combat.env import MAX_ROUNDS, BaldurCombatEnv
+from combat.env import MAX_ROUNDS, BaldurCombatEnv, _advance_to_next_turn
+from combat.legality import legal_mask_for
 from combat.resources import Resource
 from combat.stages import StagedCombatEnv
 from combat.turns import TurnManager
@@ -196,12 +197,40 @@ def test_goblin_refresh_restores_action_only() -> None:
 # Environment turn integration.
 
 
+def test_next_controlled_ally_refreshes_before_decision_without_round_wrap() -> None:
+    order = (
+        ActorRef(Side.ALLY, 0), ActorRef(Side.ALLY, 1),
+        ActorRef(Side.ENEMY, 0), ActorRef(Side.ENEMY, 1),
+    )
+    allies = (_fighter(), _fighter())
+    enemies = (_goblin(), _goblin())
+    roster = CombatRoster(allies=allies, enemies=enemies)
+    turns = TurnManager(order)
+    controlled_refs = frozenset(order[:2])
+    allies[1].resources.set(Resource.ACTION, 0)
+    allies[1].resources.set(Resource.BONUS_ACTION, 0)
+    enemies[0].resources.set(Resource.ACTION, 0)
+
+    assert allies[0].resources.get(Resource.ACTION) == 1
+    assert allies[1].resources.get(Resource.ACTION) == 0
+    assert allies[1].resources.get(Resource.BONUS_ACTION) == 0
+    assert _advance_to_next_turn(turns, roster) is False  # ALLY 0 ends turn
+
+    assert turns.current == order[1]
+    assert turns.current in controlled_refs
+    assert turns.round_number == 1
+    assert allies[1].resources.get(Resource.ACTION) == 1
+    assert allies[1].resources.get(Resource.BONUS_ACTION) == 1
+    assert enemies[0].resources.get(Resource.ACTION) == 0  # no automatic turn ran
+
+
 def test_end_turn_refreshes_only_participants_and_skips_dead() -> None:
     env = StagedCombatEnv("m1b")
     env.reset(seed=2)
     assert env.fighter is not None
     env.enemies[0].hp = 0
     env.enemies[0].resources.set(Resource.ACTION, 0)
+    env.enemies[1].resources.set(Resource.ACTION, 0)
     env.fighter.resources.set(Resource.ACTION, 0)
     env.fighter.resources.set(Resource.BONUS_ACTION, 0)
 
@@ -214,6 +243,32 @@ def test_end_turn_refreshes_only_participants_and_skips_dead() -> None:
     assert env.fighter.resources.get(Resource.ACTION) == 1  # new turn refresh
     assert env.fighter.resources.get(Resource.BONUS_ACTION) == 1
     assert info["round"] == 2
+
+
+def test_abilities_do_not_begin_a_new_turn() -> None:
+    m0 = BaldurCombatEnv()
+    m0.reset(seed=1)
+    assert m0.fighter is not None
+    m0.fighter.hp = 10
+    m0.fighter.resources.set(Resource.ACTION, 0)
+    m0.step(1)  # SECOND_WIND
+    assert m0.fighter.resources.get(Resource.ACTION) == 0
+    assert m0.fighter.resources.get(Resource.SECOND_WIND) == 0
+
+    m0.fighter.resources.set(Resource.BONUS_ACTION, 0)
+    m0.step(2)  # ACTION_SURGE grants one Action, without refreshing Bonus Action
+    assert m0.fighter.resources.get(Resource.ACTION) == 1
+    assert m0.fighter.resources.get(Resource.BONUS_ACTION) == 0
+    assert m0.fighter.resources.get(Resource.ACTION_SURGE) == 0
+
+    m2 = StagedCombatEnv("m2")
+    m2.reset(seed=2)
+    assert m2.fighter is not None
+    m2.fighter.resources.set(Resource.BONUS_ACTION, 0)
+    m2.step(2)  # CLEAVE
+    assert m2.fighter.resources.get(Resource.ACTION) == 0
+    assert m2.fighter.resources.get(Resource.BONUS_ACTION) == 0
+    assert m2.fighter.resources.get(Resource.CLEAVE) == 0
 
 
 def test_no_new_round_or_refresh_after_fighter_death() -> None:
@@ -234,6 +289,19 @@ def test_no_new_round_or_refresh_after_fighter_death() -> None:
     assert info["enemy_attacks"][1] is None  # second enemy never acts
     assert info["round"] == 1  # no wrap, no new round
     assert env.fighter.resources.get(Resource.ACTION) == 0  # no refresh after death
+
+
+def test_no_refresh_after_fighter_victory() -> None:
+    env = BaldurCombatEnv()
+    env.reset(seed=13)
+    assert env.fighter is not None and env.goblin is not None
+    env.goblin.hp = 1
+
+    _, reward, terminated, truncated, info = env.step(0)
+
+    assert terminated and not truncated and reward == 1
+    assert info["round"] == env.round_number == 1
+    assert env.fighter.resources.get(Resource.ACTION) == 0
 
 
 def test_round_fifty_truncation_preserves_round_and_resources() -> None:
@@ -264,6 +332,65 @@ def test_staged_debug_info_preserves_existing_keys() -> None:
     _, _, _, _, step_info = env.step(0)
     assert step_info["active_actor_side"] == "ALLY"  # enemy turns stay hidden
     assert "fighter_attack" in step_info
+
+
+def test_env_masks_delegate_to_generic_per_actor_legality() -> None:
+    cases = [
+        (BaldurCombatEnv(), [0, 3]),
+        (StagedCombatEnv("m1a"), [0, 3]),
+        (StagedCombatEnv("m1b"), [0, 3, 0, 4]),
+        (StagedCombatEnv("m2"), [2, 4, 0, 5]),
+    ]
+    for env, actions in cases:
+        env.reset(seed=11)
+        assert env.roster is not None
+        assert env.action_masks().tolist() == legal_mask_for(
+            ActorRef(Side.ALLY, 0), env.roster, env.decisions
+        )
+        for action in actions:
+            if not env.action_masks()[action]:
+                break
+            _, _, terminated, truncated, _ = env.step(action)
+            if terminated or truncated:
+                break
+            assert env.action_masks().tolist() == legal_mask_for(
+                ActorRef(Side.ALLY, 0), env.roster, env.decisions
+            )
+
+
+def test_masks_are_all_false_while_current_actor_is_not_controlled() -> None:
+    for env in (BaldurCombatEnv(), StagedCombatEnv("m1b")):
+        env.reset(seed=3)
+        assert env.turns is not None
+        assert env.action_masks().any()
+        env.turns.advance(lambda ref: True)  # force current to ENEMY 0
+        assert env.turns.current == ActorRef(Side.ENEMY, 0)
+        assert not env.action_masks().any()
+        for _ in range(len(env.turns.order) - 1):  # wrap back to ALLY 0
+            env.turns.advance(lambda ref: True)
+        assert env.turns.current == ActorRef(Side.ALLY, 0)
+        assert env.action_masks().any()
+
+
+def test_automatic_turn_without_attacker_or_target_uses_no_rng_or_refresh() -> None:
+    from unittest.mock import Mock
+
+    env = StagedCombatEnv("m1b")
+    env.reset(seed=3)
+    strict_rng = Mock()
+    strict_rng.integers.side_effect = AssertionError("unexpected die roll")
+    env.np_random = strict_rng
+    enemy_ref = ActorRef(Side.ENEMY, 0)
+
+    env.enemies[0].hp = 0  # dead attacker takes no turn at all
+    assert env._run_automatic_turn(enemy_ref) is None
+
+    env.enemies[0].hp = 15  # live attacker, dead ally: nothing to hit
+    assert env.fighter is not None
+    env.fighter.hp = 0
+    env.enemies[0].resources.set(Resource.ACTION, 0)
+    assert env._run_automatic_turn(enemy_ref) is None
+    assert env.enemies[0].resources.get(Resource.ACTION) == 0
 
 
 def test_m0_info_contract_unchanged() -> None:

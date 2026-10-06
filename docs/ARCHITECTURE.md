@@ -31,6 +31,7 @@ The simulator therefore uses **semantic state and semantic actions**, rather tha
 | `combat/characters.py` | Entity state: `Character`, `Fighter`, `Goblin`; known `Action` IDs, per-turn `turn_refresh` mapping, not copied ability definitions | Rewards, turn loops, policies, attack-resolution orchestration |
 | `combat/actors.py` | Stable `Side`/`ActorRef` addresses and `CombatRoster` ally/enemy organization | Combat rules, rewards, turn advancement |
 | `combat/turns.py` | Deterministic `TurnManager`: order, current actor, round, wrap detection, dead-actor skipping | Dice, HP mutation, rewards, policies, attacks |
+| `combat/legality.py` | `DecisionSpec` decisions, side-aware `resolve_target`, turn-agnostic per-actor `legal_mask_for` | Turn order, dice, HP mutation, rewards, policies |
 | `combat/actions.py` | Semantic action intent: `ATTACK`, `SECOND_WIND`, `ACTION_SURGE`, `END_TURN` | Execution rules |
 | `combat/resources.py` | `Resource` enum and `ResourcePool` counts; shared affordability, atomic spending, gaining, and setting counts | Effect-specific legality or effects |
 | `combat/damage.py` | Immutable `DamageSpec(dice_count, die_size, bonus)` | Rolls or damage application |
@@ -42,7 +43,7 @@ The simulator therefore uses **semantic state and semantic actions**, rather tha
 
 ## Stage progression
 
-M0 remains the fixed 1v1 regression environment specified in `M0_SPEC.md`. The later stages are specified in `STAGES_SPEC.md`: M1A varies one opponent's stats; M1B has two fixed melee enemy slots and explicit target decisions; M2 adds one-use Cleave. A small stage factory selects an environment for training and evaluation. Each environment publishes action labels and observation field names in index order so traces and run cards do not encode M0 assumptions.
+M0 remains the fixed 1v1 regression environment specified in `M0_SPEC.md`. The later stages are specified in `STAGES_SPEC.md`: M1A varies one opponent's stats; M1B has two fixed melee enemy slots and explicit target decisions; M2 adds one-use Cleave; M3 controls two allies against two enemies with an active-actor observation; M4 extends that to three scaled enemies. A small stage factory selects an environment for training and evaluation. Each environment publishes action labels and observation field names in index order so traces and run cards do not encode M0 assumptions.
 
 Gym action indices represent decisions. A decision carries a semantic `Action` and, for a targeted attack, an enemy slot index. Target selection is separate from the shared ability identity. The environment owns target legality, turn order, outcomes, and reward selection; mechanics still own attack and ability effects. Character state holds resources and known abilities. Agents receive only the flat observation and action mask and return an index.
 

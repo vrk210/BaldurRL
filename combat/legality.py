@@ -1,0 +1,77 @@
+"""Per-actor targeting and legality without turns, dice, or rewards."""
+
+from collections.abc import Sequence
+from dataclasses import dataclass
+
+from .actions import Action
+from .actors import ActorRef, CombatRoster, Side
+from .mechanics import can_use_ability
+
+
+@dataclass(frozen=True)
+class DecisionSpec:
+    action: Action
+    target_index: int | None = None
+
+    @property
+    def label(self) -> str:
+        return self.action.name if self.target_index is None else f"{self.action.name}_ENEMY_{self.target_index}"
+
+
+def _opposing_side(side: Side) -> Side:
+    return Side.ENEMY if side is Side.ALLY else Side.ALLY
+
+
+def resolve_target(acting: ActorRef, target_index: int | None, roster: CombatRoster) -> ActorRef:
+    """Resolve a decision target slot to an ActorRef on the opposing side.
+
+    A None index addresses slot 0, preserving single-opponent decisions.
+    """
+    side = _opposing_side(acting.side)
+    opponents = roster.enemies if side is Side.ENEMY else roster.allies
+    slot = 0 if target_index is None else target_index
+    if not 0 <= slot < len(opponents):
+        raise IndexError(f"Target slot {slot} is out of range for {side.name}")
+    return ActorRef(side, slot)
+
+
+def legal_mask_for(
+    actor: ActorRef, roster: CombatRoster, decisions: Sequence[DecisionSpec]
+) -> list[bool]:
+    """Legal decisions for one actor on its turn, independent of turn order.
+
+    Turn-agnostic by design: callers only query the active actor (gate at
+    the caller). Episode-over (terminated/truncated) stays with the env.
+    Uses the same known-ability and cost checks as execution, so a legal
+    mask never disagrees with the mechanics it gates. A decision whose
+    target slot does not exist for the acting side is illegal, not an
+    error, so any stage decision list is evaluable for any actor.
+    """
+    character = roster.get(actor)
+    opponents = roster.enemies if actor.side is Side.ALLY else roster.allies
+    if not character.alive or not any(opponent.alive for opponent in opponents):
+        return [False] * len(decisions)
+    mask = []
+    for decision in decisions:
+        action = decision.action
+        if action is Action.ATTACK:
+            try:
+                target = roster.get(resolve_target(actor, decision.target_index, roster))
+            except IndexError:
+                legal = False
+            else:
+                legal = can_use_ability(character, action) and target.alive
+        elif action is Action.CLEAVE:
+            legal = can_use_ability(character, action) and any(
+                opponent.alive for opponent in opponents
+            )
+        elif action is Action.SECOND_WIND:
+            legal = can_use_ability(character, action) and character.hp < character.max_hp
+        elif action is Action.ACTION_SURGE:
+            legal = can_use_ability(character, action)
+        elif action is Action.END_TURN:
+            legal = character.alive and any(opponent.alive for opponent in opponents)
+        else:
+            raise ValueError(f"Unknown action: {action!r}")
+        mask.append(legal)
+    return mask
