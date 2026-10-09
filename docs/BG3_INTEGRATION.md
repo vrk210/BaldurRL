@@ -31,7 +31,7 @@ BG3
 
 The harness captures rich semantic facts from the real game. It does **not** emit M0's seven-value PPO observation or infer simulator resources. An observation adapter will later choose what each policy sees and map raw BG3 IDs to policy concepts. Preserve entity, ability, and resource IDs supplied by BG3 until that boundary. Unknown facts remain `None`, an empty tuple when enumeration is incomplete, or `Legality.UNKNOWN`; do not fill them with simulator presets. The current `evaluation/evaluate.py` JSONL trace is a separate simulator format with flat vectors, masks, and diagnostic `info`.
 
-`integration/schema.py` is a platform-neutral contract, independent of Gymnasium and the simulator. `GameSnapshot` answers **what is true now**; `GameEvent` answers **what just happened**. A snapshot contains no event history. Both carry `schema_version = 1` and a collector-assigned `sequence`. The future collector must increase sequence across its emitted records to preserve order; timestamp milliseconds are optional. `to_dict()` emits JSON-compatible primitives and arrays, with enum values as lowercase strings and unknown values as JSON `null`. Python serialization, reading, inspection, and interval reconstruction are implemented; collection, policy adaptation, and action execution are future work.
+`integration/schema.py` is a platform-neutral contract, independent of Gymnasium and the simulator. `GameSnapshot` answers **what is true now**; `GameEvent` answers **what just happened**. A snapshot contains no event history. Both carry `schema_version = 1` and a collector-assigned `sequence`. The collector increases sequence across its emitted records within one session directory; timestamp milliseconds are optional. `to_dict()` emits JSON-compatible primitives and arrays, with enum values as lowercase strings and unknown values as JSON `null`. Python serialization, reading, inspection, interval reconstruction, and passive Lua collection are implemented and tested offline. Live collection remains unverified; policy adaptation and action execution are future work.
 
 `CombatSnapshot.participant_ids` may be empty until participant enumeration works. `EntitySnapshot.armor_class`, `alive`, and `position` may remain unknown if unavailable at capture time. `AbilitySnapshot.visible` does not assert usability. A candidate decision describes ability and target intent; `LEGAL` means a source establishes current legality, `ILLEGAL` means a source establishes rejection, and `UNKNOWN` means available evidence is insufficient. `legality_source` and `legality_reason` preserve that evidence. Ability ownership plus apparent resources do not reconstruct BG3 UI legality in general: target validity, range, line of sight, status, and other conditions can matter. Do not label such a candidate legal solely from ownership and resources.
 
@@ -57,9 +57,12 @@ The APIs expose StoryActionID, but actual event ordering and correlation in our 
 ## First file bridge
 
 ```text
-BG3 Script Extender Lua (NOT IMPLEMENTED)
+BG3 Script Extender Lua (OFFLINE-TESTED / LIVE-UNVERIFIED)
         │
-        │ Ext.IO.SaveFile
+        │ Ext.IO.SaveFile (.pending JSON + .ready byte count)
+        ▼
+integration.publish (validate + atomic publication)
+        │
         ▼
 JSON snapshot/event files
         │
@@ -76,7 +79,7 @@ SnapshotInterval reconstruction
 Later H1 demonstration assembly (NOT IMPLEMENTED)
 ```
 
-[Script Extender documents `Ext.IO.SaveFile` and `Ext.IO.LoadFile`](https://github.com/Norbyte/bg3se/blob/main/Docs/API.md). File location, safe read behavior, naming, and polling cadence require live tests. Temp-file/rename behavior remains `TODO_VERIFY` on Windows. The Python reader uses simple polling through repeated `read_new()` calls; it does not watch the filesystem asynchronously.
+[Script Extender documents `Ext.IO.SaveFile` and `Ext.IO.LoadFile`](https://github.com/Norbyte/bg3se/blob/main/Docs/API.md), but no atomic rename API. The Lua collector stages immutable payloads and completion markers; the Python publisher validates them and uses `os.replace` to expose complete `.json` files. This protocol is tested offline. Output-root resolution, readback behavior, and atomic replacement on Windows remain `TODO_VERIFY`. The optional publisher watch loop polls files every 0.5 seconds. The Python reader uses simple polling through repeated `read_new()` calls; it does not watch the filesystem asynchronously. Lua collection is event-driven, without per-frame polling.
 
 ### Version 1 wire record
 
@@ -92,7 +95,7 @@ Each `.json` file contains one top-level record. The existing v1 `GameSnapshot.t
 
 The IDs above are **synthetic test IDs**, not discovered BG3 IDs. `integration.serialization.parse_record()` rejects unsupported versions, unknown types and fields, and malformed nested values. Optional facts may be omitted or `null`; omitted collections default to empty arrays. Required fields are `record_type`, `schema_version`, and positive integer `sequence`, plus `kind` for events. Nested entities require `entity_id`; resources require `resource_id` and `amount`; abilities require `ability_id`; candidates require `ability_id`, `target_kind`, and `legality`. Enum values are lowercase strings. Schema v1 uses no simulator defaults.
 
-The eventual Lua producer only needs to choose the next monotonically increasing sequence, populate `schema_version` and `record_type`, serialize one snapshot or event, and write one JSON file into the record directory. It does not need PPO, Gymnasium, reward, or observation encoding.
+The passive Lua producer in [bg3/h0](../bg3/h0/README.md) chooses increasing sequences, populates `schema_version` and `record_type`, and stages one JSON document per record. `python -m integration.publish` validates completion markers and atomically publishes `.json` files for this reader. Each collector session has its own directory and sequence namespace. It does not need PPO, Gymnasium, reward, or observation encoding. Lua execution and Python compatibility are tested offline; BG3 loading, APIs, event timing, and Windows IO remain live-unverified.
 
 ### Python use
 
@@ -105,7 +108,7 @@ One record directory represents one collector session / sequence namespace. For 
 
 `reconstruct_intervals()` creates a `SnapshotInterval(before, events, after)` between consecutive snapshots. An interval is **not necessarily one decision**. Trailing events after the last snapshot remain in the raw stream and are not placed in a completed interval. `controlled_action()` checks only ability-use events whose `actor_id` matches the requested entity. Multiple events with the same non-null `story_action_id` are treated as one attempted action; a targeted event is preferred over a position event, which is preferred over a generic event. Distinct IDs, multiple events without an ID, or conflicting target and position events raise `AmbiguousActionError`; no match returns `None`. Raw interval events are preserved. This correlation rule needs live verification. It does not infer rewards, legal actions, or policy labels.
 
-**IMPLEMENTED (Python H0):** schema, serialization/parser, sequence-aware directory reader, interval reconstruction, inspection CLI, synthetic fixture. **NOT IMPLEMENTED / WINDOWS:** Script Extender producer, Osiris subscriptions, real BG3 resource and spell IDs, participant enumeration, legal-action reconstruction, action execution. All live-verification checklist items below remain open.
+**IMPLEMENTED (offline H0):** schema, serialization/parser, sequence-aware directory reader, interval reconstruction, inspection CLI, synthetic fixture, passive Script Extender Lua source mod, documented Osiris subscriptions, conservative snapshot probes, and completion-aware file publisher. **LIVE-UNVERIFIED / WINDOWS:** mod packaging/loading, actual API signatures/availability, output paths, event ordering, and snapshot completeness. Resource/owned-ability/participant enumeration, legality, and action execution remain unimplemented. Spell IDs are captured only from callbacks. See the [collector installation/run guide and concise live checklist](../bg3/h0/README.md); all live-verification checklist items below remain open.
 
 ## Windows live-verification checklist
 
