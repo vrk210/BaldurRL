@@ -125,7 +125,7 @@ Each session has its own directory tree and independent ID/sequence namespace:
 sessions/<session-id>/
     records/             # existing snapshot/event JSON, collector sequence
     commands/            # <command_id>.json, immutable semantic intent
-    acknowledgements/    # <command_id>.1.json and optionally .2.json
+    acknowledgements/    # <command_id>.1.json, .2.json, and .observation.json
 ```
 
 `CommandSession(session_directory)` creates these three directories. Use a fresh
@@ -155,7 +155,8 @@ ability IDs remain opaque nonempty strings and are never mapped to PPO indices.
 
 Coordinates must be finite JSON numbers, excluding booleans. Optional IDs and
 positions may be omitted or `null`; the serializer emits explicit `null` values.
-`parse_command()` and `parse_acknowledgement()` reject unknown fields, missing
+`parse_command()`, `parse_acknowledgement()`, and
+`parse_post_execution_observation()` reject unknown fields, missing
 required fields, unsupported versions, wrong types, unknown enum values, and
 inconsistent targets. Transport JSON loading additionally rejects duplicate
 object keys and nonstandard `NaN`/`Infinity` constants. File errors name the path.
@@ -170,7 +171,57 @@ so a command published before a new snapshot can still be rejected. A command
 must refer to exactly the latest snapshot sequence; older and future sequences
 are rejected. Observation gaps, an empty stream, or events following the latest
 snapshot require a fresh snapshot before issuing another decision. Files are
-immutable for the session lifetime.
+immutable for the session lifetime. Validation and latest-snapshot selection use
+one `read_all()` collection; another publication cannot switch the selected
+snapshot to an unvalidated collection within the same check. This does not lock
+an independent observation publisher or freeze BG3.
+
+Completion does not make the pre-action facts fresh. Both command publication
+and executor receipt use `validate_command_for_execution()`. After each
+`resolved` or `failed` result, another command requires an explicit
+`PostExecutionObservation` confirmation for that completed command. A genuinely
+`rejected` intent was never executed and imposes no such boundary, so a new
+command ID can retry from the unchanged snapshot if it is still current/legal.
+`uncertain` continues to hold the in-flight slot and cannot be cleared by a
+snapshot confirmation.
+
+The completion/capture handshake is:
+
+1. The executor establishes completion or a known, stopped failure. It publishes
+   the terminal result with `observation_boundary_sequence`, at least the highest
+   observation sequence already published and the command's decision sequence.
+   Python `publish_acknowledgement()` fills this boundary when omitted; its
+   returned file contains the persisted value. External result producers must
+   supply the boundary themselves. Missing boundaries in older result files
+   fail closed and require external recovery.
+2. After observing that terminal acknowledgement, the trusted collector initiates
+   a fresh capture. It must not relabel a cached snapshot or a delayed snapshot
+   captured before completion. It publishes the snapshot in the same collector
+   sequence namespace, then publishes a `PostExecutionObservation` record through
+   `publish_post_execution_observation()` (or the equivalent future producer).
+3. The confirmation references the completed command ID and a snapshot strictly
+   after the persisted boundary. Its `reason` describes the capture evidence.
+   The gate checks the result status, boundary, snapshot existence, continuity,
+   and uniqueness. The next command must use the current latest snapshot at or
+   after that confirmation. Every previous executed command requires a valid
+   confirmation; restart does not discard these requirements.
+
+```json
+{"record_type":"post_execution_observation","schema_version":1,"command_id":"demo-001","snapshot_sequence":2,"reason":"Synthetic capture initiated after observing the terminal result"}
+```
+
+This confirmation lives in `acknowledgements/<command_id>.observation.json`, not
+in `records/`; passive observation schemas and readers are unchanged. The
+collector attestation explicitly establishes the capture-after-completion
+relation. **A higher sequence, a later file publication, or the result's optional
+`observation_sequence` alone does not prove post-action timing.** Python trusts
+this producer assertion just as it trusts a collector's `LEGAL` assertion; the
+files do not independently authenticate game timing. A real producer must
+coordinate capture with the terminal result and preserve capture/sequence order,
+including draining or discarding old queued captures. Verifying that producer
+behavior in BG3 remains future work. If effects may still be ongoing after a
+failure, the executor must report `uncertain` rather than assert a stopped
+failure and fresh capture.
 
 The actor must match `controlled_entity_id`, which must be known. When combat
 exists, it must also match the known `active_entity_id`. `expected_combat_id`
@@ -195,26 +246,28 @@ require future verified evidence and live implementation.
 ### Acknowledgement semantics
 
 ```json
-{"record_type":"acknowledgement","schema_version":1,"command_id":"demo-001","acknowledgement_sequence":1,"status":"accepted","reason":null,"observation_sequence":null}
+{"record_type":"acknowledgement","schema_version":1,"command_id":"demo-001","acknowledgement_sequence":1,"status":"accepted","reason":null,"observation_sequence":null,"observation_boundary_sequence":null}
 ```
 
 ```json
-{"record_type":"acknowledgement","schema_version":1,"command_id":"demo-001","acknowledgement_sequence":2,"status":"resolved","reason":"Synthetic fixture confirmation; no BG3 execution","observation_sequence":null}
+{"record_type":"acknowledgement","schema_version":1,"command_id":"demo-001","acknowledgement_sequence":2,"status":"resolved","reason":"Synthetic fixture confirmation; no BG3 execution","observation_sequence":null,"observation_boundary_sequence":1}
 ```
 
 | Status | Sequence | Meaning | Releases the command slot |
 | --- | --- | --- | --- |
 | `accepted` | 1 | Validated and accepted for execution; no completion evidence | No |
 | `rejected` | 1 | Refused before execution, with a reason | Yes |
-| `resolved` | 2 | Execution confirmed completed, with evidence described in `reason` | Yes |
-| `failed` | 2 | Execution reported a known failure, with a reason | Yes |
+| `resolved` | 2 | Execution confirmed completed, with evidence described in `reason` | Yes; next decision awaits confirmed post-execution capture |
+| `failed` | 2 | Execution reported a known, stopped failure, with a reason | Yes; next decision awaits confirmed post-execution capture |
 | `uncertain` | 2 | Execution outcome cannot be established, with a reason | No |
 
 Sequence 2 requires a preceding `accepted` record. Results after rejection,
 unknown command IDs, duplicate acknowledgement sequences, and repeated or
 conflicting results are errors. `reason` is required for every status except
 `accepted`. Optional positive `observation_sequence` may identify supporting
-observations, but does not establish correlation by itself. A future real
+observations, but does not establish correlation by itself. The separate
+`observation_boundary_sequence` is a positive sequence fence for resolved/failed
+results, not completion or snapshot-timing evidence by itself. A future real
 executor must supply verified completion evidence before reporting `resolved`;
 acceptance or an elapsed timeout is insufficient. Resolution means the attempted
 action completed, not that an attack hit or achieved a desired gameplay effect.
@@ -231,7 +284,9 @@ unverified. There is no networking or filesystem watcher.
 
 A short-lived `.writer-lock/` directory serializes cooperating Python writers.
 `publish_command()` allows at most one pending, accepted, or uncertain command
-per session. External conflicting inbox commands are rejected by the mock.
+per session. A released execution slot still requires post-execution snapshot
+confirmation before another command can be published or accepted. External
+conflicting inbox commands are rejected by the mock.
 Duplicate command IDs are errors, including identical payloads and IDs already
 completed. Duplicate inbox files fail closed; the original history is never
 replaced with a new rejection. Repeated mock polling skips acknowledged IDs.
@@ -241,8 +296,9 @@ history prevent ordinary cooperating writers from overwriting or replaying IDs;
 they cannot atomically commit a game effect and its acknowledgement. A crash
 between those operations can leave a pending or accepted command whose real
 outcome is unknown. Missing results never trigger automatic retries. On reopen,
-the mock leaves accepted-only histories in flight. `uncertain` also blocks new
-commands; this minimal protocol intentionally has no retry/reset API.
+the mock leaves accepted-only histories in flight. Completed histories without
+post-execution confirmation continue to block new decisions. `uncertain` also
+blocks new commands; this minimal protocol intentionally has no retry/reset API.
 
 Keep session files intact. Before recovery, stop all writers, inspect any stale
 lock/temp files, and reconcile the game state externally. Remove a stale lock
@@ -265,6 +321,8 @@ Use a fresh empty session tree for each demo. The CLI writes a synthetic
 observation with `LEGAL` and `UNKNOWN` candidates, reads it using the existing
 reader, selects the legal intent, publishes a command, and prints the mock's
 `accepted` acknowledgement followed by a separate `resolved` fixture result.
+It then initiates a new synthetic capture and prints the persisted post-execution
+observation confirmation; fixture state stays unchanged because no mechanics run.
 `MockExecutor.receive()` only validates and accepts/rejects; `finish()` explicitly
 reports a synthetic `resolved`, `failed`, or `uncertain` outcome. It never mutates
 HP/resources/turns, rolls dice, invokes BG3, or derives rewards. Fixture
@@ -330,6 +388,7 @@ confirmation is clearly labeled and is not evidence of actual game execution.
 - [ ] Test sequence numbering.
 - [ ] Test whether temp-file + rename is needed for safe reads.
 - [ ] Measure reasonable polling latency for a turn-based game.
+- [ ] Verify capture-after-terminal-result coordination, including queued old snapshots.
 
 ## Harness milestones
 

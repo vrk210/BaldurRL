@@ -5,7 +5,7 @@ import pytest
 
 from integration.command_transport import CommandSession
 from integration.commands import (
-    ActionCommand, ActionType, AcknowledgementStatus as Status, CommandAcknowledgement,
+    ActionCommand, ActionType, AcknowledgementStatus as Status, CommandAcknowledgement, PostExecutionObservation,
 )
 from integration.mock_executor import MockExecutor, run_demo, synthetic_observation
 from integration.reader import RecordDirectoryReader
@@ -100,7 +100,11 @@ def test_only_one_pending_or_accepted_command_and_no_reuse_after_completion(sess
     assert session.in_flight() == ()
     with pytest.raises(ValueError, match="Duplicate command_id"):
         session.publish_command(selected())
-    session.publish_command(selected("c2"))
+    with pytest.raises(ValueError, match="post-execution observation"):
+        session.publish_command(selected("c2"))
+    write(session.records / "2.json", replace(synthetic_observation(), sequence=2))
+    session.publish_post_execution_observation(PostExecutionObservation(1, "c1", 2, "Fixture capture after completion"))
+    session.publish_command(selected("c2", 2))
 
 
 @pytest.mark.parametrize("status,blocked", [(Status.FAILED, False), (Status.UNCERTAIN, True)])
@@ -114,7 +118,11 @@ def test_failure_and_uncertainty_are_not_success(session, status, blocked) -> No
         with pytest.raises(ValueError, match="one in-flight"):
             session.publish_command(selected("c2"))
     else:
-        session.publish_command(selected("c2"))
+        with pytest.raises(ValueError, match="post-execution observation"):
+            session.publish_command(selected("c2"))
+        write(session.records / "2.json", replace(synthetic_observation(), sequence=2))
+        session.publish_post_execution_observation(PostExecutionObservation(1, "c1", 2, "Fixture capture after failure"))
+        session.publish_command(selected("c2", 2))
 
 
 def test_stale_rejected_at_publication_and_receive(session) -> None:
@@ -261,6 +269,8 @@ def test_demo_observation_to_command_to_acceptance_and_result(tmp_path, capsys, 
     assert "observation:" in output and "selected command:" in output
     assert "mock acknowledgement:" in output and "mock result:" in output
     assert "no BG3 execution" in output
+    assert "post-execution observation confirmation:" in output
+    assert CommandSession(tmp_path / "demo").latest_snapshot().sequence == 2
     with pytest.raises(ValueError, match="fresh, empty session"):
         run_demo(tmp_path / "demo")
 

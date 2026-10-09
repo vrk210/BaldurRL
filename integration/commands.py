@@ -106,6 +106,7 @@ class CommandAcknowledgement:
     status: AcknowledgementStatus
     reason: str | None = None
     observation_sequence: int | None = None
+    observation_boundary_sequence: int | None = None
 
     def __post_init__(self) -> None:
         _header(self.schema_version, self.command_id)
@@ -117,6 +118,10 @@ class CommandAcknowledgement:
         _string(self.reason, "reason", optional=self.status is AcknowledgementStatus.ACCEPTED)
         if self.observation_sequence is not None:
             _positive(self.observation_sequence, "observation_sequence")
+        if self.observation_boundary_sequence is not None:
+            _positive(self.observation_boundary_sequence, "observation_boundary_sequence")
+            if self.status not in (AcknowledgementStatus.RESOLVED, AcknowledgementStatus.FAILED):
+                raise ValueError("observation_boundary_sequence requires resolved or failed status")
 
     @property
     def confirmed_resolved(self) -> bool:
@@ -134,6 +139,7 @@ class CommandAcknowledgement:
             "command_id": self.command_id, "acknowledgement_sequence": self.acknowledgement_sequence,
             "status": self.status.value, "reason": self.reason,
             "observation_sequence": self.observation_sequence,
+            "observation_boundary_sequence": self.observation_boundary_sequence,
         }
 
 
@@ -181,7 +187,7 @@ def parse_command(value: Any) -> ActionCommand:
 def parse_acknowledgement(value: Any) -> CommandAcknowledgement:
     obj = _object(value, "acknowledgement", {
         "record_type", "schema_version", "command_id", "acknowledgement_sequence", "status",
-    }, {"reason", "observation_sequence"})
+    }, {"reason", "observation_sequence", "observation_boundary_sequence"})
     fields = dict(obj)
     fields.pop("record_type")
     fields["status"] = _enum(obj["status"], AcknowledgementStatus, "status")
@@ -213,3 +219,39 @@ def validate_command(command: ActionCommand, snapshot: GameSnapshot) -> None:
     )]
     if len(matches) != 1 or matches[0].legality is not Legality.LEGAL:
         raise ValueError("Command requires exactly one matching currently verified LEGAL candidate; missing, ambiguous, ILLEGAL or UNKNOWN evidence is insufficient")
+
+
+@dataclass(frozen=True)
+class PostExecutionObservation:
+    """Collector attestation: this snapshot was captured after command completion.
+
+    Sequence order is necessary but insufficient. The trusted producer must
+    observe the terminal acknowledgement before initiating this fresh capture,
+    rather than attach this record to a delayed, pre-completion snapshot.
+    """
+
+    schema_version: int
+    command_id: str
+    snapshot_sequence: int
+    reason: str
+
+    def __post_init__(self) -> None:
+        _header(self.schema_version, self.command_id)
+        _positive(self.snapshot_sequence, "snapshot_sequence")
+        _string(self.reason, "reason")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "record_type": "post_execution_observation", "schema_version": self.schema_version,
+            "command_id": self.command_id, "snapshot_sequence": self.snapshot_sequence,
+            "reason": self.reason,
+        }
+
+
+def parse_post_execution_observation(value: Any) -> PostExecutionObservation:
+    obj = _object(value, "post_execution_observation", {
+        "record_type", "schema_version", "command_id", "snapshot_sequence", "reason",
+    }, set())
+    fields = dict(obj)
+    fields.pop("record_type")
+    return PostExecutionObservation(**fields)

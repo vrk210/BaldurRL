@@ -1,14 +1,15 @@
 """Synthetic command handshake only: no BG3 rules, effects or real execution."""
 
 from argparse import ArgumentParser
+from dataclasses import replace
 import json
 from pathlib import Path
 from uuid import uuid4
 
-from .command_transport import CommandSession, _publish
+from .command_transport import CommandSession, _publish, _read
 from .commands import (
     COMMAND_SCHEMA_VERSION, ActionCommand, ActionType, AcknowledgementStatus,
-    CommandAcknowledgement, validate_command,
+    CommandAcknowledgement, PostExecutionObservation, parse_acknowledgement,
 )
 from .schema import (
     CombatSnapshot, DecisionCandidate, EntitySnapshot, GameSnapshot,
@@ -33,7 +34,7 @@ class MockExecutor:
                 try:
                     if len(in_flight) > 1:
                         raise ValueError("At most one in-flight command is allowed; conflicting inbox commands rejected")
-                    validate_command(command, self.session.latest_snapshot())
+                    self.session.validate_command_for_execution(command)
                 except ValueError as exc:
                     reason = str(exc)
                 ack = CommandAcknowledgement(
@@ -57,8 +58,8 @@ class MockExecutor:
             COMMAND_SCHEMA_VERSION, command_id, 2, status,
             reason=f"Synthetic fixture reports {status.value}; no BG3 execution or mechanics were simulated",
         )
-        self.session.publish_acknowledgement(ack)
-        return ack
+        path = self.session.publish_acknowledgement(ack)
+        return _read(path, parse_acknowledgement)
 
 
 def synthetic_observation() -> GameSnapshot:
@@ -98,6 +99,16 @@ def run_demo(directory: str | Path) -> tuple[ActionCommand, tuple[CommandAcknowl
         print("mock acknowledgement:", json.dumps(acknowledgement.to_dict()))
     resolved = executor.finish(command.command_id)
     print("mock result:", json.dumps(resolved.to_dict()))
+    # Initiate a separate synthetic capture only after observing the result.
+    # State stays unchanged because this mock does not implement mechanics.
+    post_observation = replace(synthetic_observation(), sequence=2)
+    _publish(session.records / "0002.json", post_observation.to_dict())
+    confirmation = PostExecutionObservation(
+        COMMAND_SCHEMA_VERSION, command.command_id, post_observation.sequence,
+        "Synthetic fixture capture initiated after observing the mock terminal result",
+    )
+    session.publish_post_execution_observation(confirmation)
+    print("post-execution observation confirmation:", json.dumps(confirmation.to_dict()))
     return command, (*accepted, resolved)
 
 

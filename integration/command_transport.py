@@ -1,6 +1,7 @@
 """Small immutable-file session bridge. No exactly-once crash guarantee."""
 
 from contextlib import contextmanager
+from dataclasses import replace
 import json
 import os
 from pathlib import Path
@@ -9,9 +10,11 @@ from typing import Any, Callable, Iterator, TypeVar
 
 from .commands import (
     ActionCommand, AcknowledgementStatus, CommandAcknowledgement,
+    PostExecutionObservation, parse_post_execution_observation,
     parse_acknowledgement, parse_command, validate_command,
 )
-from .reader import RecordDirectoryReader
+from .reader import RecordDirectoryReader, validate_sequence
+from .serialization import Record
 from .schema import GameSnapshot
 
 
@@ -88,14 +91,21 @@ class CommandSession:
         finally:
             lock.rmdir()
 
-    def latest_snapshot(self) -> GameSnapshot:
+    def _observation_records(self) -> tuple[Record, ...]:
         # Use the existing reader unchanged. A gap or a trailing event prevents
         # issuing decisions based on facts that may already have changed.
         reader = RecordDirectoryReader(self.records)
-        report = reader.validate_all()
+        records = reader.read_all()
+        report = validate_sequence(records, start_sequence=reader.start_sequence)
         if report.gaps:
             raise ValueError(f"Observation sequence gaps: {report.gaps}")
-        records = reader.read_all()
+        return records
+
+    def latest_snapshot(self) -> GameSnapshot:
+        return self._latest_snapshot(self._observation_records())
+
+    @staticmethod
+    def _latest_snapshot(records: tuple[Record, ...]) -> GameSnapshot:
         if not records or not isinstance(records[-1], GameSnapshot):
             raise ValueError("A fresh snapshot is required after the latest event (or empty observation stream)")
         return records[-1]
@@ -111,13 +121,25 @@ class CommandSession:
             paths[command.command_id] = path
         return tuple(commands.values())
 
+    def _read_feedback(self) -> dict[Path, CommandAcknowledgement | PostExecutionObservation]:
+        def parse(value: Any) -> CommandAcknowledgement | PostExecutionObservation:
+            if isinstance(value, dict) and value.get("record_type") == "post_execution_observation":
+                return parse_post_execution_observation(value)
+            return parse_acknowledgement(value)
+
+        return {path: _read(path, parse) for path in sorted(self.acknowledgements.glob("*.json"))}
+
     def read_acknowledgements(self) -> tuple[CommandAcknowledgement, ...]:
-        commands = {command.command_id for command in self.read_commands()}
+        commands = {command.command_id: command for command in self.read_commands()}
         by_id: dict[str, dict[int, CommandAcknowledgement]] = {}
-        for path in sorted(self.acknowledgements.glob("*.json")):
-            acknowledgement = _read(path, parse_acknowledgement)
+        for path, acknowledgement in self._read_feedback().items():
+            if isinstance(acknowledgement, PostExecutionObservation):
+                continue
             if acknowledgement.command_id not in commands:
-                raise ValueError(f"Acknowledgement for unknown command_id in {path}")
+                raise ValueError(f"Acknowledgement for unknown command_id {acknowledgement.command_id!r} in {path}")
+            if (acknowledgement.observation_boundary_sequence is not None
+                    and acknowledgement.observation_boundary_sequence < commands[acknowledgement.command_id].snapshot_sequence):
+                raise ValueError("observation_boundary_sequence precedes the command's decision snapshot")
             history = by_id.setdefault(acknowledgement.command_id, {})
             sequence = acknowledgement.acknowledgement_sequence
             if sequence in history:
@@ -144,19 +166,24 @@ class CommandSession:
                 raise ValueError(f"Duplicate command_id {command.command_id!r}; never republish or retry automatically")
             if self.in_flight():
                 raise ValueError("At most one in-flight command is allowed")
-            validate_command(command, self.latest_snapshot())
+            self.validate_command_for_execution(command)
             path = self.commands / f"{command.command_id}.json"
             _publish(path, command.to_dict())
             return path
 
     def publish_acknowledgement(self, acknowledgement: CommandAcknowledgement) -> Path:
+        """Publish feedback, filling a missing resolved/failed observation boundary.
+
+        The returned file contains the persisted boundary; callers must use that
+        record rather than infer it from the acknowledgement supplied here.
+        """
         acknowledgement = parse_acknowledgement(acknowledgement.to_dict())
         with self.writer_lock():
             return self._publish_acknowledgement(acknowledgement)
 
     def _publish_acknowledgement(self, acknowledgement: CommandAcknowledgement) -> Path:
         """Caller holds writer_lock; also used for atomic mock receive checks."""
-        commands = {command.command_id for command in self.read_commands()}
+        commands = {command.command_id: command for command in self.read_commands()}
         if acknowledgement.command_id not in commands:
             raise ValueError("Acknowledgement command_id does not match a published command")
         history = [ack for ack in self.read_acknowledgements() if ack.command_id == acknowledgement.command_id]
@@ -165,6 +192,68 @@ class CommandSession:
                 raise ValueError("Duplicate acknowledgement or invalid transition")
         elif len(history) != 1 or history[0].status is not AcknowledgementStatus.ACCEPTED:
             raise ValueError("Execution result requires accepted acknowledgement; duplicate or invalid transition")
+        if acknowledgement.status in (AcknowledgementStatus.RESOLVED, AcknowledgementStatus.FAILED):
+            # Persist the completion boundary, including snapshots/events already
+            # visible at result publication. It cannot itself prove capture timing.
+            records = RecordDirectoryReader(self.records).read_all()
+            boundary = max([commands[acknowledgement.command_id].snapshot_sequence,
+                            *(record.sequence for record in records)])
+            if acknowledgement.observation_boundary_sequence is None:
+                acknowledgement = replace(acknowledgement, observation_boundary_sequence=boundary)
+            elif acknowledgement.observation_boundary_sequence < boundary:
+                raise ValueError("observation_boundary_sequence precedes observations already published at completion")
         path = self.acknowledgements / f"{acknowledgement.command_id}.{acknowledgement.acknowledgement_sequence}.json"
         _publish(path, acknowledgement.to_dict())
         return path
+
+    @staticmethod
+    def _validate_post_execution_observation(
+        confirmation: PostExecutionObservation,
+        results: dict[str, CommandAcknowledgement],
+        records: tuple[Record, ...],
+    ) -> None:
+        result = results.get(confirmation.command_id)
+        if result is None or result.status not in (AcknowledgementStatus.RESOLVED, AcknowledgementStatus.FAILED):
+            raise ValueError("post-execution observation requires a resolved or failed command result")
+        boundary = result.observation_boundary_sequence
+        if boundary is None or confirmation.snapshot_sequence <= boundary:
+            raise ValueError("post-execution observation must follow the persisted completion observation boundary")
+        if not any(isinstance(record, GameSnapshot) and record.sequence == confirmation.snapshot_sequence for record in records):
+            raise ValueError("post-execution observation must reference an existing snapshot in the contiguous observation stream")
+
+    def publish_post_execution_observation(self, confirmation: PostExecutionObservation) -> Path:
+        """Persist a trusted collector's capture-after-completion attestation.
+
+        The caller must initiate capture AFTER observing the terminal result;
+        this method cannot infer capture timing from JSON publication timing.
+        """
+        confirmation = parse_post_execution_observation(confirmation.to_dict())
+        with self.writer_lock():
+            results = {ack.command_id: ack for ack in self.read_acknowledgements()}
+            records = self._observation_records()
+            self._validate_post_execution_observation(confirmation, results, records)
+            if any(isinstance(record, PostExecutionObservation) and record.command_id == confirmation.command_id
+                   for record in self._read_feedback().values()):
+                raise ValueError("Duplicate post-execution observation confirmation")
+            path = self.acknowledgements / f"{confirmation.command_id}.observation.json"
+            _publish(path, confirmation.to_dict())
+            return path
+
+    def validate_command_for_execution(self, command: ActionCommand) -> None:
+        """Shared publication/receipt gate: completion does not refresh facts."""
+        records = self._observation_records()
+        snapshot = self._latest_snapshot(records)
+        results = {ack.command_id: ack for ack in self.read_acknowledgements()}
+        confirmations: dict[str, PostExecutionObservation] = {}
+        for record in self._read_feedback().values():
+            if isinstance(record, PostExecutionObservation):
+                if record.command_id in confirmations:
+                    raise ValueError(f"Duplicate post-execution observation for {record.command_id!r}")
+                self._validate_post_execution_observation(record, results, records)
+                confirmations[record.command_id] = record
+        for result in results.values():
+            if result.status in (AcknowledgementStatus.RESOLVED, AcknowledgementStatus.FAILED):
+                confirmation = confirmations.get(result.command_id)
+                if confirmation is None or command.snapshot_sequence < confirmation.snapshot_sequence:
+                    raise ValueError(f"Fresh confirmed post-execution observation required after {result.command_id!r}")
+        validate_command(command, snapshot)
