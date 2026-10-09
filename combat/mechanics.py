@@ -72,29 +72,31 @@ def use_fighter_attack(fighter: Fighter, goblin: Goblin, rng: Generator) -> Atta
     return use_attack(fighter, goblin, rng)
 
 
-def use_second_wind(fighter: Fighter, rng: Generator) -> int:
+def use_second_wind(character: Character, rng: Generator) -> int:
     """Spend Second Wind and the bonus action; return HP actually restored."""
-    if fighter.hp >= fighter.max_hp:
+    if character.hp >= character.max_hp:
         raise ValueError("SECOND_WIND is not legal")
-    _spend_ability(fighter, Action.SECOND_WIND)
+    _spend_ability(character, Action.SECOND_WIND)
     healing = int(rng.integers(1, 11)) + 2
-    restored = min(fighter.max_hp - fighter.hp, healing)
-    fighter.hp += restored
+    restored = min(character.max_hp - character.hp, healing)
+    character.hp += restored
     return restored
 
 
-def use_action_surge(fighter: Fighter) -> None:
+def use_action_surge(character: Character) -> None:
     """Spend Action Surge to grant one additional Action."""
-    _spend_ability(fighter, Action.ACTION_SURGE)
-    fighter.resources.gain(Resource.ACTION)
+    _spend_ability(character, Action.ACTION_SURGE)
+    character.resources.gain(Resource.ACTION)
 
 
-def use_cleave(fighter: Fighter, enemies: tuple[Goblin, ...], rng: Generator) -> tuple[AttackResult | None, ...]:
-    """Spend one Cleave and attack each living enemy with halved resolved damage."""
-    if not any(enemy.alive for enemy in enemies):
+def use_cleave(
+    attacker: Character, targets: tuple[Character, ...], rng: Generator
+) -> tuple[AttackResult | None, ...]:
+    """Spend one Cleave and attack each living target with halved resolved damage."""
+    if not any(target.alive for target in targets):
         raise ValueError("CLEAVE is not legal")
-    _spend_ability(fighter, Action.CLEAVE)
+    _spend_ability(attacker, Action.CLEAVE)
     return tuple(
-        resolve_attack(fighter, enemy, rng, damage_divisor=2) if enemy.alive else None
-        for enemy in enemies
+        resolve_attack(attacker, target, rng, damage_divisor=2) if target.alive else None
+        for target in targets
     )

@@ -4,7 +4,7 @@ BaldurRL is a project for training an agent to play Baldur's Gate 3. In progress
 
 ## Simulator stages
 
-M0 is the fixed 1v1 regression baseline. M1A varies one opponent's statistics. M1B has two opponents and target choice. M2 adds a one-use simplified Cleave. See [M0 specification](docs/M0_SPEC.md) and [stage specifications](docs/STAGES_SPEC.md).
+M0 is the fixed 1v1 regression baseline. M1A varies one opponent's statistics. M1B has two opponents and target choice. M2 adds a one-use simplified Cleave. M3 controls two allies against two enemies. M4 is 2v3 with scaled enemies. See [M0 specification](docs/M0_SPEC.md) and [stage specifications](docs/STAGES_SPEC.md).
 
 Train or evaluate by stage:
 
@@ -14,6 +14,18 @@ Train or evaluate by stage:
 ```
 
 The M1A, M1B, and M2 baseline training reward is terminal win/loss. M2 also supports an isolated `--reward damage` training experiment after the terminal baseline is established. Evaluation reports combat outcomes on explicit environment seeds.
+
+Evaluate rollout planning with a fixed heuristic or PPO continuation policy:
+
+```bash
+.venv/bin/python -m evaluation.evaluate --stage m4 --agent rollout --rollout-policy heuristic --rollouts-per-action 32 --agent-seed 0 --seed-start 3000 --episodes 10
+.venv/bin/python -m evaluation.evaluate --stage m4 --agent rollout --rollout-policy ppo --model runs/m4_ppo_s0/final_model.zip --rollouts-per-action 32 --agent-seed 0 --seed-start 3000 --episodes 10
+```
+
+The default budget runs 32 complete independent simulated episodes per legal
+action at every decision. It chooses the highest estimated win probability and
+uses seeds independent of actual combat rolls. See [rollout planning](docs/ROLLOUT_PLANNING.md)
+for the simulation API, continuation-policy factories, diagnostics, and cost.
 
 ## Inspecting decisions
 

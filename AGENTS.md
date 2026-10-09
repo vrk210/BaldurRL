@@ -4,7 +4,7 @@ Prefer stable abstractions and implementations expected to survive future milest
 
 ## Project goal and current stages
 
-BaldurRL's long-term goal is an autonomous agent capable of completing Baldur's Gate 3. **M0** is the fixed 1v1 regression baseline. **M1A** randomizes one opponent, **M1B** adds a second opponent and target choice, and **M2** adds the simplified Cleave decision. Implement only these stages unless a later task explicitly expands scope.
+BaldurRL's long-term goal is an autonomous agent capable of completing Baldur's Gate 3. **M0** is the fixed 1v1 regression baseline. **M1A** randomizes one opponent, **M1B** adds a second opponent and target choice, **M2** adds the simplified Cleave decision, **M3** controls two allies against two enemies, and **M4** is 2v3 with scaled enemies. Implement only these stages unless a later task explicitly expands scope.
 
 ## Documentation priority
 
@@ -14,13 +14,13 @@ Before modifying combat code, read in order:
 2. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 3. [docs/GAME_KNOWLEDGE.md](docs/GAME_KNOWLEDGE.md)
 
-For M1A, M1B, and M2, also read the stage specification before editing their rules.
+For M1A, M1B, M2, M3, and M4, also read the stage specification before editing their rules.
 
-`docs/M0_SPEC.md` is authoritative for M0 behavior; the stage specification governs M1A, M1B, and M2. If code and documentation disagree, report the inconsistency; do not silently choose one.
+`docs/M0_SPEC.md` is authoritative for M0 behavior; the stage specification governs M1A, M1B, M2, M3, and M4. If code and documentation disagree, report the inconsistency; do not silently choose one.
 
 ## Scope
 
-M0 has exactly one Fighter and one Goblin at fixed melee range. M1A retains one enemy with randomized stats. M1B and M2 have two enemies at fixed melee range. All stages omit movement, terrain, elevation, line of sight, opportunity attacks, inventory, consumables, party members, dialogue, quests, BG3 API integration, computer vision, and LLM calls. Do not add these systems unless explicitly requested.
+M0 has exactly one Fighter and one Goblin at fixed melee range. M1A retains one enemy with randomized stats. M1B and M2 have two enemies at fixed melee range. M3 has two controlled Fighter allies and two enemies at fixed melee range. M4 has two allies and three scaled enemies at fixed melee range. All stages omit movement, terrain, elevation, line of sight, opportunity attacks, inventory, consumables, party members, dialogue, quests, BG3 API integration, computer vision, and LLM calls. Do not add these systems unless explicitly requested.
 
 ## Design and module boundaries
 
@@ -40,14 +40,17 @@ The agent chooses actions. The environment coordinates episodes, turns, legality
 
 | Module | Responsibility | Exclusions |
 | --- | --- | --- |
-| `combat/characters.py` | State representations: `Character`, `Fighter`, `Goblin`, with resources and known ability IDs | Attack resolution, rewards, environment turn loops, RL algorithms |
+| `combat/characters.py` | State representations: `Character`, `Fighter`, `Goblin`, with resources, known ability IDs, and per-turn refresh | Attack resolution, rewards, environment turn loops, RL algorithms |
 | `combat/actions.py` | Semantic ability intent, including `CLEAVE`, and `END_TURN` turn control | Action execution |
 | `combat/resources.py` | Typed `Resource` counts and shared `ResourcePool` affordability/spending | Ability-specific effects |
 | `combat/damage.py` | Immutable damage dice and bonus data | Damage rolls |
 | `combat/abilities.py` | Immutable `AbilitySpec` catalogs for stage abilities and their costs/targets | Executable effects; `END_TURN` remains turn control |
+| `combat/actors.py` | Stable `Side`/`ActorRef` addresses and `CombatRoster` ally/enemy organization | Combat rules, rewards, turn advancement |
+| `combat/turns.py` | Deterministic `TurnManager`: order, current actor, round, wrap detection, dead-actor skipping | Dice, HP mutation, rewards, policies, attacks |
+| `combat/legality.py` | `DecisionSpec` decisions, side-aware targets, turn-agnostic per-actor `legal_mask_for` | Turn order, dice, HP mutation, rewards, policies |
 | `combat/mechanics.py` | d20 and damage rolls, critical hits, attack resolution, Second Wind, Action Surge, Cleave | RL rewards |
 | `combat/env.py` | Gymnasium M0 environment: one Fighter decision per step, fixed Goblin turn after `END_TURN`, observations, action masks, rewards, termination, truncation | Combat formulas; call `mechanics.py` |
-| `combat/stages.py` | M1A/M1B/M2 environments, shallow target decisions, stage factory and metadata | Combat formulas; call `mechanics.py` |
+| `combat/stages.py` | M1A/M1B/M2/M3/M4 environments, shallow target decisions, stage factory and metadata | Combat formulas; call `mechanics.py` |
 | `agents/` | Random, stage heuristic, and trained policies; action selection only | Direct environment-state mutation |
 | `evaluation/` | Reproducible stage evaluation: win rate, remaining HP, rounds, action and target usage | Combat rules |
 
