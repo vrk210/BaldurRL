@@ -358,32 +358,48 @@ class TacticalCombatEnv(gym.Env[np.ndarray, int]):
 
     def _pass_turn(self) -> list[dict[str, Any] | None]:
         """End the current ally's turn; run enemies until an ally decides or play stops."""
-        roster = self._roster()
-        turns = self._turns()
-        end_tactical_turn(roster.get(turns.current))
+        self._end_current_turn()
         records: list[dict[str, Any] | None] = [None] * len(self.enemies)
         while True:
-            _, would_wrap = turns.peek_next(roster.is_alive)
-            if would_wrap and self.round_number == MAX_ROUNDS:
-                self._truncated = True
-                break
-            if turns.advance(roster.is_alive):
-                self.round_number = turns.round_number
-            ref = turns.current
-            actor = roster.get(ref)
-            begin_tactical_turn(actor)
-            if self._is_policy_controlled(ref):
-                break
-            engaged = self.ranks and archer_engaged(self.allies, self.enemies)
-            result = run_enemy_turn(
-                ref.slot, self.allies, self.enemies, self.np_random,
-                heal=self.rules.heal, engaged_archer=engaged,
-            )
-            end_tactical_turn(actor)
-            records[ref.slot] = _enemy_turn_record(result)
-            if roster.side_defeated(Side.ALLY) or roster.side_defeated(Side.ENEMY):
-                break
-        return records
+            finished, slot, record = self._pass_step()
+            if slot is not None:
+                records[slot] = record
+            if finished:
+                return records
+
+    def _end_current_turn(self) -> None:
+        """First part of passing play: the acting ally's turn-end conditions."""
+        end_tactical_turn(self._roster().get(self._turns().current))
+
+    def _pass_step(self) -> tuple[bool, int | None, dict[str, Any] | None]:
+        """Advance to the next living actor and run it if it is automatic.
+
+        Returns (finished, enemy slot that acted or None, its record). Passing
+        finishes on round-limit truncation, on reaching a controlled ally, or
+        when a side is defeated. Exact transition enumeration
+        (``combat.tactical_transitions``) calls this one actor at a time.
+        """
+        roster = self._roster()
+        turns = self._turns()
+        _, would_wrap = turns.peek_next(roster.is_alive)
+        if would_wrap and self.round_number == MAX_ROUNDS:
+            self._truncated = True
+            return True, None, None
+        if turns.advance(roster.is_alive):
+            self.round_number = turns.round_number
+        ref = turns.current
+        actor = roster.get(ref)
+        begin_tactical_turn(actor)
+        if self._is_policy_controlled(ref):
+            return True, None, None
+        engaged = self.ranks and archer_engaged(self.allies, self.enemies)
+        result = run_enemy_turn(
+            ref.slot, self.allies, self.enemies, self.np_random,
+            heal=self.rules.heal, engaged_archer=engaged,
+        )
+        end_tactical_turn(actor)
+        finished = roster.side_defeated(Side.ALLY) or roster.side_defeated(Side.ENEMY)
+        return finished, ref.slot, _enemy_turn_record(result)
 
     # --- observation and info --------------------------------------------------
 

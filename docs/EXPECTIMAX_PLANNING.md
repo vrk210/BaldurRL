@@ -100,6 +100,48 @@ distribution helpers added next to its mechanics.
   every decision of an episode. A separate check against the original
   `m2_dp.py` on 12 random small states agreed to 6e-16.
 
+### M5/M6 transition model
+
+`combat/tactical_transitions.py` registers `TacticalTransitionModel` for M5 and
+M6. Their rules (roles, Trip/Prone, Dodge, healing, three targeting policies,
+ranks, opportunity attacks) are not restated. Instead the model drives the real
+environment code with an enumerating random source (`_PathRng`): every sequence
+of draws is replayed in odometer order, and identical successor states are
+merged. Three things keep this tractable:
+
+- **One draw per attack.** While enumerating, `combat.tactics.resolve_attack_with_mode`
+  and `combat.tactics.roll_attack` are swapped for versions that draw once from
+  the attack's exact (hit, damage) distribution. Those distributions are computed
+  by enumerating every die path through the original `combat.rolls` functions
+  with exact fractions, and cached. Callers in `combat.tactics` use only the
+  damage dealt and, for Trip, whether it hit. The swap is undone after every call.
+- **One actor at a time.** `END_TURN` runs `TacticalCombatEnv._end_current_turn`,
+  then `_pass_step` once per actor, merging identical intermediate states.
+  `_pass_turn` is built from the same two methods, so the environment and the
+  model share one loop.
+- **Caching.** Outcomes are cached per (state, action), and enemy steps per state.
+
+States are tuples of (status, current side, current slot, round, per-ally HP,
+conditions and resources, per-enemy HP, conditions and resources). Enemy Action
+is omitted because every enemy turn refreshes it before use. Every M5/M6 state at
+an allied decision is fully observable, so states convert to observations and back.
+
+Cost is the limitation. A three-target Cleave has hundreds of merged outcomes, a
+three-enemy `END_TURN` up to a few thousand, and each enumerated path runs real
+environment code (tens of microseconds). Single transitions take from under a
+millisecond to several seconds, so full-turn search on M5/M6 is impractical
+without a faster, table-driven model.
+
+Verification (`tests/test_tactical_transitions.py`, plus a larger scratch run):
+- **Raw path enumeration.** 241 (state, action) cases from random-play M5/M6
+  episodes, with at most 20,000 raw paths, matched enumeration through the
+  unmodified `env.step` to floating-point rounding (about 1e-16).
+- **Sampling.** 288 cases, each with 20,000 real-generator samples, produced no
+  successor missing from the enumeration. The largest per-outcome z-score was 4.6,
+  across many thousands of outcomes.
+- **Cross-check.** Normal-mode attack distributions equal the independent M0–M4
+  `attack_damage_distribution` derivation.
+
 ## Search implementation
 
 Each decision expands the tree depth-first with a transposition table keyed by
@@ -112,6 +154,16 @@ deeper than one turn that would expand more than `N` decision nodes is abandoned
 and the next shallower depth is used; `depth_used` reports the outcome.
 `always_search=True` also searches forced decisions (used to record root values
 for value training).
+
+Two options trade exactness for cost on stages with long enemy phases:
+
+- `afterstate_value`: an `END_TURN` that would use the last unit of depth is not
+  expanded through the enemy phase. It is scored by a learned afterstate value
+  of the state in which the turn ends (Sutton and Barto, section 6.8). Afterstate
+  networks are fitted on `END_TURN` rows only (`value_training.py fit --afterstate`),
+  with every ally's per-turn fields zeroed.
+- `decision_horizon=1`: search only the next decision. Ongoing successors are
+  scored by `leaf_value`, terminal ones exactly, and `END_TURN` by `afterstate_value`.
 
 ## Leaf values
 

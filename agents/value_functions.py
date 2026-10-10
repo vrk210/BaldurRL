@@ -53,6 +53,13 @@ class _Layout:
         self.ally_cols = np.array([[column(ally_prefix(s) + f) for f in _ALLY_COUNTS] for s in range(self.n_allies)])
         self.enemy_cols = np.array([[column(enemy_prefix(s) + f) for f in _ENEMY_STATS] for s in range(self.n_enemies)])
         self.actor_col = column("active_actor_index")
+        # Per-turn fields that are reset before an ally can act again.
+        self.turn_reset_cols = np.array([
+            i for i, name in enumerate(fields)
+            if name.startswith(("ally_", "fighter_"))
+            and name.endswith(("action_count", "bonus_action_count", "movement_count", "disengaged"))
+            and not name.endswith("surge_count")
+        ], dtype=np.intp)
         self.round_col = column("round_number")
 
     def allies(self, obs: np.ndarray) -> np.ndarray:
@@ -179,10 +186,14 @@ class MLPValue:
     the outcome, and zeroing keeps search leaves on the training distribution.
     """
 
-    def __init__(self, weights: list[tuple[np.ndarray, np.ndarray]], stage: str, *, canonicalize: bool = True) -> None:
+    def __init__(
+        self, weights: list[tuple[np.ndarray, np.ndarray]], stage: str, *, canonicalize: bool = True,
+        afterstate: bool = False,
+    ) -> None:
         self.layout = _Layout(stage)
         self.weights = [(np.asarray(w, dtype=np.float64), np.asarray(b, dtype=np.float64)) for w, b in weights]
         self.canonicalize = canonicalize
+        self.afterstate = afterstate
 
     @classmethod
     def load(cls, path: str | Path) -> "MLPValue":
@@ -192,10 +203,11 @@ class MLPValue:
         layers = [(data[f"w{i}"], data[f"b{i}"]) for i in range(meta["layers"])]
         if meta.get("feature_set", "obs") != "obs":
             raise ValueError("Only observation-feature value networks are supported")
-        return cls(layers, meta["stage"], canonicalize=meta.get("canonicalize", True))
+        return cls(layers, meta["stage"], canonicalize=meta.get("canonicalize", True),
+                   afterstate=meta.get("afterstate", False))
 
     def features(self, observations: np.ndarray) -> np.ndarray:
-        return value_features(self.layout, observations, self.canonicalize)
+        return value_features(self.layout, observations, self.canonicalize, afterstate=self.afterstate)
 
     def logits(self, observations: np.ndarray) -> np.ndarray:
         x = self.features(observations)
@@ -222,9 +234,19 @@ class EnsembleValue:
         return 1.0 / (1.0 + np.exp(-logits))
 
 
-def value_features(layout: _Layout, observations: np.ndarray, canonicalize: bool = True) -> np.ndarray:
-    """Observations divided by the observation-space highs, optionally canonicalized."""
+def value_features(
+    layout: _Layout, observations: np.ndarray, canonicalize: bool = True, *, afterstate: bool = False
+) -> np.ndarray:
+    """Observations divided by the observation-space highs, optionally canonicalized.
+
+    Afterstate features describe the moment a controlled turn ends: every
+    ally's per-turn fields (Action, Bonus Action, Movement, Disengaged) are
+    zeroed because each is reset before that ally can act again.
+    """
     obs = np.asarray(observations, dtype=np.float64).reshape(-1, len(layout.high)).copy()
+    if afterstate:
+        obs[:, layout.turn_reset_cols] = 0.0
+        return obs / layout.high
     if canonicalize and layout.actor_col >= 0:
         actor = layout.actor(obs)
         for slot in range(layout.n_allies):

@@ -57,6 +57,7 @@ The agent chooses actions. The environment coordinates episodes, turns, legality
 | `combat/tactical_env.py` | M5/M6 Gymnasium environment: sampling, turns, masks, observations, rewards, termination, per-stage `STAGE_RULES` | Combat formulas; call `tactics.py`/`mechanics.py` |
 | `combat/simulation.py` | Restore independent simulators (M0–M6) from live observations | Live RNG access, policies, combat formulas |
 | `combat/transitions.py` | Exact planner transitions: `TransitionModel` protocol, stage registry, M0–M4 roster model | Policies; combat formulas (use `distributions.py`) |
+| `combat/tactical_transitions.py` | Exact M5/M6 transitions by enumerating random paths through the real environment code, one draw per attack | Policies; restated combat rules |
 | `agents/` | Random, stage heuristic (including named M5/M6 variants), rollout, trained, and expectimax policies; leaf value functions; action selection only | Direct environment-state mutation; combat formulas |
 | `evaluation/` | Reproducible stage evaluation: win rate, remaining HP, rounds, action and target usage, kill order by role, paired comparisons, M5/M6 behavior summaries, planner timing | Combat rules |
 

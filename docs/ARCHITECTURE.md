@@ -43,6 +43,7 @@ The simulator therefore uses **semantic state and semantic actions**, rather tha
 | `combat/distributions.py` | Exact attack-damage and Second Wind outcome distributions enumerated through the mechanics rule functions | Sampling, state mutation, policies |
 | `combat/env.py` | Gymnasium coordinator: reset, flat observation encoding, action-index mapping and masks, one Fighter decision per step, fixed Goblin turn, reward call, termination, truncation | Duplicated combat formulas; call mechanics |
 | `combat/simulation.py` | Independent M0–M6 simulator reconstruction from live observations and caller-supplied seeds | Live RNG access, policies, duplicated combat formulas |
+| `combat/tactical_transitions.py` | Exact M5/M6 transitions: enumerating random source over the real environment step, attack draws collapsed to exact cached distributions, enemy phase stepped one actor at a time | Policies, value estimates, restated combat rules |
 | `combat/transitions.py` | Exact planner-facing transitions: `TransitionModel` protocol, stage registry, M0–M4 `RosterTransitionModel` (merged successor distributions including the automatic phase after `END_TURN`) | Policies, value estimates, duplicated combat formulas |
 | `agents/` | Action-selection policies (random, heuristics, rollout and expectimax planners) and leaf value functions | Direct state mutation or combat formulas |
 | `evaluation/` | Reproducible seeded episodes and external metrics: win rate, final HP, rounds, action usage | Combat rules |

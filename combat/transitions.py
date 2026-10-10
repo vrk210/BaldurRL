@@ -472,6 +472,8 @@ def register_transition_model(stage: str, factory: TransitionModelFactory) -> No
 
 def transition_model(stage: str, observation: np.ndarray) -> TransitionModel:
     """Exact transition model for the encounter described by a live observation."""
+    if stage not in _MODEL_FACTORIES and stage in ("m5", "m6"):
+        from . import tactical_transitions  # noqa: F401  (registers M5/M6 on import)
     try:
         factory = _MODEL_FACTORIES[stage]
     except KeyError as exc:

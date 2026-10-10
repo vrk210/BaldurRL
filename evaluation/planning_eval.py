@@ -37,11 +37,15 @@ def make_leaf(stage: str, spec: str):
 
 
 def make_policy(stage: str, name: str, *, model: str | None = None, leaf: str | None = None,
-                depth: int | None = 1, always_search: bool = False, node_budget: int | None = None) -> Policy:
+                depth: int | None = 1, always_search: bool = False, node_budget: int | None = None,
+                afterstate_leaf: str | None = None, decision_horizon: int | None = None) -> Policy:
+    """Build a policy; ``heuristic:<variant>`` selects a named M5/M6 heuristic variant."""
     from agents.heuristic_agent import M4ThreatAwareAgent, make_heuristic_agent
 
     if name == "heuristic":
         return make_heuristic_agent(stage)
+    if name.startswith("heuristic:"):
+        return make_heuristic_agent(stage, name.split(":", 1)[1])
     if name == "threat":
         return M4ThreatAwareAgent()
     if name == "ppo":
@@ -56,8 +60,10 @@ def make_policy(stage: str, name: str, *, model: str | None = None, leaf: str | 
         from agents.expectimax_agent import ExpectimaxAgent
 
         leaf_value = make_leaf(stage, leaf) if leaf is not None else None
+        after_value = make_leaf(stage, afterstate_leaf) if afterstate_leaf is not None else None
         return ExpectimaxAgent(stage, depth=depth, leaf_value=leaf_value, always_search=always_search,
-                               node_budget=node_budget)
+                               node_budget=node_budget, afterstate_value=after_value,
+                               decision_horizon=decision_horizon)
     raise ValueError(f"Unknown policy {name!r}")
 
 
@@ -146,9 +152,12 @@ def main() -> None:
     parser = ArgumentParser(description="Parallel seeded evaluation with decision timing")
     parser.add_argument("--name", required=True)
     parser.add_argument("--stage", default="m4")
-    parser.add_argument("--policy", required=True, choices=["heuristic", "threat", "ppo", "expectimax"])
+    parser.add_argument("--policy", required=True,
+                        help="heuristic, heuristic:<variant>, threat, ppo, or expectimax")
     parser.add_argument("--model")
     parser.add_argument("--leaf")
+    parser.add_argument("--afterstate-leaf")
+    parser.add_argument("--decision-horizon", type=int, default=None)
     parser.add_argument("--depth", type=int, default=1)
     parser.add_argument("--node-budget", type=int, default=None)
     parser.add_argument("--seed-start", type=int, required=True)
@@ -156,7 +165,8 @@ def main() -> None:
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
-    spec = dict(name=args.policy, model=args.model, leaf=args.leaf, depth=args.depth, node_budget=args.node_budget)
+    spec = dict(name=args.policy, model=args.model, leaf=args.leaf, depth=args.depth, node_budget=args.node_budget,
+                afterstate_leaf=args.afterstate_leaf, decision_horizon=args.decision_horizon)
     seeds = list(range(args.seed_start, args.seed_start + args.episodes))
     tick = perf_counter()
     rows = evaluate_parallel(args.stage, spec, seeds, args.workers)

@@ -41,7 +41,7 @@ class EpsilonPolicy:
 
 def collect(stage: str, policy: Policy, seeds: range) -> dict[str, np.ndarray]:
     env = make_env(stage)
-    observations, wins, values, seed_ids, steps, seconds = [], [], [], [], [], []
+    observations, wins, values, seed_ids, steps, seconds, actions = [], [], [], [], [], [], []
     for seed in seeds:
         obs, _ = env.reset(seed=seed)
         start = len(observations)
@@ -56,6 +56,7 @@ def collect(stage: str, policy: Policy, seeds: range) -> dict[str, np.ndarray]:
             diagnostics = getattr(policy, "last_diagnostics", None)
             values.append(float(getattr(diagnostics, "value", np.nan)) if diagnostics is not None else np.nan)
             observations.append(obs.copy())
+            actions.append(action)
             seed_ids.append(seed)
             steps.append(step)
             obs, reward, terminated, truncated, _ = env.step(action)
@@ -69,6 +70,7 @@ def collect(stage: str, policy: Policy, seeds: range) -> dict[str, np.ndarray]:
         seed=np.asarray(seed_ids, dtype=np.int32),
         step=np.asarray(steps, dtype=np.int16),
         seconds=np.asarray(seconds, dtype=np.float32),
+        action=np.asarray(actions, dtype=np.int16),
     )
 
 
@@ -113,17 +115,28 @@ def targets_for(data: dict[str, np.ndarray], mode: str) -> np.ndarray:
     raise ValueError(f"Unknown target mode {mode!r}")
 
 
+def end_turn_rows(stage: str, data: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    """Keep only decisions where END_TURN was chosen (afterstate training rows)."""
+    if "action" not in data:
+        raise ValueError("Afterstate fitting needs data collected with recorded actions")
+    env = make_env(stage)
+    end = [i for i, name in enumerate(env.action_names) if name == "END_TURN"][0]
+    keep = data["action"] == end
+    return {key: value[keep] for key, value in data.items()}
+
+
 def fit(stage: str, train: dict, val: dict, *, target: str, hidden: list[int], epochs: int,
-        batch_size: int, lr: float, weight_decay: float, seed: int, threads: int) -> tuple[list, dict]:
+        batch_size: int, lr: float, weight_decay: float, seed: int, threads: int,
+        afterstate: bool = False) -> tuple[list, dict]:
     import torch
     from torch import nn
 
     torch.manual_seed(seed)
     torch.set_num_threads(threads)
     layout = make_layout(stage)
-    x_train = torch.tensor(value_features(layout, train["observations"]), dtype=torch.float32)
+    x_train = torch.tensor(value_features(layout, train["observations"], afterstate=afterstate), dtype=torch.float32)
     y_train = torch.tensor(targets_for(train, target), dtype=torch.float32)
-    x_val = torch.tensor(value_features(layout, val["observations"]), dtype=torch.float32)
+    x_val = torch.tensor(value_features(layout, val["observations"], afterstate=afterstate), dtype=torch.float32)
     y_val_outcome = torch.tensor(val["win"].astype(np.float64), dtype=torch.float32)
     y_val_target = torch.tensor(targets_for(val, target), dtype=torch.float32)
     sizes = [x_train.shape[1], *hidden, 1]
@@ -196,7 +209,9 @@ def main() -> None:
     commands = parser.add_subparsers(dest="command", required=True)
     c = commands.add_parser("collect")
     c.add_argument("--stage", default="m4")
-    c.add_argument("--policy", required=True, choices=["heuristic", "threat", "ppo", "expectimax"])
+    c.add_argument("--policy", required=True, help="heuristic, heuristic:<variant>, threat, ppo, or expectimax")
+    c.add_argument("--afterstate-leaf")
+    c.add_argument("--decision-horizon", type=int, default=None)
     c.add_argument("--model")
     c.add_argument("--leaf")
     c.add_argument("--depth", type=int, default=1)
@@ -218,6 +233,7 @@ def main() -> None:
     f.add_argument("--weight-decay", type=float, default=1e-4)
     f.add_argument("--seed", type=int, default=0)
     f.add_argument("--threads", type=int, default=4)
+    f.add_argument("--afterstate", action="store_true", help="fit an afterstate value on END_TURN rows")
     f.add_argument("--out", required=True)
     r = commands.add_parser("fit-race")
     r.add_argument("--stage", default="m4")
@@ -227,7 +243,8 @@ def main() -> None:
 
     if args.command == "collect":
         policy = make_policy(args.stage, args.policy, model=args.model, leaf=args.leaf, depth=args.depth,
-                             always_search=True, node_budget=args.node_budget)
+                             always_search=True, node_budget=args.node_budget, afterstate_leaf=args.afterstate_leaf,
+                             decision_horizon=args.decision_horizon)
         if args.epsilon > 0:
             policy = EpsilonPolicy(policy, args.epsilon, args.agent_seed)
         tick = perf_counter()
@@ -248,10 +265,13 @@ def main() -> None:
     else:
         train = load_data(args.train)
         val = load_data(args.val)
+        if args.afterstate:
+            train, val = end_turn_rows(args.stage, train), end_turn_rows(args.stage, val)
         weights, info = fit(args.stage, train, val, target=args.target, hidden=args.hidden, epochs=args.epochs,
                             batch_size=args.batch_size, lr=args.lr, weight_decay=args.weight_decay,
-                            seed=args.seed, threads=args.threads)
+                            seed=args.seed, threads=args.threads, afterstate=args.afterstate)
         meta = dict(stage=args.stage, layers=len(weights), canonicalize=True, feature_set="obs", hidden=args.hidden,
+                    afterstate=args.afterstate,
                     target=args.target, train=args.train, val=args.val, train_samples=int(len(train["win"])),
                     **{k: v for k, v in info.items() if k != "history"})
         save_value(args.out, weights, meta)

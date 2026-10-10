@@ -16,6 +16,20 @@ transposition table is shared by all decisions of the same controlled turn.
 With `node_budget`, a search that would expand more decision nodes than the
 budget is abandoned and the next shallower depth is used instead (depth 1 is
 never budgeted), so deeper search is spent only where it is affordable.
+
+With `afterstate_value`, an `END_TURN` that would use the last unit of depth is
+not expanded through the automatic phase. Instead it is scored by the
+afterstate value of the state in which the turn ends (Sutton & Barto 6.8): the
+search covers the controlled turn's own decisions and dice exactly, and a
+learned function scores the hand-over. This avoids enumerating long enemy
+phases, which dominate cost on M5/M6.
+
+`decision_horizon=1` limits the search to the next controlled decision: each
+legal action's exact outcomes are scored by `leaf_value` (ongoing states) or
+exactly (terminal states), and `END_TURN` by `afterstate_value`. On M5/M6 a
+whole turn can branch into hundreds of thousands of nodes (one three-target
+Cleave alone has hundreds of outcomes), so the one-decision horizon keeps the
+cost bounded by the root's outcomes.
 The agent contains no combat rules; all dynamics come from `combat.transitions`.
 """
 
@@ -55,6 +69,8 @@ class _SearchStats:
 
 
 _TIE_TOLERANCE = 1e-12
+_AFTER = "after"
+"""Depth marker for afterstate-scored END_TURN children."""
 
 
 class ExpectimaxAgent:
@@ -73,11 +89,15 @@ class ExpectimaxAgent:
         always_search: bool = False,
         node_budget: int | None = None,
         max_cache_entries: int = 3_000_000,
+        afterstate_value: LeafValue | None = None,
+        decision_horizon: int | None = None,
     ) -> None:
         if depth is not None and (isinstance(depth, bool) or not isinstance(depth, int) or depth < 1):
             raise ValueError("depth must be a positive integer or None")
-        if depth is not None and leaf_value is None:
+        if depth is not None and leaf_value is None and afterstate_value is None:
             raise ValueError("A depth-limited search requires a leaf value")
+        if afterstate_value is not None and depth is None:
+            raise ValueError("An afterstate value requires a finite depth")
         env = make_env(stage)
         self.action_count = env.action_space.n
         self.observation_shape = env.observation_space.shape
@@ -86,6 +106,12 @@ class ExpectimaxAgent:
         self.depth = depth
         self.leaf_value = leaf_value
         self.always_search = always_search
+        self.afterstate_value = afterstate_value
+        if decision_horizon not in (None, 1):
+            raise ValueError("Only decision_horizon=1 is supported")
+        if decision_horizon == 1 and (leaf_value is None or afterstate_value is None or depth != 1):
+            raise ValueError("decision_horizon=1 needs depth=1, a leaf value, and an afterstate value")
+        self.decision_horizon = decision_horizon
         if node_budget is not None and (depth is None or node_budget < 1):
             raise ValueError("node_budget requires a finite depth and a positive budget")
         self.node_budget = node_budget
@@ -115,6 +141,13 @@ class ExpectimaxAgent:
         if legal.size == 1 and not self.always_search:
             choice = int(legal[0])
             self.last_diagnostics = ExpectimaxDiagnostics((), float("nan"), 0, 0, perf_counter() - started)
+        elif self.decision_horizon == 1:
+            q_values, stats = self.one_decision_values(root)
+            best = max(q for _, q in q_values)
+            choice = next(action for action, q in q_values if q >= best - _TIE_TOLERANCE)
+            self.last_diagnostics = ExpectimaxDiagnostics(
+                q_values, best, stats.expanded, stats.leaves, perf_counter() - started, 0
+            )
         else:
             q_values, stats = self.action_values(root)
             best = max(q for _, q in q_values)
@@ -155,6 +188,43 @@ class ExpectimaxAgent:
         )
         return q_values, stats
 
+    def one_decision_values(self, root: State) -> tuple[tuple[tuple[int, float], ...], _SearchStats]:
+        """Exact-chance Q-values over the next decision only (see `decision_horizon`)."""
+        model = self._model
+        if model is None:
+            raise RuntimeError("Call model_for(observation) first")
+        stats = _SearchStats(expanded=1)
+        plans: list[tuple[int, object]] = []
+        ongoing: dict[State, None] = {}
+        for action in model.legal_actions(root):
+            if model.ends_turn(action):
+                plans.append((action, None))
+                continue
+            outcomes = model.outcomes(root, action)
+            for _, child in outcomes:
+                if model.status(child) is Status.ONGOING:
+                    ongoing[child] = None
+            plans.append((action, outcomes))
+        states = list(ongoing)
+        values: dict[State, float] = {}
+        if states:
+            leaf = np.asarray(self.leaf_value(model.observations(states)), dtype=np.float64).reshape(-1)
+            values = dict(zip(states, leaf.tolist()))
+        after = float(np.asarray(self.afterstate_value(model.observations([root]))).reshape(-1)[0])
+        stats.leaves = len(states) + 1
+
+        def score(child: State) -> float:
+            status = model.status(child)
+            if status is Status.ONGOING:
+                return values[child]
+            return 1.0 if status is Status.WIN else 0.0
+
+        q_values = tuple(
+            (action, after if outcomes is None else sum(p * score(child) for p, child in outcomes))
+            for action, outcomes in plans
+        )
+        return q_values, stats
+
     def state_value(self, state: State) -> float:
         """Value of a state at the configured depth (uses the shared cache)."""
         model = self._model
@@ -174,6 +244,7 @@ class ExpectimaxAgent:
         expanded: dict[tuple[State, int | None], list] = {}
         post_order: list[tuple[tuple[State, int | None], list]] = []
         leaves: dict[State, None] = {}
+        afterstates: dict[State, None] = {}
 
         def expand(state: State, remaining: int | None) -> None:
             key = (state, remaining)
@@ -191,24 +262,23 @@ class ExpectimaxAgent:
             if budget is not None and len(expanded) > budget:
                 raise _BudgetExceeded
             for action in model.legal_actions(state):
-                child_depth = remaining - 1 if remaining is not None and model.ends_turn(action) else remaining
-                outcomes = model.outcomes(state, action)
-                for _, child in outcomes:
-                    expand(child, child_depth)
-                actions.append((action, child_depth, outcomes))
+                actions.append(child(state, remaining, action))
             post_order.append((key, actions))
+
+        def child(state: State, remaining: int | None, action: int) -> tuple:
+            if self.afterstate_value is not None and remaining == 1 and model.ends_turn(action):
+                afterstates[state] = None
+                return action, _AFTER, ((1.0, state),)
+            child_depth = remaining - 1 if remaining is not None and model.ends_turn(action) else remaining
+            outcomes = model.outcomes(state, action)
+            for _, successor in outcomes:
+                expand(successor, child_depth)
+            return action, child_depth, outcomes
 
         root_key = (root, depth)
         if root_key in values and root_key not in expanded:
             # Root value cached from an earlier decision; recompute its action list.
-            actions = []
-            for action in model.legal_actions(root):
-                child_depth = depth - 1 if depth is not None and model.ends_turn(action) else depth
-                outcomes = model.outcomes(root, action)
-                for _, child in outcomes:
-                    expand(child, child_depth)
-                actions.append((action, child_depth, outcomes))
-            root_actions = actions
+            root_actions = [child(root, depth, action) for action in model.legal_actions(root)]
         else:
             expand(root, depth)
             root_actions = expanded[root_key]
@@ -222,11 +292,20 @@ class ExpectimaxAgent:
                 raise ValueError("Leaf value must return one value per observation")
             for state, value in zip(states, leaf_values):
                 values[(state, 0)] = float(value)
+        pending = [state for state in afterstates if (state, _AFTER) not in values]
+        if pending:
+            after_values = np.asarray(
+                self.afterstate_value(model.observations(pending)), dtype=np.float64
+            ).reshape(-1)
+            if after_values.shape != (len(pending),):
+                raise ValueError("Afterstate value must return one value per observation")
+            for state, value in zip(pending, after_values):
+                values[(state, _AFTER)] = float(value)
         for key, actions in post_order:
             values[key] = max(
                 sum(p * values[(child, child_depth)] for p, child in outcomes)
                 for _, child_depth, outcomes in actions
             )
         stats.expanded += len(post_order)
-        stats.leaves += len(leaves)
+        stats.leaves += len(leaves) + len(pending)
         return root_actions
