@@ -65,7 +65,8 @@ def _new_goblin() -> Goblin:
 def _advance_to_next_turn(turns: TurnManager, roster: CombatRoster) -> bool:
     """Advance past dead actors and begin the next living actor's turn."""
     wrapped = turns.advance(roster.is_alive)
-    refresh_turn_resources(roster.get(turns.current))
+    if roster.is_alive(turns.current):
+        refresh_turn_resources(roster.get(turns.current))
     return wrapped
 
 

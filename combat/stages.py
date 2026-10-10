@@ -181,7 +181,10 @@ class StagedCombatEnv(gym.Env[np.ndarray, int]):
         return ref in self._controlled_refs
 
     def _run_automatic_turn(self, ref: ActorRef) -> AttackResult | None:
-        """Fixed policy via the shared mask path: first legal ATTACK in stage order."""
+        """Fixed policy via the shared mask path: first legal ATTACK in stage order.
+
+        Runs after turn-start refresh and does not refresh resources itself.
+        """
         roster = self._roster()
         attacker = roster.get(ref)
         if not attacker.alive:

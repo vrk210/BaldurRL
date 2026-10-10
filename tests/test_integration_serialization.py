@@ -68,3 +68,11 @@ def test_malformed_event_rejected() -> None:
     wire = {"record_type": "event", "schema_version": 1, "sequence": 2, "kind": "bad"}
     with pytest.raises(ValueError, match="kind"):
         parse_record(wire)
+
+
+@pytest.mark.parametrize("sequence", [0, -1, True])
+def test_writer_rejects_invalid_sequence(sequence: int) -> None:
+    with pytest.raises(ValueError, match="sequence"):
+        record_to_dict(GameSnapshot(1, sequence))
+    with pytest.raises(ValueError, match="sequence"):
+        record_to_dict(GameEvent(1, sequence, EventKind.MISS))

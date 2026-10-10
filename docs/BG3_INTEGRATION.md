@@ -1,4 +1,4 @@
-# BG3 observation integration contract
+# BG3 observation and semantic command integration contract
 
 ## Boundary and data flow
 
@@ -31,7 +31,7 @@ BG3
 
 The harness captures rich semantic facts from the real game. It does **not** emit M0's seven-value PPO observation or infer simulator resources. An observation adapter will later choose what each policy sees and map raw BG3 IDs to policy concepts. Preserve entity, ability, and resource IDs supplied by BG3 until that boundary. Unknown facts remain `None`, an empty tuple when enumeration is incomplete, or `Legality.UNKNOWN`; do not fill them with simulator presets. The current `evaluation/evaluate.py` JSONL trace is a separate simulator format with flat vectors, masks, and diagnostic `info`.
 
-`integration/schema.py` is a platform-neutral contract, independent of Gymnasium and the simulator. `GameSnapshot` answers **what is true now**; `GameEvent` answers **what just happened**. A snapshot contains no event history. Both carry `schema_version = 1` and a collector-assigned `sequence`. The future collector must increase sequence across its emitted records to preserve order; timestamp milliseconds are optional. `to_dict()` emits JSON-compatible primitives and arrays, with enum values as lowercase strings and unknown values as JSON `null`. Python serialization, reading, inspection, and interval reconstruction are implemented; collection, policy adaptation, and action execution are future work.
+`integration/schema.py` is a platform-neutral contract, independent of Gymnasium and the simulator. `GameSnapshot` answers **what is true now**; `GameEvent` answers **what just happened**. A snapshot contains no event history. Both carry `schema_version = 1` and a collector-assigned `sequence`. The collector increases sequence across its emitted records within one session directory; timestamp milliseconds are optional. `to_dict()` emits JSON-compatible primitives and arrays, with enum values as lowercase strings and unknown values as JSON `null`. Python serialization, reading, inspection, interval reconstruction, and passive Lua collection are implemented and tested offline. Live collection remains unverified; policy adaptation and action execution are future work.
 
 `CombatSnapshot.participant_ids` may be empty until participant enumeration works. `EntitySnapshot.armor_class`, `alive`, and `position` may remain unknown if unavailable at capture time. `AbilitySnapshot.visible` does not assert usability. A candidate decision describes ability and target intent; `LEGAL` means a source establishes current legality, `ILLEGAL` means a source establishes rejection, and `UNKNOWN` means available evidence is insufficient. `legality_source` and `legality_reason` preserve that evidence. Ability ownership plus apparent resources do not reconstruct BG3 UI legality in general: target validity, range, line of sight, status, and other conditions can matter. Do not label such a candidate legal solely from ownership and resources.
 
@@ -57,9 +57,12 @@ The APIs expose StoryActionID, but actual event ordering and correlation in our 
 ## First file bridge
 
 ```text
-BG3 Script Extender Lua (NOT IMPLEMENTED)
+BG3 Script Extender Lua (OFFLINE-TESTED / LIVE-UNVERIFIED)
         │
-        │ Ext.IO.SaveFile
+        │ Ext.IO.SaveFile (.pending JSON + .ready byte count)
+        ▼
+integration.publish (validate + atomic publication)
+        │
         ▼
 JSON snapshot/event files
         │
@@ -76,7 +79,7 @@ SnapshotInterval reconstruction
 Later H1 demonstration assembly (NOT IMPLEMENTED)
 ```
 
-[Script Extender documents `Ext.IO.SaveFile` and `Ext.IO.LoadFile`](https://github.com/Norbyte/bg3se/blob/main/Docs/API.md). File location, safe read behavior, naming, and polling cadence require live tests. Temp-file/rename behavior remains `TODO_VERIFY` on Windows. The Python reader uses simple polling through repeated `read_new()` calls; it does not watch the filesystem asynchronously.
+[Script Extender documents `Ext.IO.SaveFile` and `Ext.IO.LoadFile`](https://github.com/Norbyte/bg3se/blob/main/Docs/API.md), but no atomic rename API. The Lua collector stages immutable payloads and completion markers; the Python publisher validates them and uses `os.replace` to expose complete `.json` files. This protocol is tested offline. Output-root resolution, readback behavior, and atomic replacement on Windows remain `TODO_VERIFY`. The optional publisher watch loop polls files every 0.5 seconds. The Python reader uses simple polling through repeated `read_new()` calls; it does not watch the filesystem asynchronously. Lua collection is event-driven, without per-frame polling.
 
 ### Version 1 wire record
 
@@ -92,7 +95,7 @@ Each `.json` file contains one top-level record. The existing v1 `GameSnapshot.t
 
 The IDs above are **synthetic test IDs**, not discovered BG3 IDs. `integration.serialization.parse_record()` rejects unsupported versions, unknown types and fields, and malformed nested values. Optional facts may be omitted or `null`; omitted collections default to empty arrays. Required fields are `record_type`, `schema_version`, and positive integer `sequence`, plus `kind` for events. Nested entities require `entity_id`; resources require `resource_id` and `amount`; abilities require `ability_id`; candidates require `ability_id`, `target_kind`, and `legality`. Enum values are lowercase strings. Schema v1 uses no simulator defaults.
 
-The eventual Lua producer only needs to choose the next monotonically increasing sequence, populate `schema_version` and `record_type`, serialize one snapshot or event, and write one JSON file into the record directory. It does not need PPO, Gymnasium, reward, or observation encoding.
+The passive Lua producer in [bg3/h0](../bg3/h0/README.md) chooses increasing sequences, populates `schema_version` and `record_type`, and stages one JSON document per record. `python -m integration.publish` validates completion markers and atomically publishes `.json` files for this reader. Each collector session has its own directory and sequence namespace. It does not need PPO, Gymnasium, reward, or observation encoding. Lua execution and Python compatibility are tested offline; BG3 loading, APIs, event timing, and Windows IO remain live-unverified.
 
 ### Python use
 
@@ -101,11 +104,232 @@ python -m integration.mock_h0 /tmp/baldurrl-h0
 python -m integration.inspect /tmp/baldurrl-h0
 ```
 
-`RecordDirectoryReader(directory, start_sequence=1).read_new()` emits each record once and stops at a missing sequence, retaining later records until another poll. Use `start_sequence` when attaching to a stream that starts after 1. `read_all()` returns all available records sorted by embedded sequence; `validate_all()` reports gaps for offline inspection. Duplicate IDs and invalid JSON or schema records raise errors naming the offending file. Record files are treated as immutable after a successful read.
+One record directory represents one collector session / sequence namespace. For H0, a restarted collector should start a new output directory rather than reuse sequence IDs in an existing directory. `RecordDirectoryReader(directory, start_sequence=1).read_new()` emits each record once and stops at a missing sequence, retaining later records until another poll. Use `start_sequence` when attaching to a stream that starts after 1. `read_all()` returns all available records sorted by embedded sequence; `validate_all()` reports gaps for offline inspection. Duplicate IDs and invalid JSON or schema records raise errors naming the offending file. Record files are treated as immutable after a successful read.
 
-`reconstruct_intervals()` creates a `SnapshotInterval(before, events, after)` between consecutive snapshots. An interval is **not necessarily one decision**. Trailing events after the last snapshot remain in the raw stream and are not placed in a completed interval. `controlled_action()` checks only ability-use events whose `actor_id` matches the requested entity; it returns `None` for no match and raises `AmbiguousActionError` for multiple matches. It does not infer rewards, legal actions, or policy labels.
+`reconstruct_intervals()` creates a `SnapshotInterval(before, events, after)` between consecutive snapshots. An interval is **not necessarily one decision**. Trailing events after the last snapshot remain in the raw stream and are not placed in a completed interval. `controlled_action()` checks only ability-use events whose `actor_id` matches the requested entity. Multiple events with the same non-null `story_action_id` are treated as one attempted action; a targeted event is preferred over a position event, which is preferred over a generic event. Distinct IDs, multiple events without an ID, or conflicting target and position events raise `AmbiguousActionError`; no match returns `None`. Raw interval events are preserved. This correlation rule needs live verification. It does not infer rewards, legal actions, or policy labels.
 
-**IMPLEMENTED (Python H0):** schema, serialization/parser, sequence-aware directory reader, interval reconstruction, inspection CLI, synthetic fixture. **NOT IMPLEMENTED / WINDOWS:** Script Extender producer, Osiris subscriptions, real BG3 resource and spell IDs, participant enumeration, legal-action reconstruction, action execution. All live-verification checklist items below remain open.
+**IMPLEMENTED (offline H0):** schema, serialization/parser, sequence-aware directory reader, interval reconstruction, inspection CLI, synthetic fixture, passive Script Extender Lua source mod, documented Osiris subscriptions, conservative snapshot probes, and completion-aware file publisher. **LIVE-UNVERIFIED / WINDOWS:** mod packaging/loading, actual API signatures/availability, output paths, event ordering, and snapshot completeness. Resource/owned-ability/participant enumeration, legality, and action execution remain unimplemented. Spell IDs are captured only from callbacks. See the [collector installation/run guide and concise live checklist](../bg3/h0/README.md); all live-verification checklist items below remain open.
+
+## Python semantic command protocol
+
+The Python portion of a future H3 bridge is implemented in `integration/commands.py`,
+`integration/command_transport.py`, and `integration/mock_executor.py`. It has no
+imports from `combat/`, Gymnasium, trained agents, or ML libraries. It does not
+execute actions in BG3 or simulate BG3 mechanics. Passive `GameSnapshot`,
+`GameEvent`, `parse_record()`, and `RecordDirectoryReader` retain their v1 contract.
+Commands and acknowledgements have their own v1 schema and parsers; do not place
+these records in the observation directory or feed them to `parse_record()`.
+
+### Session layout and wire format
+
+Each session has its own directory tree and independent ID/sequence namespace:
+
+```text
+sessions/<session-id>/
+    records/             # existing snapshot/event JSON, collector sequence
+    commands/            # <command_id>.json, immutable semantic intent
+    acknowledgements/    # <command_id>.1.json, .2.json, and .observation.json
+```
+
+`CommandSession(session_directory)` creates these three directories. Use a fresh
+session when restarting a collector rather than reusing its sequence IDs.
+Observation sequences continue to include events; command IDs and per-command
+acknowledgement sequences do not consume collector sequence numbers.
+
+```json
+{"record_type":"command","schema_version":1,"command_id":"demo-001","snapshot_sequence":1,"expected_combat_id":"synthetic-combat","actor_entity_id":"synthetic-player","action_type":"use_ability","ability_id":"synthetic-ability","target_kind":"entity","target_entity_id":"synthetic-enemy","target_position":null}
+```
+
+`ActionCommand` requires a unique `command_id`, positive `snapshot_sequence`,
+`actor_entity_id`, `action_type`, and `target_kind`, plus `schema_version=1`.
+Generate IDs with `str(uuid.uuid4())`, or supply an ID unique within this session.
+IDs must contain 1–128 filename-safe ASCII characters: the first is alphanumeric,
+and the remainder may also contain `_`, `-`, or `.`. BG3 entity, combat, and
+ability IDs remain opaque nonempty strings and are never mapped to PPO indices.
+
+| Action/target | Required intent | Forbidden intent |
+| --- | --- | --- |
+| `use_ability` | Original BG3 `ability_id` | Missing/empty ability ID |
+| `end_turn` | `target_kind=none` | Ability ID or target payload |
+| `none` | No target payload | Entity ID or position |
+| `self` | Actor is the implicit target | Redundant entity ID or position |
+| `entity` | `target_entity_id` | Position |
+| `position` | `target_position={"x":number,"y":number,"z":number}` | Entity ID |
+
+Coordinates must be finite JSON numbers, excluding booleans. Optional IDs and
+positions may be omitted or `null`; the serializer emits explicit `null` values.
+`parse_command()`, `parse_acknowledgement()`, and
+`parse_post_execution_observation()` reject unknown fields, missing
+required fields, unsupported versions, wrong types, unknown enum values, and
+inconsistent targets. Transport JSON loading additionally rejects duplicate
+object keys and nonstandard `NaN`/`Infinity` constants. File errors name the path.
+Malformed inbox records fail closed with a validation error, rather than emitting
+an acknowledgement for an untrusted or unparseable command ID.
+
+### Freshness and legality
+
+`publish_command()` checks the current observation stream and writes only valid
+commands. The mock independently repeats those checks when receiving a command,
+so a command published before a new snapshot can still be rejected. A command
+must refer to exactly the latest snapshot sequence; older and future sequences
+are rejected. Observation gaps, an empty stream, or events following the latest
+snapshot require a fresh snapshot before issuing another decision. Files are
+immutable for the session lifetime. Validation and latest-snapshot selection use
+one `read_all()` collection; another publication cannot switch the selected
+snapshot to an unvalidated collection within the same check. This does not lock
+an independent observation publisher or freeze BG3.
+
+Completion does not make the pre-action facts fresh. Both command publication
+and executor receipt use `validate_command_for_execution()`. After each
+`resolved` or `failed` result, another command requires an explicit
+`PostExecutionObservation` confirmation for that completed command. A genuinely
+`rejected` intent was never executed and imposes no such boundary, so a new
+command ID can retry from the unchanged snapshot if it is still current/legal.
+`uncertain` continues to hold the in-flight slot and cannot be cleared by a
+snapshot confirmation.
+
+The completion/capture handshake is:
+
+1. The executor establishes completion or a known, stopped failure. It publishes
+   the terminal result with `observation_boundary_sequence`, at least the highest
+   observation sequence already published and the command's decision sequence.
+   Python `publish_acknowledgement()` fills this boundary when omitted; its
+   returned file contains the persisted value. External result producers must
+   supply the boundary themselves. Missing boundaries in older result files
+   fail closed and require external recovery.
+2. After observing that terminal acknowledgement, the trusted collector initiates
+   a fresh capture. It must not relabel a cached snapshot or a delayed snapshot
+   captured before completion. It publishes the snapshot in the same collector
+   sequence namespace, then publishes a `PostExecutionObservation` record through
+   `publish_post_execution_observation()` (or the equivalent future producer).
+3. The confirmation references the completed command ID and a snapshot strictly
+   after the persisted boundary. Its `reason` describes the capture evidence.
+   The gate checks the result status, boundary, snapshot existence, continuity,
+   and uniqueness. The next command must use the current latest snapshot at or
+   after that confirmation. Every previous executed command requires a valid
+   confirmation; restart does not discard these requirements.
+
+```json
+{"record_type":"post_execution_observation","schema_version":1,"command_id":"demo-001","snapshot_sequence":2,"reason":"Synthetic capture initiated after observing the terminal result"}
+```
+
+This confirmation lives in `acknowledgements/<command_id>.observation.json`, not
+in `records/`; passive observation schemas and readers are unchanged. The
+collector attestation explicitly establishes the capture-after-completion
+relation. **A higher sequence, a later file publication, or the result's optional
+`observation_sequence` alone does not prove post-action timing.** Python trusts
+this producer assertion just as it trusts a collector's `LEGAL` assertion; the
+files do not independently authenticate game timing. A real producer must
+coordinate capture with the terminal result and preserve capture/sequence order,
+including draining or discarding old queued captures. Verifying that producer
+behavior in BG3 remains future work. If effects may still be ongoing after a
+failure, the executor must report `uncertain` rather than assert a stopped
+failure and fresh capture.
+
+The actor must match `controlled_entity_id`, which must be known. When combat
+exists, it must also match the known `active_entity_id`. `expected_combat_id`
+must equal the observed combat ID, including `null` when unknown: omitting a
+known combat ID does not bypass the check.
+
+Ability commands must exactly match one current `DecisionCandidate` by original
+ability ID, target kind, entity ID, and position, with `legality=LEGAL`. The
+collector's explicit `LEGAL` assertion is trusted; this layer does not invent
+legality from ownership, visibility, or resources. Missing, duplicated,
+`ILLEGAL`, and `UNKNOWN` candidates are rejected. An empty candidate list does
+not disable legality checks. Positions compare exactly, without rounding or
+range inference. Self-target candidates use the same implicit-actor form.
+
+The existing observation candidate schema describes abilities only; it cannot
+represent turn control. For `end_turn`, legality checking is limited to verifying
+the current controlled actor's active combat turn. It is rejected outside combat
+or when the active actor is unknown. No fake BG3 end-turn ability ID or change to
+the observation schema is introduced. Richer BG3 end-turn restrictions still
+require future verified evidence and live implementation.
+
+### Acknowledgement semantics
+
+```json
+{"record_type":"acknowledgement","schema_version":1,"command_id":"demo-001","acknowledgement_sequence":1,"status":"accepted","reason":null,"observation_sequence":null,"observation_boundary_sequence":null}
+```
+
+```json
+{"record_type":"acknowledgement","schema_version":1,"command_id":"demo-001","acknowledgement_sequence":2,"status":"resolved","reason":"Synthetic fixture confirmation; no BG3 execution","observation_sequence":null,"observation_boundary_sequence":1}
+```
+
+| Status | Sequence | Meaning | Releases the command slot |
+| --- | --- | --- | --- |
+| `accepted` | 1 | Validated and accepted for execution; no completion evidence | No |
+| `rejected` | 1 | Refused before execution, with a reason | Yes |
+| `resolved` | 2 | Execution confirmed completed, with evidence described in `reason` | Yes; next decision awaits confirmed post-execution capture |
+| `failed` | 2 | Execution reported a known, stopped failure, with a reason | Yes; next decision awaits confirmed post-execution capture |
+| `uncertain` | 2 | Execution outcome cannot be established, with a reason | No |
+
+Sequence 2 requires a preceding `accepted` record. Results after rejection,
+unknown command IDs, duplicate acknowledgement sequences, and repeated or
+conflicting results are errors. `reason` is required for every status except
+`accepted`. Optional positive `observation_sequence` may identify supporting
+observations, but does not establish correlation by itself. The separate
+`observation_boundary_sequence` is a positive sequence fence for resolved/failed
+results, not completion or snapshot-timing evidence by itself. A future real
+executor must supply verified completion evidence before reporting `resolved`;
+acceptance or an elapsed timeout is insufficient. Resolution means the attempted
+action completed, not that an attack hit or achieved a desired gameplay effect.
+`confirmed_resolved` is true only for `resolved`.
+
+### Publication, duplicates, and recovery limits
+
+Python publication writes and fsyncs a temporary file on the destination
+filesystem, then atomically hard-links it to the final name without overwriting
+an existing record. Pollers ignore temporary files. This requires a filesystem
+with atomic hard-link creation; unsupported filesystems raise an error without
+a partial final file. Windows/Script Extender producer behavior is still
+unverified. There is no networking or filesystem watcher.
+
+A short-lived `.writer-lock/` directory serializes cooperating Python writers.
+`publish_command()` allows at most one pending, accepted, or uncertain command
+per session. A released execution slot still requires post-execution snapshot
+confirmation before another command can be published or accepted. External
+conflicting inbox commands are rejected by the mock.
+Duplicate command IDs are errors, including identical payloads and IDs already
+completed. Duplicate inbox files fail closed; the original history is never
+replaced with a new rejection. Repeated mock polling skips acknowledged IDs.
+
+**This is not exactly-once execution across crashes.** The lock and immutable
+history prevent ordinary cooperating writers from overwriting or replaying IDs;
+they cannot atomically commit a game effect and its acknowledgement. A crash
+between those operations can leave a pending or accepted command whose real
+outcome is unknown. Missing results never trigger automatic retries. On reopen,
+the mock leaves accepted-only histories in flight. Completed histories without
+post-execution confirmation continue to block new decisions. `uncertain` also
+blocks new commands; this minimal protocol intentionally has no retry/reset API.
+
+Keep session files intact. Before recovery, stop all writers, inspect any stale
+lock/temp files, and reconcile the game state externally. Remove a stale lock
+only after establishing that its owner is gone. Do not blindly replay commands
+or delete acknowledgement history. After reconciliation, a fresh session and
+fresh observations provide a new namespace; they do not prove that a previous
+effect happened only once. A known `failed` result likewise does not roll back
+partial effects. File fsync does not guarantee directory-entry durability after
+power loss. The future collector must coordinate a stable snapshot with command
+intake; this Python lock does not freeze BG3 or cover an independent Lua writer.
+
+### Synthetic CLI demonstration
+
+```text
+python -m integration.mock_executor /tmp/baldurrl-command-session-001
+python -m integration.inspect /tmp/baldurrl-command-session-001/records
+```
+
+Use a fresh empty session tree for each demo. The CLI writes a synthetic
+observation with `LEGAL` and `UNKNOWN` candidates, reads it using the existing
+reader, selects the legal intent, publishes a command, and prints the mock's
+`accepted` acknowledgement followed by a separate `resolved` fixture result.
+It then initiates a new synthetic capture and prints the persisted post-execution
+observation confirmation; fixture state stays unchanged because no mechanics run.
+`MockExecutor.receive()` only validates and accepts/rejects; `finish()` explicitly
+reports a synthetic `resolved`, `failed`, or `uncertain` outcome. It never mutates
+HP/resources/turns, rolls dice, invokes BG3, or derives rewards. Fixture
+confirmation is clearly labeled and is not evidence of actual game execution.
 
 ## Windows live-verification checklist
 
@@ -167,6 +391,7 @@ python -m integration.inspect /tmp/baldurrl-h0
 - [ ] Test sequence numbering.
 - [ ] Test whether temp-file + rename is needed for safe reads.
 - [ ] Measure reasonable polling latency for a turn-based game.
+- [ ] Verify capture-after-terminal-result coordination, including queued old snapshots.
 
 ## Harness milestones
 
@@ -189,7 +414,7 @@ Later stages, described here only:
 
 - **H1 — Reliable human-decision recorder:** snapshot before, candidate/legal decisions, human action, outcome events, snapshot after.
 - **H2 — Validated legal-action extraction.**
-- **H3 — Python → BG3 command execution.**
+- **H3 — Python → BG3 command execution:** Python semantic protocol and mock handshake implemented; real BG3 execution remains future work.
 - **H4 — BG3-backed Gymnasium adapter.**
 
 The schema is designed so a future demonstration record can be assembled as `snapshot_before + candidate/legal decisions + human chosen action + outcome events + snapshot_after`. This can support behavior cloning, DAgger-style human correction, and simulator/BG3 validation later. The Python H0 tools do not assemble demonstrations or verify live event semantics.

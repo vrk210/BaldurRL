@@ -18,6 +18,8 @@ def record_to_dict(record: Record) -> dict[str, Any]:
         raise TypeError("Expected GameSnapshot or GameEvent")
     if record.schema_version != SCHEMA_VERSION:
         raise ValueError(f"Unsupported schema_version: {record.schema_version!r}")
+    if type(record.sequence) is not int or record.sequence < 1:
+        raise ValueError("sequence must be a positive integer")
     return record.to_dict()
 
 

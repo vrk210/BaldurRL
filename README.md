@@ -2,6 +2,10 @@
 
 BaldurRL is a project for training an agent to play Baldur's Gate 3. In progress
 
+The [passive BG3 H0 collector](bg3/h0/README.md) includes Script Extender Lua
+source, installation/run instructions, offline compatibility tests, and a Windows
+live-verification checklist. It has not been tested in the game.
+
 ## Simulator stages
 
 M0 is the fixed 1v1 regression baseline. M1A varies one opponent's statistics. M1B has two opponents and target choice. M2 adds a one-use simplified Cleave. M3 controls two allies against two enemies. M4 is 2v3 with scaled enemies. M5 is 2v3 against a Brute, an Archer, and a Healer with varied enemy targeting, advantage/disadvantage, Trip/Prone, and Dodge. M6 adds front/back ranks, Advance/Disengage, and opportunity attacks to M5. M5/M6 rules are simulator choices designed for decision headroom, not verified BG3 rules. See [M0 specification](docs/M0_SPEC.md), [stage specifications](docs/STAGES_SPEC.md), and the [M5/M6 report](reports/m5_m6_decision_stages.md).
