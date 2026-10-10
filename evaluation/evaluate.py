@@ -7,15 +7,12 @@ from dataclasses import dataclass
 from math import sqrt
 from pathlib import Path
 from statistics import mean, pstdev
-from typing import Any, Iterable, Protocol
+from typing import Any, Iterable
 
 import numpy as np
 
 from combat.stages import make_env
-
-
-class Policy(Protocol):
-    def choose_action(self, observation: np.ndarray, action_mask: np.ndarray) -> int: ...
+from agents.policy import Policy
 
 
 _M0_NAMES = ("ATTACK", "SECOND_WIND", "ACTION_SURGE", "END_TURN")
@@ -33,6 +30,7 @@ class EpisodeResult:
     action_names: tuple[str, ...] = _M0_NAMES
     first_kill_slot: int | None = None
     cleave_living_counts: tuple[int, ...] = ()
+    kill_order_roles: tuple[str, ...] | None = None
 
     def _used(self, name: str) -> bool:
         return name in self.action_names and self.action_counts[self.action_names.index(name)] > 0
@@ -59,6 +57,8 @@ class EpisodeResult:
             payload["first_kill_slot"] = self.first_kill_slot
         if "CLEAVE" in self.action_names:
             payload["cleave_living_counts"] = list(self.cleave_living_counts)
+        if self.kill_order_roles is not None:
+            payload["kill_order_roles"] = list(self.kill_order_roles)
         return payload
 
 
@@ -139,16 +139,26 @@ class EvaluationSummary:
             "second_wind_use_rate": self.second_wind_use_rate,
             "action_surge_use_rate": self.action_surge_use_rate,
         }
-        if "ATTACK_ENEMY_0" in self.action_names:
+        attacks = [(index, int(name.rsplit("_", 1)[-1])) for index, name in enumerate(self.action_names)
+                   if name.startswith("ATTACK_ENEMY_")]
+        if attacks:
             counts = self.action_counts
-            payload["target_attack_counts"] = [counts[0], counts[1]]
-            first_kills = [sum(result.first_kill_slot == index for result in self.results) for index in (0, 1)]
+            payload["target_attack_counts"] = [counts[index] for index, _ in attacks]
+            slots = [slot for _, slot in attacks]
+            first_kills = [sum(result.first_kill_slot == slot for result in self.results) for slot in slots]
             payload["first_kill_counts"] = first_kills
             payload["first_kill_rates"] = [count / self.episodes for count in first_kills]
         if "CLEAVE" in self.action_names:
             payload["cleave_use_rate"] = sum(result._used("CLEAVE") for result in self.results) / self.episodes
             living = [count for result in self.results for count in result.cleave_living_counts]
             payload["mean_living_enemies_at_cleave"] = mean(living) if living else 0.0
+        role_orders = [result.kill_order_roles for result in self.results if result.kill_order_roles is not None]
+        if role_orders:
+            roles = sorted({role for order in role_orders for role in order})
+            payload["first_kill_role_rates"] = {
+                role: sum(bool(order) and order[0] == role for order in role_orders) / self.episodes
+                for role in roles
+            }
         if self.action_names != _M0_NAMES:
             payload["action_use_rates"] = {
                 name: sum(result._used(name) for result in self.results) / self.episodes
@@ -210,6 +220,8 @@ def evaluate(
             for seed in episode_seeds:
                 observation, reset_info = env.reset(seed=seed)
                 previous_enemy_hps = _enemy_hps(reset_info)
+                enemy_roles = reset_info.get("enemy_roles")
+                kill_order: list[int] = []
                 first_kill_slot: int | None = None
                 cleave_living_counts: list[int] = []
                 action_counts = [0] * len(action_names)
@@ -226,6 +238,10 @@ def evaluate(
                         cleave_living_counts.append(sum(hp > 0 for hp in previous_enemy_hps))
                     next_observation, reward, terminated, truncated, info = env.step(int(action))
                     current_enemy_hps = _enemy_hps(info)
+                    kill_order.extend(
+                        index for index, (before, after) in enumerate(zip(previous_enemy_hps, current_enemy_hps))
+                        if before > 0 and after == 0
+                    )
                     if first_kill_slot is None and len(current_enemy_hps) > 1:
                         first_kill_slot = next((index for index, (before, after) in enumerate(zip(previous_enemy_hps, current_enemy_hps)) if before > 0 and after == 0), None)
                     previous_enemy_hps = current_enemy_hps
@@ -245,17 +261,25 @@ def evaluate(
                             "info": info,
                         })
                     observation = next_observation
+                ally_hps = info.get("ally_hps")
                 result = EpisodeResult(
                     seed=int(seed),
                     won=terminated and all(hp == 0 for hp in previous_enemy_hps),
-                    lost=terminated and info["fighter_hp"] == 0,
+                    lost=terminated and (
+                        all(hp == 0 for hp in ally_hps)
+                        if ally_hps is not None
+                        else info["fighter_hp"] == 0
+                    ),
                     truncated=truncated,
                     rounds=info["round"],
-                    fighter_hp=info["fighter_hp"],
+                    fighter_hp=sum(ally_hps) if ally_hps is not None else info["fighter_hp"],
                     action_counts=tuple(action_counts),
                     action_names=action_names,
                     first_kill_slot=first_kill_slot,
                     cleave_living_counts=tuple(cleave_living_counts),
+                    kill_order_roles=(
+                        tuple(enemy_roles[slot] for slot in kill_order) if enemy_roles is not None else None
+                    ),
                 )
                 results.append(result)
                 if trace_file is not None:
@@ -276,6 +300,7 @@ def write_run_card(
     model_path: str | None = None,
     agent_seed: int | None = None,
     stage: str = "m0",
+    rollout_settings: dict[str, Any] | None = None,
 ) -> None:
     """Save metadata needed to inspect and compare a traced evaluation run."""
     env = make_env(stage)
@@ -299,19 +324,28 @@ def write_run_card(
         "loss_seeds": [result.seed for result in summary.results if result.lost],
         "truncation_seeds": [result.seed for result in summary.results if result.truncated],
     }
+    if rollout_settings is not None:
+        card["rollout_settings"] = rollout_settings
     output_path.write_text(json.dumps(card, indent=2) + "\n", encoding="utf-8")
 
 
 def main() -> None:
     from agents.heuristic_agent import make_heuristic_agent
     from agents.random_agent import RandomAgent
+    from agents.rollout_agent import RolloutAgent
 
     parser = ArgumentParser(description="Evaluate a combat policy")
-    parser.add_argument("--stage", choices=["m0", "m1a", "m1b", "m2"], default="m0")
+    parser.add_argument("--stage", choices=["m0", "m1a", "m1b", "m2", "m3", "m4", "m5", "m6"], default="m0")
     parser.add_argument("--episodes", type=int, default=10_000)
+    parser.add_argument(
+        "--heuristic-variant", type=str, default=None,
+        help="M5/M6 named heuristic (agents.tactical_heuristics.VARIANTS); default naive",
+    )
     parser.add_argument("--agent-seed", type=int, default=0)
-    parser.add_argument("--agent", choices=["random", "heuristic", "ppo"], default="random")
-    parser.add_argument("--model", type=str, default=None, help="MaskablePPO checkpoint for --agent ppo")
+    parser.add_argument("--agent", choices=["random", "heuristic", "ppo", "rollout"], default="random")
+    parser.add_argument("--model", type=str, default=None, help="MaskablePPO checkpoint for PPO or rollout PPO")
+    parser.add_argument("--rollout-policy", choices=["heuristic", "ppo"], default="heuristic")
+    parser.add_argument("--rollouts-per-action", type=int, default=32)
     parser.add_argument("--seed-start", type=int, default=0)
     parser.add_argument("--format", choices=["text", "json"], default="text")
     parser.add_argument("--output", type=str, default=None)
@@ -319,13 +353,39 @@ def main() -> None:
     args = parser.parse_args()
 
     agent: Policy
-    if args.agent == "ppo":
+    rollout_settings = None
+    if args.agent == "rollout":
+        if args.rollouts_per_action < 1:
+            parser.error("--rollouts-per-action must be a positive integer")
+        if args.rollout_policy == "ppo":
+            if args.model is None:
+                parser.error("--rollout-policy ppo requires --model")
+            from sb3_contrib import MaskablePPO
+            model = MaskablePPO.load(args.model)
+            continuation_factory = lambda seed: SB3Policy(model, deterministic=True)
+        else:
+            continuation_factory = lambda seed: make_heuristic_agent(args.stage, args.heuristic_variant)
+        agent = RolloutAgent(
+            args.stage, continuation_factory=continuation_factory,
+            rollouts_per_action=args.rollouts_per_action, seed=args.agent_seed,
+        )
+        rollout_settings = {
+            "continuation_policy": args.rollout_policy,
+            "rollouts_per_action": args.rollouts_per_action,
+            "planner_seed": args.agent_seed,
+            "objective": "win_probability",
+            "common_random_numbers": True,
+            "tie_break": "continuation_policy_then_action_index",
+        }
+        if args.heuristic_variant is not None:
+            rollout_settings["heuristic_variant"] = args.heuristic_variant
+    elif args.agent == "ppo":
         if args.model is None:
             parser.error("--agent ppo requires --model")
         from sb3_contrib import MaskablePPO
         agent = SB3Policy(MaskablePPO.load(args.model), deterministic=True)
     elif args.agent == "heuristic":
-        agent = make_heuristic_agent(args.stage)
+        agent = make_heuristic_agent(args.stage, args.heuristic_variant)
     else:
         agent = RandomAgent(seed=args.agent_seed)
 
@@ -335,12 +395,16 @@ def main() -> None:
     if args.trace_dir is not None:
         write_run_card(
             args.trace_dir / "run_card.json",
-            policy=args.agent,
+            policy=(
+                f"heuristic:{args.heuristic_variant}"
+                if args.agent == "heuristic" and args.heuristic_variant is not None else args.agent
+            ),
             summary=summary,
             trace_file="episodes.jsonl",
             model_path=args.model,
-            agent_seed=args.agent_seed if args.agent == "random" else None,
+            agent_seed=args.agent_seed if args.agent in ("random", "rollout") else None,
             stage=args.stage,
+            rollout_settings=rollout_settings,
         )
     if args.format == "json":
         output = json.dumps(summary.as_dict(), indent=2)
@@ -358,7 +422,8 @@ def main() -> None:
             f"Second Wind used:         {summary.second_wind_use_rate:.2%}",
             f"Action Surge used:        {summary.action_surge_use_rate:.2%}",
         ]
-        for key in ("target_attack_counts", "first_kill_counts", "cleave_use_rate", "mean_living_enemies_at_cleave"):
+        for key in ("target_attack_counts", "first_kill_counts", "cleave_use_rate", "mean_living_enemies_at_cleave",
+                    "first_kill_role_rates"):
             if key in payload:
                 lines.append(f"{key}: {payload[key]}")
         lines.extend(["", "Action selections:"])

@@ -1,0 +1,234 @@
+{
+  "stage": "m4",
+  "episode_seed_start": 18000,
+  "episodes": 100,
+  "planner_seed": 0,
+  "note": "Small functional/performance pilot. All real encounters use the same 100 seeds. Rollouts follow the original stage heuristic. Win-rate uncertainty is large at this sample size.",
+  "episode_seed_end": 18099,
+  "continuation_policy": "original stage heuristic",
+  "policies": {
+    "original_heuristic": {
+      "summary": {
+        "episodes": 100,
+        "wins": 64,
+        "losses": 36,
+        "truncations": 0,
+        "win_rate": 0.64,
+        "win_rate_se": 0.048,
+        "mean_rounds": 6.78,
+        "mean_rounds_std": 2.755285829092873,
+        "mean_fighter_hp": 13.46,
+        "mean_fighter_hp_std": 12.31131187160816,
+        "action_counts": [
+          370,
+          357,
+          339,
+          200,
+          126,
+          200,
+          1002
+        ],
+        "second_wind_use_rate": 0.93,
+        "action_surge_use_rate": 1.0,
+        "target_attack_counts": [
+          370,
+          357,
+          339
+        ],
+        "first_kill_counts": [
+          32,
+          28,
+          30
+        ],
+        "first_kill_rates": [
+          0.32,
+          0.28,
+          0.3
+        ],
+        "cleave_use_rate": 1.0,
+        "mean_living_enemies_at_cleave": 2.945,
+        "action_use_rates": {
+          "ATTACK_ENEMY_0": 0.89,
+          "ATTACK_ENEMY_1": 0.9,
+          "ATTACK_ENEMY_2": 0.86,
+          "CLEAVE": 1.0,
+          "SECOND_WIND": 0.93,
+          "ACTION_SURGE": 1.0,
+          "END_TURN": 1.0
+        }
+      },
+      "elapsed_seconds": 0.20648399999481626,
+      "all_decisions": {
+        "mean_ms": 0.004006577753957358,
+        "p50_ms": 0.0037919962778687477,
+        "p95_ms": 0.005333361332304776
+      },
+      "planned_decisions": null,
+      "simulated_episodes": 0,
+      "simulated_decisions": 0
+    },
+    "rollout_heuristic_32": {
+      "summary": {
+        "episodes": 100,
+        "wins": 47,
+        "losses": 53,
+        "truncations": 0,
+        "win_rate": 0.47,
+        "win_rate_se": 0.04990991885387112,
+        "mean_rounds": 6.93,
+        "mean_rounds_std": 2.9129194976861275,
+        "mean_fighter_hp": 9.13,
+        "mean_fighter_hp_std": 12.389233228896774,
+        "action_counts": [
+          277,
+          342,
+          328,
+          178,
+          134,
+          192,
+          994
+        ],
+        "second_wind_use_rate": 0.92,
+        "action_surge_use_rate": 1.0,
+        "target_attack_counts": [
+          277,
+          342,
+          328
+        ],
+        "first_kill_counts": [
+          25,
+          37,
+          21
+        ],
+        "first_kill_rates": [
+          0.25,
+          0.37,
+          0.21
+        ],
+        "cleave_use_rate": 0.99,
+        "mean_living_enemies_at_cleave": 2.853932584269663,
+        "action_use_rates": {
+          "ATTACK_ENEMY_0": 0.94,
+          "ATTACK_ENEMY_1": 0.95,
+          "ATTACK_ENEMY_2": 0.92,
+          "CLEAVE": 0.99,
+          "SECOND_WIND": 0.92,
+          "ACTION_SURGE": 1.0,
+          "END_TURN": 1.0
+        }
+      },
+      "elapsed_seconds": 204.9416916659975,
+      "all_decisions": {
+        "mean_ms": 83.73120182113111,
+        "p50_ms": 62.69629200687632,
+        "p95_ms": 274.5881256181746
+      },
+      "planned_decisions": {
+        "mean_ms": 120.6357136911417,
+        "p50_ms": 90.69354200619273,
+        "p95_ms": 289.1687337949405
+      },
+      "simulated_episodes": 192288,
+      "simulated_decisions": 3002590
+    },
+    "rollout_heuristic_64": {
+      "summary": {
+        "episodes": 100,
+        "wins": 51,
+        "losses": 49,
+        "truncations": 0,
+        "win_rate": 0.51,
+        "win_rate_se": 0.04998999899979995,
+        "mean_rounds": 7.24,
+        "mean_rounds_std": 3.2097351915695476,
+        "mean_fighter_hp": 9.82,
+        "mean_fighter_hp_std": 12.201131095107534,
+        "action_counts": [
+          353,
+          360,
+          327,
+          177,
+          149,
+          191,
+          1057
+        ],
+        "second_wind_use_rate": 0.97,
+        "action_surge_use_rate": 1.0,
+        "target_attack_counts": [
+          353,
+          360,
+          327
+        ],
+        "first_kill_counts": [
+          31,
+          36,
+          24
+        ],
+        "first_kill_rates": [
+          0.31,
+          0.36,
+          0.24
+        ],
+        "cleave_use_rate": 0.99,
+        "mean_living_enemies_at_cleave": 2.8587570621468927,
+        "action_use_rates": {
+          "ATTACK_ENEMY_0": 0.91,
+          "ATTACK_ENEMY_1": 0.91,
+          "ATTACK_ENEMY_2": 0.93,
+          "CLEAVE": 0.99,
+          "SECOND_WIND": 0.97,
+          "ACTION_SURGE": 1.0,
+          "END_TURN": 1.0
+        }
+      },
+      "elapsed_seconds": 412.6713405420014,
+      "all_decisions": {
+        "mean_ms": 157.77250007894952,
+        "p50_ms": 107.24787499930244,
+        "p95_ms": 546.1363954978877
+      },
+      "planned_decisions": {
+        "mean_ms": 233.66158495720796,
+        "p50_ms": 178.62066699308343,
+        "p95_ms": 573.7267335993238
+      },
+      "simulated_episodes": 388160,
+      "simulated_decisions": 6099139
+    }
+  },
+  "single_state_sampling_check": {
+    "episode_seed": 18000,
+    "step": 4,
+    "rollouts_per_action": 2048,
+    "planner_seed": 717,
+    "action": 0,
+    "scores": [
+      [
+        0,
+        0.86328125
+      ],
+      [
+        1,
+        0.85595703125
+      ],
+      [
+        2,
+        0.8232421875
+      ],
+      [
+        3,
+        0.85986328125
+      ],
+      [
+        5,
+        0.85986328125
+      ],
+      [
+        6,
+        0.76123046875
+      ]
+    ],
+    "planning_seconds": 15.945808457996463
+  },
+  "interpretation": "The two tested rollout budgets underperformed the heuristic on this small pilot. A larger-budget check reversed one premature END_TURN choice. This does not establish overall performance at larger budgets or an optimal-play ceiling."
+}

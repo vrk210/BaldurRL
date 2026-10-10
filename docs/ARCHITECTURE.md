@@ -31,18 +31,26 @@ The simulator therefore uses **semantic state and semantic actions**, rather tha
 | `combat/characters.py` | Entity state: `Character`, `Fighter`, `Goblin`; known `Action` IDs, per-turn `turn_refresh` mapping, not copied ability definitions | Rewards, turn loops, policies, attack-resolution orchestration |
 | `combat/actors.py` | Stable `Side`/`ActorRef` addresses and `CombatRoster` ally/enemy organization | Combat rules, rewards, turn advancement |
 | `combat/turns.py` | Deterministic `TurnManager`: order, current actor, round, wrap detection, dead-actor skipping | Dice, HP mutation, rewards, policies, attacks |
+| `combat/legality.py` | `DecisionSpec` decisions, side-aware `resolve_target`, turn-agnostic per-actor `legal_mask_for` | Turn order, dice, HP mutation, rewards, policies |
 | `combat/actions.py` | Semantic action intent: `ATTACK`, `SECOND_WIND`, `ACTION_SURGE`, `END_TURN` | Execution rules |
 | `combat/resources.py` | `Resource` enum and `ResourcePool` counts; shared affordability, atomic spending, gaining, and setting counts | Effect-specific legality or effects |
 | `combat/damage.py` | Immutable `DamageSpec(dice_count, die_size, bonus)` | Rolls or damage application |
 | `combat/abilities.py` | Immutable `AbilitySpec(action, costs, target)` definitions and shared M0 catalog; excludes `END_TURN` | Execution methods or turn control |
 | `combat/mechanics.py` | Game rules: dice rolls, attack resolution, damage, healing, critical hits, Action Surge | Rewards or policy choice |
+| `combat/rolls.py` | Advantage/disadvantage roll modes, attack rolls under a mode, moded attack resolution (M5/M6) | Rewards or policy choice |
+| `combat/tactics.py` | M5/M6 simulator rules: Trip/Prone, Dodge, Healer behavior, enemy targeting policies, ranks and reach, Advance with opportunity attacks, Disengage, per-turn condition lifecycle, `TacticalRules` tuning data | Environment loops, rewards, policies |
+| `combat/tactical_env.py` | M5/M6 Gymnasium coordinator: role/stat sampling, turn order, masks via `tactical_legal_mask`, observations, rewards, termination, truncation | Duplicated combat formulas |
+| `combat/distributions.py` | Exact attack-damage and Second Wind outcome distributions enumerated through the mechanics rule functions | Sampling, state mutation, policies |
 | `combat/env.py` | Gymnasium coordinator: reset, flat observation encoding, action-index mapping and masks, one Fighter decision per step, fixed Goblin turn, reward call, termination, truncation | Duplicated combat formulas; call mechanics |
-| `agents/` | Action-selection policies, beginning with `RandomAgent` | Direct state mutation or combat formulas |
+| `combat/simulation.py` | Independent M0–M6 simulator reconstruction from live observations and caller-supplied seeds | Live RNG access, policies, duplicated combat formulas |
+| `combat/tactical_transitions.py` | Exact M5/M6 transitions: enumerating random source over the real environment step, attack draws collapsed to exact cached distributions, enemy phase stepped one actor at a time | Policies, value estimates, restated combat rules |
+| `combat/transitions.py` | Exact planner-facing transitions: `TransitionModel` protocol, stage registry, M0–M4 `RosterTransitionModel` (merged successor distributions including the automatic phase after `END_TURN`) | Policies, value estimates, duplicated combat formulas |
+| `agents/` | Action-selection policies (random, heuristics, rollout and expectimax planners) and leaf value functions | Direct state mutation or combat formulas |
 | `evaluation/` | Reproducible seeded episodes and external metrics: win rate, final HP, rounds, action usage | Combat rules |
 
 ## Stage progression
 
-M0 remains the fixed 1v1 regression environment specified in `M0_SPEC.md`. The later stages are specified in `STAGES_SPEC.md`: M1A varies one opponent's stats; M1B has two fixed melee enemy slots and explicit target decisions; M2 adds one-use Cleave. A small stage factory selects an environment for training and evaluation. Each environment publishes action labels and observation field names in index order so traces and run cards do not encode M0 assumptions.
+M0 remains the fixed 1v1 regression environment specified in `M0_SPEC.md`. The later stages are specified in `STAGES_SPEC.md`: M1A varies one opponent's stats; M1B has two fixed melee enemy slots and explicit target decisions; M2 adds one-use Cleave; M3 controls two allies against two enemies with an active-actor observation; M4 extends that to three scaled enemies. M5 and M6 (`combat/tactical_env.py`) are decision-rich stages: role-typed enemies (Brute, Archer, Healer) with observed targeting policies, advantage/disadvantage, ally Trip/Prone and Dodge, and in M6 a two-rank front/back abstraction with Advance, Disengage, and opportunity attacks. Their rules live in `combat/tactics.py`; per-stage tuning data lives in `STAGE_RULES`. Stage-specific character state (`TacticalFighter`, `TacticalEnemy`) adds conditions, positions, and last-attacker memory to `Character`; all of it is observed, so `simulation_from_observation` restores M5/M6 exactly. A small stage factory selects an environment for training and evaluation. Each environment publishes action labels and observation field names in index order so traces and run cards do not encode M0 assumptions.
 
 Gym action indices represent decisions. A decision carries a semantic `Action` and, for a targeted attack, an enemy slot index. Target selection is separate from the shared ability identity. The environment owns target legality, turn order, outcomes, and reward selection; mechanics still own attack and ability effects. Character state holds resources and known abilities. Agents receive only the flat observation and action mask and return an index.
 
@@ -62,8 +70,21 @@ For M0, `BaldurCombatEnv.step()` handles exactly one Fighter decision. It dispat
 
 `RandomAgent` is the first baseline policy. It chooses uniformly from the legal-action mask using its own seeded NumPy generator; the environment's separate seeded generator handles combat rolls. The evaluation harness runs policies over explicit environment episode seeds (by default `0..9999`) and reports win rate as the primary baseline metric, along with outcomes, final HP, rounds, and action usage. Run it with `python -m evaluation.evaluate`.
 
+`RolloutAgent` evaluates every legal first action by following independent fixed
+continuation policies through terminal-reward simulators restored from the
+observation. Combat code owns reconstruction; the agent only chooses and scores
+actions through `step()`. A small `agents.policy.Policy` structural protocol is
+shared with evaluation. See [rollout planning](ROLLOUT_PLANNING.md) for factory
+isolation, budgets, diagnostics, and CLI usage.
+
 For decision-level inspection, evaluation can write one JSONL record per episode. Each record contains the outcome and every Fighter decision with the observation, legal-action mask, chosen action, reward, next observation, termination flags, and diagnostic `info` (including attack rolls). A run card records the policy or model, exact episode seeds, field and action names, aggregate metrics, and loss seeds. This is evaluation data only; it does not change the policy observation or combat transitions. Training also saves traces and a run card for its final evaluation. Use a separate seed range for final comparison because periodic model selection already uses the training run's evaluation seeds.
 `evaluation.compare` compares two run cards evaluated on the same seeds and reports losses and the first trace divergence. Later dice rolls can differ after policies choose different actions, so the report does not attribute outcome differences solely to that first decision.
+
+`ExpectimaxAgent` instead enumerates exact chance outcomes through
+`combat.transitions` and maximizes expected win probability to a fixed number of
+turn boundaries, scoring the frontier with a pluggable leaf value (exact terminal
+values, a heuristic race estimate, or a learned MLP). New stages plug in by
+registering their own transition model. See [expectimax planning](EXPECTIMAX_PLANNING.md).
 
 ## Future BG3 integration
 

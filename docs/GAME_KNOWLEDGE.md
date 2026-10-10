@@ -63,12 +63,30 @@ Exact Action and Bonus Action resource IDs; Second Wind and Action Surge ability
 - M2 Cleave is a once-per-encounter ability represented by a single resource. This models a short-rest-recharge weapon ability for the simulator; the encounter does not implement rests.
 - M2 Cleave makes a separate normal attack roll against each living enemy and deals half of resolved weapon damage on a hit, floored with minimum one. This calculation is an explicit simulator simplification, not a verified complete BG3 Cleave implementation.
 - M1A, M1B, and baseline M2 use terminal rewards. The M2 reward experiment adds bounded progress from Fighter damage during training only.
+- M3 is a 2v2 simulator stage: two preset Fighters with per-ally Cleave, Second Wind, and Action Surge pools act in fixed `ALLY 0, ALLY 1` order against two M1B-sampled enemies. Combat continues while any ally lives; enemies attack the lowest living ally slot.
+- M3 uses terminal rewards only. Its observation adds `active_actor_index` before fixed ally and enemy slots; evaluation counts a loss only when every ally is dead and reports total remaining ally HP.
+- M4 is the 2v3 counterpart with scaled enemy sampling (HP 12–24, attack +3–+7, damage bonus 2–6; same AC range and damage dice as M1B). These ranges are a first fairness guess placing enemies near Fighter potency, not verified BG3 distributions. M4 uses terminal rewards only.
 
 No new behavior in this section is labeled `VERIFIED_BG3`.
 
+## M5 and M6 simulator choices
+
+### SIMULATOR_SIMPLIFICATION (owner-authorized designs, not BG3 rules)
+
+The project owner authorized designing these mechanics for decision headroom. They are specified in [STAGES_SPEC.md](STAGES_SPEC.md) and must not be cited as BG3 behavior:
+
+- Enemy roles Brute, Archer, and Healer, one of each per M5/M6 encounter, with role-specific stat ranges; the Healer heals the most-injured enemy at or below half HP (2d6+2, limited charges) instead of attacking.
+- Enemy targeting policies `WEAKEST`, `RETALIATE` (last ally to attack or trip it), and `RANDOM`, sampled per enemy and visible to the policy.
+- Advantage/disadvantage: two d20, keep higher/lower; any advantage plus any disadvantage cancel; sources never stack.
+- Trip: a Bonus Action plus one of two per-encounter charges; an attack roll against AC knocks the target Prone. Prone grants advantage to ally melee attacks and disadvantage to the Prone creature's attacks until the end of its next turn.
+- Dodge: the Action; enemy attacks against the ally have disadvantage until its next turn.
+- M6 ranks: Brute in front, Archer and Healer behind; allies are at the line or deep; reach, the engaged-Archer disadvantage, Movement, Reaction, Advance, opportunity attacks, and Disengage follow the stage specification. There are no distances or grid.
+
+Advantage, Prone, Dodge, Disengage, opportunity attacks, and Reactions resemble BG3/5e concepts, but every number, duration, and trigger above is a simulator choice.
+
 ## Future game mechanics: TODO_VERIFY / outside the implemented stages
 
-Initiative; movement and movement distance; jumping; range; line of sight; terrain; elevation; advantage/disadvantage; saving throws; status effects; spell slots; concentration; items; potions; multiple attacks beyond the specified enemy slots; multiple party members; death saving throws; actual short rests; long rests; other class-specific resources; enemy AI abilities.
+Initiative; movement and movement distance; jumping; range; line of sight; terrain; elevation; actual BG3 advantage/disadvantage sources; saving throws; status effects beyond the M5/M6 simulator conditions; spell slots; concentration; items; potions; multiple attacks beyond the specified enemy slots; multiple party members; death saving throws; actual short rests; long rests; other class-specific resources; actual BG3 enemy AI. (M5/M6 implement simplified simulator versions of a few of these; see above.)
 
 Listing a topic here does **not** authorize its implementation. These are future research and design questions.
 

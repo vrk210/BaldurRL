@@ -11,7 +11,8 @@ from .actions import Action
 from .actors import ActorRef, CombatRoster, Side
 from .characters import Fighter, Goblin, refresh_turn_resources
 from .damage import DamageSpec
-from .mechanics import AttackResult, can_use_ability, use_action_surge, use_attack, use_second_wind
+from .legality import legal_mask_for, resolve_target
+from .mechanics import AttackResult, use_action_surge, use_attack, use_second_wind
 from .resources import Resource
 from .turns import TurnManager
 
@@ -118,21 +119,17 @@ class BaldurCombatEnv(gym.Env[np.ndarray, int]):
         return self._get_observation(), self._get_info(action=None)
 
     def action_masks(self) -> np.ndarray:
-        fighter, goblin = self._characters()
-        if self._terminated or self._truncated or not fighter.alive or not goblin.alive:
+        if self._terminated or self._truncated:
+            return np.zeros(len(M0_ACTIONS), dtype=np.bool_)
+        turns = self._turns()
+        if not self._is_policy_controlled(turns.current):
             return np.zeros(len(M0_ACTIONS), dtype=np.bool_)
         return np.array(
-            [
-                can_use_ability(fighter, Action.ATTACK) and goblin.alive,
-                can_use_ability(fighter, Action.SECOND_WIND) and fighter.hp < fighter.max_hp,
-                can_use_ability(fighter, Action.ACTION_SURGE),
-                fighter.alive and goblin.alive,
-            ],
+            legal_mask_for(turns.current, self._roster(), self.decisions),
             dtype=np.bool_,
         )
 
     def step(self, action: int) -> tuple[np.ndarray, float, bool, bool, dict[str, Any]]:
-        fighter, goblin = self._characters()
         roster = self._roster()
         turns = self._turns()
         if self._terminated or self._truncated:
@@ -143,19 +140,23 @@ class BaldurCombatEnv(gym.Env[np.ndarray, int]):
         if not self.action_masks()[index]:
             raise ValueError(f"{M0_ACTIONS[index].name} is not legal now")
 
-        semantic_action = M0_ACTIONS[index]
+        decision = self.decisions[index]
+        semantic_action = decision.action
+        acting = turns.current
+        attacker = roster.get(acting)
         before = self._reward_snapshot()
         fighter_attack: AttackResult | None = None
         goblin_attack: AttackResult | None = None
         healed: int | None = None
 
         if semantic_action is Action.ATTACK:
-            fighter_attack = use_attack(fighter, goblin, self.np_random)
+            target = roster.get(resolve_target(acting, decision.target_index, roster))
+            fighter_attack = use_attack(attacker, target, self.np_random)
             self._terminated = roster.side_defeated(Side.ALLY) or roster.side_defeated(Side.ENEMY)
         elif semantic_action is Action.SECOND_WIND:
-            healed = use_second_wind(fighter, self.np_random)
+            healed = use_second_wind(attacker, self.np_random)
         elif semantic_action is Action.ACTION_SURGE:
-            use_action_surge(fighter)
+            use_action_surge(attacker)
         else:
             _advance_to_next_turn(turns, roster)
             while not self._is_policy_controlled(turns.current):
@@ -203,12 +204,17 @@ class BaldurCombatEnv(gym.Env[np.ndarray, int]):
         return ref in self._controlled_refs
 
     def _run_automatic_turn(self, ref: ActorRef) -> AttackResult | None:
+        """Fixed policy via the shared mask path: first legal ATTACK in stage order."""
         roster = self._roster()
         attacker = roster.get(ref)
-        target = roster.get(ActorRef(Side.ALLY, 0))
-        if not attacker.alive or not target.alive:
+        if not attacker.alive:
             return None
-        return use_attack(attacker, target, self.np_random)
+        mask = legal_mask_for(ref, roster, self.decisions)
+        for decision, legal in zip(self.decisions, mask):
+            if legal and decision.action is Action.ATTACK:
+                target = roster.get(resolve_target(ref, decision.target_index, roster))
+                return use_attack(attacker, target, self.np_random)
+        return None
 
     def _get_observation(self) -> np.ndarray:
         fighter, goblin = self._characters()

@@ -7,7 +7,9 @@ import pytest
 from numpy.random import Generator
 
 from combat.actions import Action
-from combat.mechanics import use_cleave
+from combat.characters import Character
+from combat.env import MAX_ROUNDS
+from combat.mechanics import AttackResult, use_attack, use_cleave
 from combat.resources import Resource
 from combat.stages import StagedCombatEnv, make_env
 
@@ -140,3 +142,82 @@ def test_damage_reward_only_tracks_fighter_damage() -> None:
     env.np_random = fixed_rng(20, 8, 8)
     _, reward, _, _, _ = env.step(0)
     assert 0 < reward <= 0.2
+
+
+@pytest.mark.parametrize("stage", ["m1a", "m1b", "m2"])
+@pytest.mark.parametrize("outcome", ["victory", "defeat", "ongoing", "truncation"])
+def test_single_ally_terminal_rewards(stage: str, outcome: str) -> None:
+    env = StagedCombatEnv(stage)
+    env.reset(seed=2)
+    assert env.fighter is not None
+    if outcome == "victory":
+        for enemy in env.enemies[1:]:
+            enemy.hp = 0
+        env.enemies[0].hp = 1
+        env.np_random = fixed_rng(20, 8, 8)
+        action = 0
+    else:
+        action = env.action_names.index("END_TURN")
+        if outcome == "defeat":
+            env.fighter.hp = 1
+            env.np_random = fixed_rng(20, 8, 8)
+        else:
+            env.np_random = fixed_rng(*([1] * len(env.enemies)))
+            if outcome == "truncation":
+                for _ in range(MAX_ROUNDS - 1):
+                    env.np_random = fixed_rng(*([1] * len(env.enemies)))
+                    env.step(action)
+                env.np_random = fixed_rng(*([1] * len(env.enemies)))
+
+    _, reward, terminated, truncated, _ = env.step(action)
+    assert reward == {"victory": 1.0, "defeat": -1.0}.get(outcome, 0.0)
+    assert terminated is (outcome in ("victory", "defeat"))
+    assert truncated is (outcome == "truncation")
+
+
+@pytest.mark.parametrize("stage", ["m1a", "m1b", "m2", "m3", "m4"])
+def test_injected_simultaneous_defeat_is_a_loss(stage: str, monkeypatch) -> None:
+    env = StagedCombatEnv(stage)
+    env.reset(seed=2)
+    for enemy in env.enemies[1:]:
+        enemy.hp = 0
+    env.enemies[0].hp = 1
+    env.np_random = fixed_rng(20, 8, 8)
+
+    # Inject mutual defeat without adding a new mechanic to the simulator.
+    def mutual_defeat(attacker: Character, defender: Character, rng: Generator) -> AttackResult:
+        result = use_attack(attacker, defender, rng)
+        for ally in env.allies:
+            ally.hp = 0
+        return result
+
+    monkeypatch.setattr("combat.stages.use_attack", mutual_defeat)
+    _, reward, terminated, truncated, _ = env.step(0)
+    assert all(ally.hp == 0 for ally in env.allies)
+    assert all(enemy.hp == 0 for enemy in env.enemies)
+    assert (reward, terminated, truncated) == (-1.0, True, False)
+    assert not env.action_masks().any()
+
+
+def test_m2_damage_shaping_is_added_to_terminal_victory() -> None:
+    env = StagedCombatEnv("m2", reward_mode="damage")
+    env.reset(seed=2)
+    initial_hp = sum(enemy.max_hp for enemy in env.enemies)
+    for enemy in env.enemies:
+        enemy.hp = 1
+    env.np_random = fixed_rng(20, 8, 8, 20, 8, 8)
+
+    _, reward, terminated, truncated, _ = env.step(2)  # Cleave kills both.
+    assert (terminated, truncated) == (True, False)
+    assert reward == pytest.approx(1.0 + 0.2 * 2 / initial_hp)
+
+
+def test_m2_damage_shaping_does_not_change_terminal_defeat() -> None:
+    env = StagedCombatEnv("m2", reward_mode="damage")
+    env.reset(seed=2)
+    assert env.fighter is not None
+    env.fighter.hp = 1
+    env.np_random = fixed_rng(20, 8, 8)
+
+    _, reward, terminated, truncated, _ = env.step(5)
+    assert (reward, terminated, truncated) == (-1.0, True, False)
