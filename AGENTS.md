@@ -51,12 +51,14 @@ The agent chooses actions. The environment coordinates episodes, turns, legality
 | `combat/mechanics.py` | d20 and damage rolls, critical hits, attack resolution, Second Wind, Action Surge, Cleave | RL rewards |
 | `combat/rolls.py` | Advantage/disadvantage roll modes and moded attack resolution (M5/M6) | RL rewards, environment loops |
 | `combat/tactics.py` | M5/M6 rules: roles' tuning data, catalog costs, healing, Trip/Prone, Dodge, Healer, enemy targeting, ranks and reach, Advance/opportunity attacks, Disengage, turn-start/turn-end conditions | Environment loops, rewards, policies |
+| `combat/distributions.py` | Exact outcome distributions enumerated through the mechanics rule functions | Sampling, state mutation |
 | `combat/env.py` | Gymnasium M0 environment: one Fighter decision per step, fixed Goblin turn after `END_TURN`, observations, action masks, rewards, termination, truncation | Combat formulas; call `mechanics.py` |
 | `combat/stages.py` | M1A/M1B/M2/M3/M4 environments, shallow target decisions, stage factory (M0–M6) and metadata | Combat formulas; call `mechanics.py` |
 | `combat/tactical_env.py` | M5/M6 Gymnasium environment: sampling, turns, masks, observations, rewards, termination, per-stage `STAGE_RULES` | Combat formulas; call `tactics.py`/`mechanics.py` |
 | `combat/simulation.py` | Restore independent simulators (M0–M6) from live observations | Live RNG access, policies, combat formulas |
-| `agents/` | Random, stage heuristic (including named M5/M6 variants), rollout, and trained policies; action selection only | Direct environment-state mutation, combat rules |
-| `evaluation/` | Reproducible stage evaluation: win rate, remaining HP, rounds, action and target usage, kill order by role, paired comparisons, M5/M6 behavior summaries | Combat rules |
+| `combat/transitions.py` | Exact planner transitions: `TransitionModel` protocol, stage registry, M0–M4 roster model | Policies; combat formulas (use `distributions.py`) |
+| `agents/` | Random, stage heuristic (including named M5/M6 variants), rollout, trained, and expectimax policies; leaf value functions; action selection only | Direct environment-state mutation; combat formulas |
+| `evaluation/` | Reproducible stage evaluation: win rate, remaining HP, rounds, action and target usage, kill order by role, paired comparisons, M5/M6 behavior summaries, planner timing | Combat rules |
 
 ## Coding rules
 
