@@ -27,6 +27,22 @@ action at every decision. It chooses the highest estimated win probability and
 uses seeds independent of actual combat rolls. See [rollout planning](docs/ROLLOUT_PLANNING.md)
 for the simulation API, continuation-policy factories, diagnostics, and cost.
 
+## Expectimax planning
+
+`ExpectimaxAgent` searches exact chance outcomes from `combat/transitions.py`
+(no sampling noise) and scores the search frontier with a leaf value: a
+heuristic race estimate or a small learned MLP trained with `value_training.py`.
+Evaluate it in parallel with per-decision timing:
+
+```bash
+.venv/bin/python value_training.py collect --policy threat --seed-start 20000 --episodes 3000 --out runs/value/data/threat.npz
+.venv/bin/python value_training.py fit --train runs/value/data/*.npz --val runs/value/val/*.npz --out runs/value/v.npz
+.venv/bin/python -m evaluation.planning_eval --name x_d1 --policy expectimax --leaf mlp:runs/value/v.npz --depth 1 --seed-start 42000 --episodes 2000 --workers 4 --out runs/m4_eval/x_d1.json
+```
+
+See [expectimax planning](docs/EXPECTIMAX_PLANNING.md) and the
+[M4 report](reports/m4_expectimax.md).
+
 ## Inspecting decisions
 
 Evaluate a saved policy on a fresh seed range and write a run card plus one JSONL trace per episode:

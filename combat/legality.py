@@ -75,3 +75,17 @@ def legal_mask_for(
             raise ValueError(f"Unknown action: {action!r}")
         mask.append(legal)
     return mask
+
+
+def automatic_attack_decision(
+    actor: ActorRef, roster: CombatRoster, decisions: Sequence[DecisionSpec]
+) -> DecisionSpec | None:
+    """Fixed automatic-turn policy: the first legal ATTACK decision in stage order.
+
+    The same rule as the environments' `_run_automatic_turn`; exact transition
+    enumeration uses it (tests check the two agree through `env.step`).
+    """
+    for decision, legal in zip(decisions, legal_mask_for(actor, roster, decisions)):
+        if legal and decision.action is Action.ATTACK:
+            return decision
+    return None

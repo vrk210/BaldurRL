@@ -49,9 +49,11 @@ The agent chooses actions. The environment coordinates episodes, turns, legality
 | `combat/turns.py` | Deterministic `TurnManager`: order, current actor, round, wrap detection, dead-actor skipping | Dice, HP mutation, rewards, policies, attacks |
 | `combat/legality.py` | `DecisionSpec` decisions, side-aware targets, turn-agnostic per-actor `legal_mask_for` | Turn order, dice, HP mutation, rewards, policies |
 | `combat/mechanics.py` | d20 and damage rolls, critical hits, attack resolution, Second Wind, Action Surge, Cleave | RL rewards |
+| `combat/distributions.py` | Exact outcome distributions enumerated through the mechanics rule functions | Sampling, state mutation |
 | `combat/env.py` | Gymnasium M0 environment: one Fighter decision per step, fixed Goblin turn after `END_TURN`, observations, action masks, rewards, termination, truncation | Combat formulas; call `mechanics.py` |
 | `combat/stages.py` | M1A/M1B/M2/M3/M4 environments, shallow target decisions, stage factory and metadata | Combat formulas; call `mechanics.py` |
-| `agents/` | Random, stage heuristic, and trained policies; action selection only | Direct environment-state mutation |
+| `combat/transitions.py` | Exact planner transitions: `TransitionModel` protocol, stage registry, M0–M4 roster model | Policies; combat formulas (use `distributions.py`) |
+| `agents/` | Random, stage heuristic, trained, rollout, and expectimax policies; leaf value functions; action selection only | Direct environment-state mutation; combat formulas |
 | `evaluation/` | Reproducible stage evaluation: win rate, remaining HP, rounds, action and target usage | Combat rules |
 
 ## Coding rules
