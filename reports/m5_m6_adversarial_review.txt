@@ -1,0 +1,281 @@
+Adversarial review of reports/m5_m6_decision_stages.md
+Reviewed 2026-10-10 in the decision-stages worktree.
+
+Follow-up: the sampling defect was corrected and both stages rescored later on
+2026-10-10 at the user's request. The initial review below records the original
+analysis; the completed follow-up at the end records the correction and results.
+
+Verdict: validate the main numerical results and the conclusion that these fixed
+PPO checkpoints leave a measurable gap to the hand heuristics. Revise the causal
+PPO diagnosis, qualify the meaning of decision headroom, and describe the original
+evaluation range as reused after design feedback. I found no combat or simulator
+reconstruction defect that explains the reported results.
+
+Reproduction and validation
+
+I reran all 16 policies in the two final v2 result tables: random, all four named
+heuristics, and the three saved final PPO models, each on seeds 3000-7999.
+All 80,000 encounter outcomes matched the original run cards seed by seed.
+Every field of every summary also matched exactly, including rounds, remaining
+HP, action counts, resource-use rates, first kills, wins, and truncations.
+
+The original main win rates are therefore independently repeatable executions:
+
+                        M5                         M6
+naive                   61.44%                     40.92%
+best heuristic          78.52% tuned                80.60% adaptive
+PPO s0/s1/s2            74.90/74.68/73.56%          75.74/75.36/74.52%
+PPO pooled              74.38%                     75.2067%
+best minus naive        17.08 points               39.68 points
+best minus PPO pooled    4.14 points                5.3933 points
+
+The paired SEs and z statistics reproduced. In particular, the pooled calculation
+averages the three model outcomes within each of 5,000 encounter seeds before
+computing the paired SE; it does not incorrectly treat the three repetitions of
+an encounter as independent. Its uncertainty is conditional on these three
+fixed trained models, rather than a full estimate of variation from retraining.
+
+All 312 repository tests passed; one test was skipped. I also generated 200
+random-policy encounters on seeds 51000-51099, sampling states every fourth
+decision, then checked every legal candidate action against an independently
+copied live environment using the same newly supplied RNG seed. M5 matched on
+3,681 transitions from 721 states; M6 matched on 3,604 transitions from 730 states.
+Observations, rewards, termination/truncation, diagnostic info, and masks matched.
+This tests restoration of the stochastic transition rules at ongoing decisions;
+it does not claim to reconstruct the unobserved original live RNG stream.
+
+An audit of the 80,000 saved main-table traces found no run-card outcome mismatch
+and no recorded illegal action. The saved models' hyperparameters match the
+reported defaults: 1,003,520 steps, four environments, 1,024 rollout steps,
+batch size 256, ten epochs, gamma .99, entropy coefficient .01, learning rate
+.0003, and separate [64,64] policy/value networks. Training metadata reports
+411-453 seconds, consistent with the report's approximate seven minutes.
+
+I checked archived paired and rollout-pilot calculations, and inspected the
+checkpoint summaries and diagnostic source. I did not retrain PPO, rerun the
+900-encounter rollout pilot, repeat its 1,024-rollout rescoring, or fully reproduce
+the historical v1 policies and tuning sweeps. Those are narrower verification
+limits than the exact, freshly executed final-v2 comparisons above.
+
+Fresh-seed check
+
+Without changing rules, thresholds, or checkpoints, I evaluated seeds
+40000-44999, which were outside the report's documented training, selection,
+development, and evaluation ranges. Each entry below has 5,000 encounters:
+
+M5: naive 60.42%; trip_focus 75.38%; healer_first 72.58%; tuned 77.84%;
+    PPO s0 74.76%.
+M6: naive 41.52%; hold 79.88%; dive_all 78.10%; adaptive 81.02%;
+    PPO s0 76.46%.
+
+The broad ranking survives. Tuned beats naive by 17.42 points and PPO s0 by
+3.08 points; adaptive beats naive by 39.50 points and PPO s0 by 4.56 points.
+Fresh-seed adaptive minus hold is only 1.14 points, paired SE .598 points,
+z=1.91 (approximate 95% interval -0.03 to +2.31). The small adaptive advantage
+is a credible modest effect, but it is not decisively significant in this new
+range. The original main gap remains strongly supported.
+
+Finding 1: PPO's local scores do not establish its main causal mistakes.
+
+Relevant report: lines 157-175; source: runs/v2/analysis/ppo_gap.py:17-32,34-51.
+Priority: revise the explanation before using it to guide training changes.
+
+The frequency counts span all three models, but the states scored do not form a
+representative sample. The script keeps the first 12 states satisfying occurrence
+count modulo 7 == 1, then stops sampling that kind. All six selected M6 kinds
+come from PPO s0, within encounter seeds 3000-3191. Five M5 kinds are sampled
+only from s0; the Cleave-to-Surge kind is sampled only from s1. For example,
+M6 Cleave-to-Attack's 12 states occupy only 11 distinct fights in 3001-3032.
+There is no reservoir sampling, stratification across models, or reported
+uncertainty for the mean local advantage.
+
+The values also use heuristic continuation, not PPO continuation. They answer
+which first action is better if the heuristic takes over afterward. They do not
+measure the effect of correcting that action while PPO continues playing. The
+report explicitly warns that local values are not additive, but subsequently
+multiplies their sample means by population frequencies and uses agreement with
+the overall gap as an explanation. That explanatory step is not validated.
+
+I tested the proposed three major M5 disagreement families over whole fights.
+If tuned chose Trip and PPO chose Attack or Cleave, the Trip repair substituted
+tuned's Trip. If tuned chose Cleave and PPO chose Attack, the Cleave repair
+substituted Cleave. Both repairs combined these rules. Every other decision
+remained deterministic masked PPO. Each configuration used all 5,000 original
+encounter seeds for each of the three saved models:
+
+                     s0        s1        s2        pooled
+original PPO         74.90%    74.68%    73.56%    74.38%
+Trip repair          75.12%    75.98%    74.86%    75.32%
+Cleave repair        74.90%    73.76%    73.36%    74.0067%
+both repairs         75.02%    76.84%    74.42%    75.4267%
+
+Both repairs recover 1.0467 points of the 4.14-point pooled gap, leaving 3.0933
+points to tuned. Seed-specific gains are .12 +/- .45, 2.16 +/- .74, and
+.86 +/- .75 points (paired SE, not confidence bounds). Forcing Cleave alone
+does not produce a consistent gain. The results support some Trip-timing value,
+interactions, and model-specific effects; they do not substantiate a general
+4-5-point causal explanation. This does not prove the proposed choices are
+intrinsically wrong: PPO may fail to capitalize on a corrected action afterward.
+
+For M6 I forced PPO s0 to follow the adaptive macro plan: immediately advance
+when legal against an opening tanky Brute, and mask Advance against a soft Brute.
+Other choices remained PPO. It won 76.18%, versus 75.74% originally, a .44-point
+gain with paired SE .68; it remained 4.42 points behind adaptive (SE .64).
+This supports an execution gap for this model under this intervention, but is
+not a comprehensive decomposition of all three models' macro/sequence errors.
+
+Recommended revision: present local rescoring as hypotheses under heuristic
+continuation, use samples across models/encounters with uncertainty, and prefer
+whole-fight interventions or values under PPO continuation for attribution.
+
+Finding 2: the M6 headline spread mainly measures two basic baseline corrections.
+
+Relevant report: lines 3,79,196-202; source: agents/tactical_heuristics.py:253-256.
+Priority: qualify the decision-headroom claim, while retaining the measured gap.
+
+Naive counts all living enemies before deciding to Cleave. At the line, while
+the Brute lives, Cleave can reach only that Brute. Naive therefore spends its
+two once-per-encounter Cleaves on one target for halved damage. This is a literal
+transfer of the M4 policy into a stage with different reach, and is legal, but
+it makes the baseline substantially weaker than a minimally adapted policy.
+
+I changed only the target-count flag and/or the existing Trip flag, retaining
+Second Wind threshold 10, Cleave threshold 2, lowest-HP targeting, and no Advance:
+
+naive                                      40.92%
+count reachable Cleave targets only         54.10%
+use Trip only                              65.04%
+use Trip and count reachable targets        77.70%
+hold (additional threshold tuning)          78.88%
+adaptive                                   80.60%
+
+The two basic changes recover 36.78 of the 39.68 headline points, about 92.7%.
+That leaves 2.90 points from the minimally adapted no-movement policy to adaptive.
+The effects interact; the individual gains should not be added as causal shares.
+
+The report already admits a new-button contribution on M5, where Trip alone
+recovers 15.18 of 17.08 points. Extend that qualification to M6's reach mismatch.
+The result shows much larger performance spread among the chosen policies and
+a gap to this PPO setup. It does not measure an optimal value, the intrinsic
+depth of decisions, or how much additional gain exists above the best heuristic.
+
+Finding 3: seeds 3000-7999 were reused after test-informed design feedback.
+
+Relevant report: lines 26-45,59,206. Priority: correct the experimental framing.
+
+The report evaluates v1 on that range, diagnoses M5 as too easy from its 75.92%
+naive win rate, then retunes the design and evaluates v2 on the same range.
+Candidate comparisons and thresholds may indeed have used disjoint development
+seeds, but the overall design process has already received evaluation feedback.
+The range is therefore not an untouched test set for the whole design process.
+This is not evidence of deliberate cherry-picking or a numerical error. The
+fresh-seed results above substantially mitigate the concern. Describe the reused
+benchmark honestly and use a new frozen range for future final claims.
+
+Finding 4: the plateau and rollout root cause need weaker wording.
+
+Relevant report: lines 131,179-190,203,210. Priority: distinguish observation
+from extrapolation.
+
+Four checkpoints from one training seed show no sustained gain between 500k
+and 1M steps. They do not establish that longer training will not help, or that
+PPO generally cannot close the gap. The demonstrated statement is about these
+three default-hyperparameter 1M checkpoints and this limited learning curve.
+Gamma .99 discounts by individual decision steps, whereas evaluation measures
+undiscounted wins; an additional useful experiment would separate optimization
+of that objective from combat execution. I did not test that hypothesis.
+
+The archived rollout pilot really is worse than its continuation heuristic:
+58.00% vs 78.83% on M5, and 65.33% vs 81.33% on M6, with the reported paired SEs.
+Exact restoration plus noisy action estimates makes finite-sample selection
+error a plausible explanation. However, early-state rescoring and one planner
+seed at one budget do not quantify that it is mostly the cause. A budget sweep
+with multiple planner seeds and matched encounters is needed for that stronger
+claim. I did not run such a sweep, so this root-cause statement remains provisional.
+
+Minor literal corrections
+
+The report says every competent M5 policy spends all four Trip charges (line
+153). Actual four-Trip fight rates are 90.44% for tuned and 89.84/89.36/92.24%
+for PPO s0/s1/s2. Say approximately 3.9 Trips per fight or most fights use all four.
+
+Same-family target-swap kinds in ppo_gap.py are split by the heuristic's target
+slot. The table's generic 'Trip enemy X -> trip a different enemy' and 'attack
+target swaps' rows are each one selected slot's kind, not an aggregate across
+all slots. Label them specifically or aggregate all slots before reporting.
+
+Artifacts and rerun instructions
+
+All new machine-readable evidence is in runs/review/ (ignored by Git):
+review_summary.json; provenance.json; trace_audit.json; paired_artifact_check.txt;
+pilot_artifact_check.txt; m5/ and m6/ per-policy results, fresh.json, paired.json,
+intervention results, and m6/baseline_ablation.json. Provenance includes package
+versions, source hashes, model hashes, and checkpoint hyperparameters.
+
+From /Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages:
+
+PY=/Users/vrk93/PycharmProjects/BaldurRL/.venv/bin/python
+PYTHONPATH=. "$PY" reports/review_m5_m6.py m5
+PYTHONPATH=. "$PY" reports/review_m5_m6.py m6
+PYTHONPATH=. "$PY" reports/audit_m5_m6.py
+PYTHONPATH=. "$PY" reports/review_ppo_interventions.py 1 2
+PYTHONPATH=. "$PY" reports/review_m6_ablation.py
+
+Total newly executed combat evaluations: 195,000, plus the random-state
+reconstruction stress check. I left the original report, simulator, policies,
+training code, and pre-existing worktree changes untouched.
+
+Completed sampling follow-up (2026-10-10)
+
+The diagnostic now uses uniform reservoir sampling across the entire trace set,
+separately within each model/disagreement stratum. It selects 12 states per
+model per type, then weights means by the actual occurrence counts for those
+models. Counts and taxonomy remain unchanged. There are 204 M5 and 216 M6 states;
+M5 Cleave-to-Surge has no s0 occurrences, so that type has only 24 states.
+All other types have 12 states from each model. The sample seed is 20261010.
+
+Every selected state was freshly rescored using 1,024 common-seed rollouts per
+candidate action with heuristic continuation: 860,160 simulated continuation
+episodes in total. Approximate pointwise 95% normal intervals include state
+sampling and paired Monte Carlo uncertainty, conditional on the fixed traces.
+These are local action values, not a whole-fight attribution or an estimate of
+variation from retraining PPO.
+
+Selected old versus corrected local advantages (percentage points):
+
+M5 Trip -> Attack:      +1.90 -> +1.53, interval [+0.82,+2.23]
+M5 Cleave -> Attack:    +2.73 -> +0.12, interval [-1.49,+1.74]
+M5 Trip -> Cleave:      +2.29 -> +2.70, interval [+1.82,+3.58]
+M5 Trip slot 0 swap:    +1.00 -> -0.51, interval [-1.54,+0.52]
+M6 Trip -> Attack:      +0.42 -> +0.94, interval [+0.37,+1.51]
+M6 Advance -> Attack:   +0.66 -> -0.73, interval [-3.00,+1.53]
+M6 Advance -> Trip:     +0.83 -> +0.15, interval [-0.44,+0.74]
+
+The corrected M5 Cleave-to-Attack sample has model-specific means
++3.40/-0.09/+0.32 points for s0/s1/s2. The original sample covered only s0,
+which accounts for 2.6% of that type's occurrences. Thus a claim generalized
+from that sample to all PPO models was particularly vulnerable to model bias.
+
+The corrected diagnostic supports a local Trip-timing benefit on both stages,
+and Trip before Cleave on M5. It does not establish a consistent average benefit
+for the other scored disagreement types. The prior whole-fight intervention
+results remain relevant and unchanged; frequency times local values should not
+be presented as a causal allocation of PPO's gap.
+
+The main report's diagnostic table, method, opening summary, and attribution
+paragraphs were updated. The old report, diagnostic script, and outputs were
+archived in runs/review/stratified_diagnostics/. Corrected manifests, per-state
+scores, and summaries are in runs/v2/analysis/stratified/{m5,m6}/. Sampling audits,
+old-versus-corrected comparisons, and provenance are in
+runs/review/stratified_diagnostics/. No combat or policy rules were changed.
+
+The maintained entry point is evaluation/ppo_diagnostics.py. The old
+runs/v2/analysis/ppo_gap.py delegates to it. Reproduce from the repository root:
+
+PY=/Users/vrk93/PycharmProjects/BaldurRL/.venv/bin/python
+"$PY" -m evaluation.ppo_diagnostics m5 tuned 6 --samples-per-model 12 --budget 1024 --workers 2
+"$PY" -m evaluation.ppo_diagnostics m6 adaptive 6 --samples-per-model 12 --budget 1024 --workers 2
+
+Validation: all 316 repository tests passed, with one skipped, after adding
+four tests that guard against early-only sampling, incorrect equal-quota
+weighting, loss of Monte Carlo uncertainty, and omitted model strata.

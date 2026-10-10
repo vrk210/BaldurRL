@@ -2,6 +2,8 @@
 
 import numpy as np
 
+from .policy import Policy
+
 _ATTACK = 0
 _SECOND_WIND = 1
 _ACTION_SURGE = 2
@@ -153,8 +155,18 @@ class M4HeuristicAgent:
         return _first_legal_index(action_mask)
 
 
-def make_heuristic_agent(stage: str) -> HeuristicAgent | M1AHeuristicAgent | M1BHeuristicAgent | M2HeuristicAgent | M3HeuristicAgent | M4HeuristicAgent:
-    """Select the fixed, untuned priority policy for a stage."""
+def make_heuristic_agent(stage: str, variant: str | None = None) -> Policy:
+    """Select the fixed, untuned priority policy for a stage.
+
+    M5/M6 default to the naive M4-style rules; ``variant`` selects one of the
+    named smarter M5/M6 heuristics in ``agents.tactical_heuristics.VARIANTS``.
+    """
+    if stage in ("m5", "m6"):
+        from .tactical_heuristics import make_tactical_heuristic
+
+        return make_tactical_heuristic(stage, variant or "naive")
+    if variant not in (None, "naive"):
+        raise ValueError(f"Heuristic variants are available only for m5 and m6, not {stage}")
     agents = {
         "m0": HeuristicAgent,
         "m1a": M1AHeuristicAgent,

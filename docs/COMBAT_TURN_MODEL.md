@@ -63,3 +63,13 @@ See [STAGES_SPEC.md](STAGES_SPEC.md) for the normative M3/M4 contracts. M4
 scales enemy sampling toward Fighter parity as a first fairness guess.
 Larger encounters, real BG3 initiative, interleaved/grouped turns, and
 movement remain future mechanics and are not guessed here.
+
+## M5/M6 turn hooks
+
+`TacticalCombatEnv` uses the same `TurnManager` order and round/truncation
+logic, with two lifecycle hooks from `combat/tactics.py`: `begin_tactical_turn`
+(refresh per-turn resources, end an ally's Dodging and Disengaged) and
+`end_tactical_turn` (an enemy stands up from Prone; an ally's Disengaged ends).
+Enemy turns are automatic (`run_enemy_turn`: Healer heal or targeted attack).
+In M6 an opportunity attack can kill the active ally during its own turn; the
+turn then passes exactly as if it had chosen `END_TURN`.

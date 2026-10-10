@@ -21,6 +21,7 @@ from .mechanics import (
     use_second_wind,
 )
 from .resources import Resource
+from .tactical_env import TacticalCombatEnv
 from .turns import TurnManager
 
 
@@ -341,6 +342,8 @@ STAGES: dict[str, Callable[..., gym.Env]] = {
     "m2": lambda reward_mode="terminal": StagedCombatEnv("m2", reward_mode),
     "m3": lambda reward_mode="terminal": StagedCombatEnv("m3", reward_mode),
     "m4": lambda reward_mode="terminal": StagedCombatEnv("m4", reward_mode),
+    "m5": lambda reward_mode="terminal": TacticalCombatEnv("m5", reward_mode),
+    "m6": lambda reward_mode="terminal": TacticalCombatEnv("m6", reward_mode),
 }
 
 

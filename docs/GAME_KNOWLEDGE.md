@@ -69,9 +69,24 @@ Exact Action and Bonus Action resource IDs; Second Wind and Action Surge ability
 
 No new behavior in this section is labeled `VERIFIED_BG3`.
 
+## M5 and M6 simulator choices
+
+### SIMULATOR_SIMPLIFICATION (owner-authorized designs, not BG3 rules)
+
+The project owner authorized designing these mechanics for decision headroom. They are specified in [STAGES_SPEC.md](STAGES_SPEC.md) and must not be cited as BG3 behavior:
+
+- Enemy roles Brute, Archer, and Healer, one of each per M5/M6 encounter, with role-specific stat ranges; the Healer heals the most-injured enemy at or below half HP (2d6+2, limited charges) instead of attacking.
+- Enemy targeting policies `WEAKEST`, `RETALIATE` (last ally to attack or trip it), and `RANDOM`, sampled per enemy and visible to the policy.
+- Advantage/disadvantage: two d20, keep higher/lower; any advantage plus any disadvantage cancel; sources never stack.
+- Trip: a Bonus Action plus one of two per-encounter charges; an attack roll against AC knocks the target Prone. Prone grants advantage to ally melee attacks and disadvantage to the Prone creature's attacks until the end of its next turn.
+- Dodge: the Action; enemy attacks against the ally have disadvantage until its next turn.
+- M6 ranks: Brute in front, Archer and Healer behind; allies are at the line or deep; reach, the engaged-Archer disadvantage, Movement, Reaction, Advance, opportunity attacks, and Disengage follow the stage specification. There are no distances or grid.
+
+Advantage, Prone, Dodge, Disengage, opportunity attacks, and Reactions resemble BG3/5e concepts, but every number, duration, and trigger above is a simulator choice.
+
 ## Future game mechanics: TODO_VERIFY / outside the implemented stages
 
-Initiative; movement and movement distance; jumping; range; line of sight; terrain; elevation; advantage/disadvantage; saving throws; status effects; spell slots; concentration; items; potions; multiple attacks beyond the specified enemy slots; multiple party members; death saving throws; actual short rests; long rests; other class-specific resources; enemy AI abilities.
+Initiative; movement and movement distance; jumping; range; line of sight; terrain; elevation; actual BG3 advantage/disadvantage sources; saving throws; status effects beyond the M5/M6 simulator conditions; spell slots; concentration; items; potions; multiple attacks beyond the specified enemy slots; multiple party members; death saving throws; actual short rests; long rests; other class-specific resources; actual BG3 enemy AI. (M5/M6 implement simplified simulator versions of a few of these; see above.)
 
 Listing a topic here does **not** authorize its implementation. These are future research and design questions.
 

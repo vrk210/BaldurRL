@@ -4,13 +4,21 @@ BaldurRL is a project for training an agent to play Baldur's Gate 3. In progress
 
 ## Simulator stages
 
-M0 is the fixed 1v1 regression baseline. M1A varies one opponent's statistics. M1B has two opponents and target choice. M2 adds a one-use simplified Cleave. M3 controls two allies against two enemies. M4 is 2v3 with scaled enemies. See [M0 specification](docs/M0_SPEC.md) and [stage specifications](docs/STAGES_SPEC.md).
+M0 is the fixed 1v1 regression baseline. M1A varies one opponent's statistics. M1B has two opponents and target choice. M2 adds a one-use simplified Cleave. M3 controls two allies against two enemies. M4 is 2v3 with scaled enemies. M5 is 2v3 against a Brute, an Archer, and a Healer with varied enemy targeting, advantage/disadvantage, Trip/Prone, and Dodge. M6 adds front/back ranks, Advance/Disengage, and opportunity attacks to M5. M5/M6 rules are simulator choices designed for decision headroom, not verified BG3 rules. See [M0 specification](docs/M0_SPEC.md), [stage specifications](docs/STAGES_SPEC.md), and the [M5/M6 report](reports/m5_m6_decision_stages.md).
 
 Train or evaluate by stage:
 
 ```bash
 .venv/bin/python train.py --stage m1b --seed 0 --timesteps 200000 --save-dir runs/m1b_ppo_s0
 .venv/bin/python -m evaluation.evaluate --stage m1b --agent heuristic --seed-start 3000 --episodes 1000 --trace-dir runs/m1b_heldout/heuristic
+```
+
+M5 and M6 have a naive M4-style heuristic (the default) and named smarter variants:
+
+```bash
+.venv/bin/python -m evaluation.evaluate --stage m6 --agent heuristic --heuristic-variant adaptive --seed-start 3000 --episodes 5000
+.venv/bin/python -m evaluation.paired runs/a/run_card.json runs/b/run_card.json
+.venv/bin/python -m evaluation.tactical_behavior --stage m6 runs/a/episodes.jsonl
 ```
 
 The M1A, M1B, and M2 baseline training reward is terminal win/loss. M2 also supports an isolated `--reward damage` training experiment after the terminal baseline is established. Evaluation reports combat outcomes on explicit environment seeds.

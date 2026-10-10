@@ -1,7 +1,7 @@
 # Rollout planning
 
 `RolloutAgent` chooses a legal action by evaluating complete simulated episodes
-from the current observation. It supports M0 through M4 and uses the existing
+from the current observation. It supports M0 through M6 and uses the existing
 terminal-reward environment and combat mechanics. Policy weights stay fixed;
 the planner performs no training.
 
@@ -55,6 +55,12 @@ all observed HP, enemy statistics, ability resources, round, and active ally.
 Restoring a partially spent turn does not refresh it. Stage presets and known
 abilities come from existing constructors. Enemy Action resources need not be
 observed because the environment refreshes them before the next automatic turn.
+
+M5/M6 restoration also rebuilds roles, targeting policies, Prone, Dodging,
+last attackers, heal and Trip charges, and (M6) positions, Disengaged, Movement,
+and enemy Reactions; malformed one-hots, out-of-profile statistics, and
+inconsistent ranks raise errors. The CLI's `--heuristic-variant` selects an M5/M6
+heuristic as the continuation policy.
 
 This API accepts **ongoing allied decision observations only**. Terminal or
 truncated status cannot always be recovered from the vector: in particular,
