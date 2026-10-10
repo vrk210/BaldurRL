@@ -61,6 +61,14 @@ def _new_goblin() -> Goblin:
     return Goblin("Goblin", _GOBLIN_MAX_HP, _GOBLIN_MAX_HP, 15, 4, DamageSpec(1, 6, 2))
 
 
+def _advance_to_next_turn(turns: TurnManager, roster: CombatRoster) -> bool:
+    """Advance past dead actors and begin the next living actor's turn."""
+    wrapped = turns.advance(roster.is_alive)
+    if roster.is_alive(turns.current):
+        refresh_turn_resources(roster.get(turns.current))
+    return wrapped
+
+
 class BaldurCombatEnv(gym.Env[np.ndarray, int]):
     """One step applies exactly one Fighter decision."""
 
@@ -106,7 +114,7 @@ class BaldurCombatEnv(gym.Env[np.ndarray, int]):
         self.turns = TurnManager(
             (ActorRef(Side.ALLY, 0), ActorRef(Side.ENEMY, 0)), round_number=1
         )
-        self._begin_fighter_turn()
+        refresh_turn_resources(self.roster.get(self.turns.current))
         return self._get_observation(), self._get_info(action=None)
 
     def action_masks(self) -> np.ndarray:
@@ -149,7 +157,7 @@ class BaldurCombatEnv(gym.Env[np.ndarray, int]):
         elif semantic_action is Action.ACTION_SURGE:
             use_action_surge(fighter)
         else:
-            turns.advance(roster.is_alive)
+            _advance_to_next_turn(turns, roster)
             while not self._is_policy_controlled(turns.current):
                 result = self._run_automatic_turn(turns.current)
                 if result is not None:
@@ -161,10 +169,9 @@ class BaldurCombatEnv(gym.Env[np.ndarray, int]):
                 if would_wrap and self.round_number == MAX_ROUNDS:
                     self._truncated = True
                     break
-                wrapped = turns.advance(roster.is_alive)
+                wrapped = _advance_to_next_turn(turns, roster)
                 if wrapped:
                     self.round_number = turns.round_number
-                    self._begin_fighter_turn()
 
         after = self._reward_snapshot()
         reward = float(self.reward_fn(before, semantic_action, after, self._terminated, self._truncated))
@@ -201,12 +208,7 @@ class BaldurCombatEnv(gym.Env[np.ndarray, int]):
         target = roster.get(ActorRef(Side.ALLY, 0))
         if not attacker.alive or not target.alive:
             return None
-        refresh_turn_resources(attacker)
         return use_attack(attacker, target, self.np_random)
-
-    def _begin_fighter_turn(self) -> None:
-        fighter, _ = self._characters()
-        refresh_turn_resources(fighter)
 
     def _get_observation(self) -> np.ndarray:
         fighter, goblin = self._characters()

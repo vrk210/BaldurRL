@@ -11,7 +11,7 @@ from .actions import Action
 from .actors import ActorRef, CombatRoster, Side
 from .characters import Fighter, Goblin, refresh_turn_resources
 from .damage import DamageSpec
-from .env import BaldurCombatEnv, MAX_ROUNDS, _new_fighter
+from .env import BaldurCombatEnv, MAX_ROUNDS, _advance_to_next_turn, _new_fighter
 from .mechanics import (
     AttackResult,
     can_use_ability,
@@ -140,13 +140,12 @@ class StagedCombatEnv(gym.Env[np.ndarray, int]):
         return ref in self._controlled_refs
 
     def _run_automatic_turn(self, ref: ActorRef) -> AttackResult | None:
-        """Refresh and attack ALLY 0; isolated for future target selection."""
+        """Attack ALLY 0 after turn-start refresh; isolated for future targeting."""
         roster = self._roster()
         attacker = roster.get(ref)
         target = roster.get(ActorRef(Side.ALLY, 0))
         if not attacker.alive or not target.alive:
             return None
-        refresh_turn_resources(attacker)
         return use_attack(attacker, target, self.np_random)
 
     def action_masks(self) -> np.ndarray:
@@ -198,7 +197,7 @@ class StagedCombatEnv(gym.Env[np.ndarray, int]):
             use_action_surge(fighter)
         else:
             attacks: list[dict[str, Any] | None] = [None] * len(self.enemies)
-            turns.advance(roster.is_alive)
+            _advance_to_next_turn(turns, roster)
             while not self._is_policy_controlled(turns.current):
                 ref = turns.current
                 result = self._run_automatic_turn(ref)
@@ -210,10 +209,9 @@ class StagedCombatEnv(gym.Env[np.ndarray, int]):
                 if would_wrap and self.round_number == MAX_ROUNDS:
                     self._truncated = True
                     break
-                wrapped = turns.advance(roster.is_alive)
+                wrapped = _advance_to_next_turn(turns, roster)
                 if wrapped:
                     self.round_number = turns.round_number
-                    refresh_turn_resources(roster.get(turns.current))
             info["enemy_attacks"] = attacks
             if len(self.enemies) == 1:
                 info["goblin_attack"] = attacks[0]
