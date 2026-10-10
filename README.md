@@ -2,6 +2,10 @@
 
 BaldurRL is a project for training an agent to play Baldur's Gate 3. In progress
 
+The [passive BG3 H0 collector](bg3/h0/README.md) includes Script Extender Lua
+source, installation/run instructions, offline compatibility tests, and a Windows
+live-verification checklist. It has not been tested in the game.
+
 ## Simulator stages
 
 M0 is the fixed 1v1 regression baseline. M1A varies one opponent's statistics. M1B has two opponents and target choice. M2 adds a one-use simplified Cleave. See [M0 specification](docs/M0_SPEC.md) and [stage specifications](docs/STAGES_SPEC.md).

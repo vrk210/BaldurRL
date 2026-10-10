@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<save>
+  <version major="4" minor="8" revision="0" build="500" />
+  <region id="Config">
+    <node id="root">
+      <children>
+        <node id="Conflicts" />
+        <node id="Dependencies" />
+        <node id="ModuleInfo">
+          <attribute id="Author" type="LSString" value="vrk210" />
+          <attribute id="Description" type="LSString" value="Passive BaldurRL H0 observation collector. Live verification pending." />
+          <attribute id="Folder" type="LSString" value="BaldurRL_H0" />
+          <attribute id="Name" type="LSString" value="BaldurRL H0" />
+          <attribute id="Type" type="FixedString" value="Add-on" />
+          <attribute id="UUID" type="FixedString" value="d860477b-c599-4f12-9e95-5b8ec7235860" />
+          <attribute id="Version64" type="int64" value="36028797018963968" />
+        </node>
+      </children>
+    </node>
+  </region>
+</save>
