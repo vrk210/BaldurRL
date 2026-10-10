@@ -104,7 +104,7 @@ class M0EvalCallback(BaseCallback):
 
 def parse_args(argv: list[str] | None = None) -> Namespace:
     parser = ArgumentParser(description="Train MaskablePPO on a combat stage")
-    parser.add_argument("--stage", choices=["m0", "m1a", "m1b", "m2", "m3", "m4"], default="m0")
+    parser.add_argument("--stage", choices=["m0", "m1a", "m1b", "m2", "m3", "m4", "m5", "m6"], default="m0")
     parser.add_argument("--reward", choices=["terminal", "damage"], default="terminal")
     parser.add_argument("--timesteps", type=int, default=200_000)
     parser.add_argument("--seed", type=int, default=0)

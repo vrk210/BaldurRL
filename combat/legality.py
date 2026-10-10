@@ -5,7 +5,16 @@ from dataclasses import dataclass
 
 from .actions import Action
 from .actors import ActorRef, CombatRoster, Side
+from .characters import TacticalEnemy, TacticalFighter
 from .mechanics import can_use_ability
+from .tactics import (
+    advance_available,
+    can_attack,
+    can_disengage,
+    can_trip,
+    can_use_tactical,
+    cleave_targets,
+)
 
 
 @dataclass(frozen=True)
@@ -73,5 +82,53 @@ def legal_mask_for(
             legal = character.alive and any(opponent.alive for opponent in opponents)
         else:
             raise ValueError(f"Unknown action: {action!r}")
+        mask.append(legal)
+    return mask
+
+
+def tactical_legal_mask(
+    ally_slot: int,
+    allies: Sequence[TacticalFighter],
+    enemies: Sequence[TacticalEnemy],
+    decisions: Sequence[DecisionSpec],
+) -> list[bool]:
+    """M5/M6 legal decisions for one ally on its turn (see docs/STAGES_SPEC.md).
+
+    Combines known abilities and catalog costs with each effect's own
+    conditions from ``combat.tactics`` (reach, Prone, Dodging, ranks), so the
+    mask never disagrees with the mechanics it gates. Turn gating stays with
+    the caller, as for ``legal_mask_for``.
+    """
+    ally = allies[ally_slot]
+    if not ally.alive or not any(enemy.alive for enemy in enemies):
+        return [False] * len(decisions)
+
+    def affordable(action: Action) -> bool:
+        return can_use_tactical(ally, action)
+
+    mask = []
+    for decision in decisions:
+        action = decision.action
+        target = None if decision.target_index is None else enemies[decision.target_index]
+        if action is Action.ATTACK and target is not None:
+            legal = affordable(action) and can_attack(ally, target, enemies)
+        elif action is Action.TRIP and target is not None:
+            legal = affordable(action) and can_trip(ally, target, enemies)
+        elif action is Action.CLEAVE:
+            legal = affordable(action) and any(cleave_targets(ally, enemies))
+        elif action is Action.DODGE:
+            legal = affordable(action) and not ally.dodging
+        elif action is Action.SECOND_WIND:
+            legal = affordable(action) and ally.hp < ally.max_hp
+        elif action is Action.ACTION_SURGE:
+            legal = affordable(action)
+        elif action is Action.ADVANCE:
+            legal = affordable(action) and advance_available(ally, enemies)
+        elif action is Action.DISENGAGE:
+            legal = affordable(action) and can_disengage(ally, enemies)
+        elif action is Action.END_TURN:
+            legal = True
+        else:
+            raise ValueError(f"Unsupported tactical decision: {decision!r}")
         mask.append(legal)
     return mask
