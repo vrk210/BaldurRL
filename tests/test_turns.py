@@ -196,12 +196,53 @@ def test_goblin_refresh_restores_action_only() -> None:
 # Environment turn integration.
 
 
+def test_next_controlled_ally_refreshes_without_round_wrap_or_automatic_turn(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from unittest.mock import Mock
+
+    env = StagedCombatEnv("m1b")
+    env.reset(seed=2)
+    assert env.fighter is not None
+    ally_1 = _fighter()
+    ally_1.resources.set(Resource.ACTION, 0)
+    ally_1.resources.set(Resource.BONUS_ACTION, 0)
+    # Extend only the internal turn flow; no new stage or observation contract.
+    env.roster = CombatRoster(allies=(env.fighter, ally_1), enemies=env.enemies)
+    order = (
+        ActorRef(Side.ALLY, 0), ActorRef(Side.ALLY, 1),
+        ActorRef(Side.ENEMY, 0), ActorRef(Side.ENEMY, 1),
+    )
+    env.turns = TurnManager(order)
+    env._controlled_refs = frozenset(order[:2])
+    automatic = Mock(side_effect=AssertionError("No automatic turn should run"))
+    monkeypatch.setattr(env, "_run_automatic_turn", automatic)
+    for enemy in env.enemies:
+        enemy.resources.set(Resource.ACTION, 0)
+
+    assert env.fighter.resources.get(Resource.ACTION) == 1
+    assert ally_1.resources.get(Resource.ACTION) == 0
+    assert ally_1.resources.get(Resource.BONUS_ACTION) == 0
+    _, reward, terminated, truncated, info = env.step(4)  # ALLY 0 END_TURN
+
+    assert env.turns.current == order[1]
+    assert env.turns.current in env._controlled_refs
+    assert env.round_number == env.turns.round_number == 1
+    assert ally_1.resources.get(Resource.ACTION) == 1
+    assert ally_1.resources.get(Resource.BONUS_ACTION) == 1
+    assert (reward, terminated, truncated) == (0.0, False, False)
+    assert info["enemy_attacks"] == [None, None]
+    assert all(enemy.resources.get(Resource.ACTION) == 0 for enemy in env.enemies)
+    automatic.assert_not_called()
+
+
 def test_end_turn_refreshes_only_participants_and_skips_dead() -> None:
     env = StagedCombatEnv("m1b")
     env.reset(seed=2)
     assert env.fighter is not None
     env.enemies[0].hp = 0
     env.enemies[0].resources.set(Resource.ACTION, 0)
+    env.enemies[1].resources.set(Resource.ACTION, 0)
     env.fighter.resources.set(Resource.ACTION, 0)
     env.fighter.resources.set(Resource.BONUS_ACTION, 0)
 
@@ -216,41 +257,104 @@ def test_end_turn_refreshes_only_participants_and_skips_dead() -> None:
     assert info["round"] == 2
 
 
-def test_no_new_round_or_refresh_after_fighter_death() -> None:
-    env = StagedCombatEnv("m1b")
+def test_abilities_do_not_begin_a_new_turn() -> None:
+    m0 = BaldurCombatEnv()
+    m0.reset(seed=1)
+    assert m0.fighter is not None
+    m0.fighter.hp = 10
+    m0.fighter.resources.set(Resource.ACTION, 0)
+    m0.step(1)  # SECOND_WIND
+    assert m0.fighter.resources.get(Resource.ACTION) == 0
+    assert m0.fighter.resources.get(Resource.SECOND_WIND) == 0
+
+    m0.fighter.resources.set(Resource.BONUS_ACTION, 0)
+    m0.step(2)  # ACTION_SURGE grants an Action, without refreshing Bonus Action
+    assert m0.fighter.resources.get(Resource.ACTION) == 1
+    assert m0.fighter.resources.get(Resource.BONUS_ACTION) == 0
+    assert m0.fighter.resources.get(Resource.ACTION_SURGE) == 0
+
+    m2 = StagedCombatEnv("m2")
+    m2.reset(seed=2)
+    assert m2.fighter is not None
+    m2.fighter.resources.set(Resource.BONUS_ACTION, 0)
+    m2.step(2)  # CLEAVE
+    assert m2.fighter.resources.get(Resource.ACTION) == 0
+    assert m2.fighter.resources.get(Resource.BONUS_ACTION) == 0
+    assert m2.fighter.resources.get(Resource.CLEAVE) == 0
+
+
+@pytest.mark.parametrize("stage", ["m0", "m1a", "m1b", "m2"])
+def test_no_new_round_or_refresh_after_fighter_death(stage: str) -> None:
+    env = BaldurCombatEnv() if stage == "m0" else StagedCombatEnv(stage)
     env.reset(seed=2)
     assert env.fighter is not None
     env.fighter.hp = 1
     env.fighter.resources.set(Resource.ACTION, 0)
+    env.fighter.resources.set(Resource.BONUS_ACTION, 0)
+    roster = env._roster()
+    for enemy in roster.enemies:
+        enemy.resources.set(Resource.ACTION, 0)
     from unittest.mock import Mock
 
     rng = Mock()
-    rng.integers.side_effect = [20, 8, 8]  # first enemy crits for the kill
+    rng.integers.side_effect = [20, 1, 1]  # first enemy crits for the kill
     env.np_random = rng  # type: ignore[method-assign]
 
-    _, reward, terminated, truncated, info = env.step(4)
+    _, reward, terminated, truncated, info = env.step(env.action_names.index("END_TURN"))
 
     assert terminated and not truncated and reward == -1
-    assert info["enemy_attacks"][1] is None  # second enemy never acts
+    if len(roster.enemies) == 2:
+        assert info["enemy_attacks"][1] is None  # second enemy never acts
+    assert all(enemy.resources.get(Resource.ACTION) == 0 for enemy in roster.enemies)
     assert info["round"] == 1  # no wrap, no new round
     assert env.fighter.resources.get(Resource.ACTION) == 0  # no refresh after death
+    assert env.fighter.resources.get(Resource.BONUS_ACTION) == 0
 
 
-def test_round_fifty_truncation_preserves_round_and_resources() -> None:
-    env = StagedCombatEnv("m1a")
+@pytest.mark.parametrize("stage", ["m0", "m1a", "m1b", "m2"])
+def test_no_refresh_after_fighter_victory(stage: str) -> None:
+    from unittest.mock import Mock
+
+    env = BaldurCombatEnv() if stage == "m0" else StagedCombatEnv(stage)
+    env.reset(seed=2)
+    assert env.fighter is not None
+    roster = env._roster()
+    roster.enemies[0].hp = 1
+    for enemy in roster.enemies[1:]:
+        enemy.hp = 0
+    env.fighter.resources.set(Resource.BONUS_ACTION, 0)
+    rng = Mock()
+    rng.integers.side_effect = [20, 1, 1]  # guaranteed victory on this attack
+    env.np_random = rng
+
+    _, reward, terminated, truncated, info = env.step(0)
+
+    assert terminated and not truncated and reward == 1
+    assert info["round"] == env.round_number == 1
+    assert env.fighter.resources.get(Resource.ACTION) == 0
+    assert env.fighter.resources.get(Resource.BONUS_ACTION) == 0
+
+
+@pytest.mark.parametrize("stage", ["m0", "m1a", "m1b", "m2"])
+def test_round_fifty_truncation_preserves_round_and_resources(stage: str) -> None:
+    env = BaldurCombatEnv() if stage == "m0" else StagedCombatEnv(stage)
     env.reset(seed=0)
-    env.enemies[0].damage = DamageSpec(1, 6, -12)  # enemy hits deal zero
+    for enemy in env._roster().enemies:
+        enemy.damage = DamageSpec(1, 6, -12)  # enemy hits deal zero
+    end_turn = env.action_names.index("END_TURN")
     for _ in range(MAX_ROUNDS - 1):
-        _, _, terminated, truncated, _ = env.step(3)
+        _, _, terminated, truncated, _ = env.step(end_turn)
         assert not terminated and not truncated
     assert env.fighter is not None
     env.fighter.resources.set(Resource.ACTION, 0)
+    env.fighter.resources.set(Resource.BONUS_ACTION, 0)
 
-    _, _, terminated, truncated, info = env.step(3)
+    _, _, terminated, truncated, info = env.step(end_turn)
 
     assert not terminated and truncated
     assert info["round"] == MAX_ROUNDS == env.round_number
     assert env.fighter.resources.get(Resource.ACTION) == 0  # no round-51 refresh
+    assert env.fighter.resources.get(Resource.BONUS_ACTION) == 0
 
 
 def test_staged_debug_info_preserves_existing_keys() -> None:

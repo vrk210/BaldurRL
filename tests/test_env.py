@@ -89,6 +89,7 @@ def test_end_turn_runs_one_goblin_attack_and_refreshes_per_turn_resources() -> N
     env.fighter.hp = 10
     env.step(1)  # Spend Second Wind and Bonus Action.
     env.fighter.resources.set(Resource.ACTION, 0)
+    env.goblin.resources.set(Resource.ACTION, 0)
     before_hp = env.fighter.hp
 
     observation, reward, terminated, truncated, info = env.step(3)

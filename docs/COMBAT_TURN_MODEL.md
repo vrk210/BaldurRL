@@ -18,9 +18,15 @@ indices, masks, rewards, and seeded transitions are unchanged.
   Enemy turns stay hidden from the policy and attack `ALLY 0`.
 - Per-turn refresh: each `Character` carries an immutable `turn_refresh`
   mapping (`Fighter: ACTION, BONUS_ACTION`; `Goblin: ACTION`).
-  `refresh_turn_resources(actor)` runs at the start of that actor's actual
-  turn. Second Wind, Action Surge, and Cleave never refresh. Dead skipped
-  actors are not refreshed.
+  Per-turn resources refresh whenever an actor's actual turn begins,
+  whether that actor is policy-controlled or automatic.
+  On reset, the environment refreshes the initial actor. On `END_TURN`,
+  `_advance_to_next_turn(turns, roster)` advances to the next living actor
+  and calls `refresh_turn_resources(actor)` before deciding whether to
+  expose a controlled decision or execute an automatic turn.
+  `_run_automatic_turn()` executes the fixed policy and does not refresh.
+  Second Wind, Action Surge, and Cleave never refresh. Dead skipped actors
+  are not refreshed.
 - Rounds: round 1 starts with the first allied turn. Advancing past the
   final living ref wraps to the first ref and increments the round.
   `MAX_ROUNDS = 50` truncates instead of wrapping or refreshing, and
