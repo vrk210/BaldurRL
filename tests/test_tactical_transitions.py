@@ -168,3 +168,21 @@ def test_one_decision_planner_scores_end_turn_by_afterstate():
     assert env.action_names[action] == "END_TURN"
     assert q[action] == pytest.approx(0.9)
     assert set(q) == set(np.flatnonzero(env.action_masks()).tolist())
+
+
+def test_lethal_advance_passes_the_turn():
+    """M6: an opportunity attack that kills the active ally ends its turn like END_TURN."""
+    env = make_env("m6")
+    obs, _ = env.reset(seed=0)
+    obs = obs.copy()
+    obs[env.observation_fields.index("ally_0_hp")] = 1
+    model = transition_model("m6", obs)
+    state = model.state_from_observation(obs)
+    advance = env.action_names.index("ADVANCE")
+    outcomes = model.outcomes(state, advance)
+    passed = [p for p, successor in outcomes if model.turn_passed(state, advance, successor)]
+    kept = [p for p, successor in outcomes if not model.turn_passed(state, advance, successor)]
+    assert passed and kept
+    for p, successor in outcomes:
+        if model.turn_passed(state, advance, successor):
+            assert model.observation(successor)[env.observation_fields.index("ally_0_hp")] == 0

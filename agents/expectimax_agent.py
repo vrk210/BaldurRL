@@ -183,8 +183,8 @@ class ExpectimaxAgent:
         stats.depth_used = depth
         values = self._values
         q_values = tuple(
-            (action, sum(p * values[(child, child_depth)] for p, child in outcomes))
-            for action, child_depth, outcomes in root_actions
+            (action, sum(p * values[(child, child_depth)] for p, child, child_depth in outcomes))
+            for action, outcomes in root_actions
         )
         return q_values, stats
 
@@ -268,12 +268,16 @@ class ExpectimaxAgent:
         def child(state: State, remaining: int | None, action: int) -> tuple:
             if self.afterstate_value is not None and remaining == 1 and model.ends_turn(action):
                 afterstates[state] = None
-                return action, _AFTER, ((1.0, state),)
-            child_depth = remaining - 1 if remaining is not None and model.ends_turn(action) else remaining
-            outcomes = model.outcomes(state, action)
-            for _, successor in outcomes:
+                return action, ((1.0, state, _AFTER),)
+            # Depth counts turns: a successor consumes one when the acting ally's turn is over,
+            # whether by END_TURN or by its own death passing play on (M6 opportunity attacks).
+            children = []
+            for p, successor in model.outcomes(state, action):
+                passed = remaining is not None and model.turn_passed(state, action, successor)
+                child_depth = remaining - 1 if passed else remaining
                 expand(successor, child_depth)
-            return action, child_depth, outcomes
+                children.append((p, successor, child_depth))
+            return action, tuple(children)
 
         root_key = (root, depth)
         if root_key in values and root_key not in expanded:
@@ -303,8 +307,8 @@ class ExpectimaxAgent:
                 values[(state, _AFTER)] = float(value)
         for key, actions in post_order:
             values[key] = max(
-                sum(p * values[(child, child_depth)] for p, child in outcomes)
-                for _, child_depth, outcomes in actions
+                sum(p * values[(child, child_depth)] for p, child, child_depth in outcomes)
+                for _, outcomes in actions
             )
         stats.expanded += len(post_order)
         stats.leaves += len(leaves) + len(pending)

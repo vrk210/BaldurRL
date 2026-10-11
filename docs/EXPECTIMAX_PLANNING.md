@@ -15,6 +15,9 @@ Depth `d` counts controlled-turn boundaries. `END_TURN` includes every
 automatic actor that follows it (the whole enemy phase), so depth 1 searches the
 rest of the active ally's turn, resolves the following enemy phase exactly when
 there is one, and scores the next controlled turn start with the leaf value.
+A boundary is counted per successor through the model's `turn_passed`: in M6
+an opportunity attack that kills the active ally hands play on exactly as
+`END_TURN` does, so that successor also consumes one unit of depth.
 `depth=None` searches to termination and is exact (feasible only for small
 states). The agent keeps the `choose_action(observation, action_mask)` policy
 interface and contains no combat rules.

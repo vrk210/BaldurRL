@@ -32,11 +32,15 @@ class EpsilonPolicy:
         self.base = base
         self.epsilon = epsilon
         self.rng = np.random.default_rng(seed)
+        self.last_diagnostics = None
 
     def choose_action(self, observation: np.ndarray, action_mask: np.ndarray) -> int:
         if self.rng.random() < self.epsilon:
+            self.last_diagnostics = None  # a random decision has no search value
             return int(self.rng.choice(np.flatnonzero(action_mask)))
-        return self.base.choose_action(observation, action_mask)
+        action = self.base.choose_action(observation, action_mask)
+        self.last_diagnostics = getattr(self.base, "last_diagnostics", None)
+        return action
 
 
 def collect(stage: str, policy: Policy, seeds: range) -> dict[str, np.ndarray]:

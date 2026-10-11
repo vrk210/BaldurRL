@@ -64,6 +64,10 @@ class TransitionModel(Protocol):
 
     def ends_turn(self, action: int) -> bool: ...
 
+    def turn_passed(self, state: State, action: int, successor: State) -> bool:
+        """True when ``successor`` no longer belongs to the acting ally's turn."""
+        ...
+
     def observations(self, states: Sequence[State]) -> np.ndarray: ...
 
 
@@ -192,6 +196,10 @@ class RosterTransitionModel:
 
     def ends_turn(self, action: int) -> bool:
         return self.decisions[action].action is Action.END_TURN
+
+    def turn_passed(self, state: State, action: int, successor: State) -> bool:
+        # M0–M4 allies cannot die on their own turn, so only END_TURN hands play on.
+        return self.ends_turn(action)
 
     def legal_actions(self, state: State) -> tuple[int, ...]:
         if state[_STATUS] != Status.ONGOING:

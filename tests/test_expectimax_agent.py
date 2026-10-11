@@ -165,3 +165,42 @@ def test_node_budget_falls_back_to_shallower_depth():
     assert roomy.last_diagnostics.depth_used == 2
     with pytest.raises(ValueError):
         ExpectimaxAgent("m4", depth=None, node_budget=10)
+
+
+class _OwnTurnDeathModel:
+    """Toy model: MOVE (0) hands play on to the other ally half the time, as a lethal
+    M6 opportunity attack does; from that state a non-END ATTACK (0) always wins."""
+
+    stage = "m4"
+    action_count = 2
+
+    def status(self, state):
+        return Status.WIN if state == (9,) else Status.ONGOING
+
+    def legal_actions(self, state):
+        return {(0,): (0, 1), (1,): (0, 1)}.get(state, (1,))
+
+    def ends_turn(self, action):
+        return action == 1
+
+    def turn_passed(self, state, action, successor):
+        return self.ends_turn(action) or (state, action, successor) == ((0,), 0, (1,))
+
+    def outcomes(self, state, action):
+        if self.ends_turn(action):
+            return ((1.0, (4,)),)
+        return {(0,): ((0.5, (1,)), (0.5, (2,))), (1,): ((1.0, (9,)),)}[state]
+
+    def observations(self, states):
+        return np.zeros((len(states), 1))
+
+
+def test_successor_that_passes_the_turn_consumes_depth():
+    agent = ExpectimaxAgent("m4", depth=1, leaf_value=lambda obs: np.zeros(len(obs)))
+    agent._model = _OwnTurnDeathModel()
+    q_values, _ = agent.action_values((0,))
+    # The other ally's turn is scored by its turn-start leaf (0), not searched for its win.
+    assert dict(q_values) == {0: 0.0, 1: 0.0}
+    agent = ExpectimaxAgent("m4", depth=2, leaf_value=lambda obs: np.zeros(len(obs)))
+    agent._model = _OwnTurnDeathModel()
+    assert dict(agent.action_values((0,))[0])[0] == pytest.approx(0.5)

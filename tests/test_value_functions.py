@@ -156,3 +156,18 @@ def test_ensemble_averages_member_logits(tmp_path):
     assert ensemble(obs[None]) == pytest.approx(expected)
     with pytest.raises(ValueError):
         EnsembleValue([])
+
+
+def test_epsilon_wrapper_keeps_search_values_of_planner_decisions():
+    from agents.expectimax_agent import ExpectimaxAgent
+    from value_training import EpsilonPolicy
+
+    def planner():
+        return ExpectimaxAgent("m4", depth=1, leaf_value=lambda obs: np.full(len(obs), 0.5))
+
+    data = collect("m4", EpsilonPolicy(planner(), 1e-12, seed=0), range(500, 501))
+    reference = collect("m4", planner(), range(500, 501))
+    np.testing.assert_array_equal(data["search_value"], reference["search_value"])
+    assert not np.all(np.isnan(data["search_value"]))
+    random_only = collect("m4", EpsilonPolicy(planner(), 1.0, seed=0), range(500, 501))
+    assert np.all(np.isnan(random_only["search_value"]))
