@@ -70,7 +70,8 @@ def run_episode(job: dict) -> dict:
     planner_seed = int(np.random.SeedSequence([job["agent_seed"], int(stage[1:]), ordinal])
                        .generate_state(1, dtype=np.uint64)[0])
     agent = ImprovedHeuristicAgent(stage, seed=planner_seed, alpha=job["alpha"],
-                                  looks=tuple(job["looks"]), futility_margin=job["futility_margin"])
+                                  looks=tuple(job["looks"]), futility_margin=job["futility_margin"],
+                                  prune_nonpositive=job.get("prune_nonpositive", False))
     heuristic = make_heuristic_agent(stage, "tuned" if stage == "m5" else "adaptive")
     env = make_env(stage)
     cpu = process_time()
@@ -188,6 +189,7 @@ def main() -> None:
     run.add_argument("--alpha", type=float, default=0.01)
     run.add_argument("--looks", type=int, nargs="+", default=[16, 64, 256])
     run.add_argument("--futility-margin", type=float, default=0.0)
+    run.add_argument("--prune-nonpositive", action="store_true")
     run.add_argument("--out", type=Path, required=True)
     check = sub.add_parser("recheck")
     check.add_argument("--run", type=Path, required=True)

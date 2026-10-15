@@ -91,3 +91,23 @@ def test_real_rollouts_are_deterministic_and_preserve_live_state(stage):
     assert np.array_equal(mask, env.action_masks())
     assert env.np_random.bit_generator.state == state
     env.close()
+
+
+def test_candidate_futility_uses_matching_prefixes_and_keeps_family_size(monkeypatch):
+    env = make_env('m5')
+    obs, _ = env.reset(seed=220007)
+    mask = env.action_masks()
+    agent = ImprovedHeuristicAgent('m5', looks=(4, 16), alpha=.05, prune_nonpositive=True)
+    anchor = agent.heuristic.choose_action(obs, mask)
+    alternate = next(int(a) for a in np.flatnonzero(mask) if a != anchor)
+    calls = []
+    monkeypatch.setattr(agent, '_outcome', lambda obs, a, seed: calls.append((a, seed)) or int(a == alternate))
+    assert agent.choose_action(obs, mask) == alternate
+    counts = dict(agent.last_diagnostics.sample_counts)
+    assert counts[anchor] == counts[alternate] == 16
+    assert all(n == 4 for a, n in counts.items() if a not in (anchor, alternate))
+    assert agent.last_diagnostics.simulated_episodes == sum(counts.values())
+    # Every continuation candidate receives the anchor's exact seed prefix.
+    streams = {a: [s for called, s in calls if called == a] for a in counts}
+    assert all(seeds == streams[anchor][:len(seeds)] for seeds in streams.values())
+    env.close()

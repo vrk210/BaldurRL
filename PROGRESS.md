@@ -48,3 +48,20 @@ choose A under the same check; if neither passes report the issue instead of
 running a nominally confirmatory unsafe probe. If there are no selection
 deviations, prefer B and explicitly report low observed deviation/power.
 Confirmation is 1,000 encounters/stage, fixed before confirmation outcomes.
+
+## Additional power/efficiency selection (before collecting fresh C data)
+
+A produced two deviations on M5 (one encounter), so the gate is capable of
+switching. Early A/B outputs suggest low deviation rates. Add configuration C,
+alpha=.05, looks32/128/1024, candidate-wise nonpositive futility: score every
+legal candidate at 32, then only keep sampling candidates with positive paired
+sample advantage. The anchor receives the full stream; candidates always use
+its exact matching seed prefixes. Keep the original alternatives × three looks
+Bonferroni denominator. This only suppresses rejection events and preserves
+per-decision error control. Diagnostics record sample counts per action.
+
+C uses fresh selection encounters 221100–221111 per stage. Prefer C over B if
+its projected two-stage 1,000-fight confirmation fits within 22 CPU-hours and
+its fresh-rollout deviation validation is not significantly negative; choose
+B/A by the prior rule otherwise. This preference favors power/efficiency,
+not selection encounter win rates. No confirmation encountered yet.
