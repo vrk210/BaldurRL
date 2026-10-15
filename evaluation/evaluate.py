@@ -13,6 +13,7 @@ import numpy as np
 
 from combat.stages import make_env
 from agents.policy import Policy
+from evaluation.seeds import require_not_frozen
 
 
 _M0_NAMES = ("ATTACK", "SECOND_WIND", "ACTION_SURGE", "END_TURN")
@@ -347,10 +348,16 @@ def main() -> None:
     parser.add_argument("--rollout-policy", choices=["heuristic", "ppo"], default="heuristic")
     parser.add_argument("--rollouts-per-action", type=int, default=32)
     parser.add_argument("--seed-start", type=int, default=0)
+    parser.add_argument("--final-test", action="store_true",
+                        help="Allow a frozen final-test seed range (see evaluation.seeds); use it once")
     parser.add_argument("--format", choices=["text", "json"], default="text")
     parser.add_argument("--output", type=str, default=None)
     parser.add_argument("--trace-dir", type=Path, default=None)
     args = parser.parse_args()
+    try:
+        require_not_frozen(range(args.seed_start, args.seed_start + args.episodes), final_test=args.final_test)
+    except ValueError as exc:
+        parser.error(str(exc))
 
     agent: Policy
     rollout_settings = None

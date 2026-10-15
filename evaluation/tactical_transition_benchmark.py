@@ -10,6 +10,7 @@ from agents.random_agent import RandomAgent
 from combat.stages import make_env
 from combat.table_tactical_transitions import TableTacticalTransitionModel
 from combat.tactical_transitions import TacticalTransitionModel
+from evaluation.seeds import require_not_frozen
 
 
 def benchmark(seeds: range, stride: int = 5) -> dict:
@@ -65,6 +66,7 @@ def main() -> None:
     args = parser.parse_args()
     if args.episodes < 1 or args.stride < 1:
         parser.error('episodes and stride must be positive')
+    require_not_frozen(range(args.seed_start, args.seed_start + args.episodes))
     result = benchmark(range(args.seed_start, args.seed_start + args.episodes), args.stride)
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out).write_text(json.dumps(vars(args) | result, indent=2) + '\n')
