@@ -10,13 +10,13 @@ from collections import Counter
 from dataclasses import replace
 import hashlib
 import json
+from math import exp, lgamma, log, sqrt
 from pathlib import Path
 from statistics import NormalDist
 import time
 from typing import Any
 
 import numpy as np
-from scipy.stats import binomtest
 
 from agents.tactical_heuristics import TacticalHeuristicAgent, VARIANTS
 from combat.actions import Action
@@ -45,6 +45,23 @@ def write(name: str, value: Any) -> None:
         handle.write('\n')
 
 
+def exact_mcnemar(plus: int, minus: int) -> float:
+    n=plus+minus
+    if n==0:
+        return 1.0
+    k=min(plus,minus)
+    tail=sum(exp(lgamma(n+1)-lgamma(j+1)-lgamma(n-j+1)-n*log(2)) for j in range(k+1))
+    return min(1.0,2*tail)
+
+
+def wilson(k: int, n: int) -> list[float]:
+    z=NormalDist().inv_cdf(.975)
+    p=k/n
+    center=(p+z*z/(2*n))/(1+z*z/n)
+    half=z*sqrt(p*(1-p)/n+z*z/(4*n*n))/(1+z*z/n)
+    return [max(0.,center-half),min(1.,center+half)]
+
+
 def contrast(a: list[float], b: list[float], family: int = 1) -> dict[str, Any]:
     x, y = np.array(a), np.array(b)
     if x.shape != y.shape or not len(x):
@@ -54,7 +71,7 @@ def contrast(a: list[float], b: list[float], family: int = 1) -> dict[str, Any]:
     z = NormalDist().inv_cdf(1-.05/(2*family))
     nplus, nminus = int(np.sum(d>0)), int(np.sum(d<0))
     binary = bool(np.isin(x, [0,1]).all() and np.isin(y, [0,1]).all())
-    p = float(binomtest(nplus, nplus+nminus, .5).pvalue) if nplus+nminus and binary else (1.0 if binary else None)
+    p = exact_mcnemar(nplus,nminus) if binary else None
     return {'n':len(d), 'first_rate':float(x.mean()), 'second_rate':float(y.mean()),
             'difference':float(d.mean()), 'paired_se':se,
             'ci95':[float(d.mean()-1.96*se),float(d.mean()+1.96*se)],
@@ -119,7 +136,7 @@ def confirmation() -> None:
         outputs[stage] = {'outcomes':results, 'baseline_minus_variant':contrasts}
     outputs['metadata'] = {'seed_start':232000,'seed_end':235999,'family':FAMILY,
         'cpu_seconds':time.process_time()-cpu,'wall_seconds':time.perf_counter()-start,
-        'plan_commit':'743ba90','source_commit': 'b082262'}
+        'plan_commit':'e2e25d3','source_commit': 'b082262'}
     write('confirmation.json',outputs)
 
 
@@ -251,10 +268,10 @@ def replay() -> None:
                 env=simulation_from_observation(stage,np.array(obs,dtype=np.float32),seed=rollout_seed)
                 wins.append(fight(env,policy,np.array(obs,dtype=np.float32)))
             k=sum(wins)
-            ci=binomtest(k,len(wins)).proportion_ci(method='exact')
+            ci=wilson(k,len(wins))
             records.append({'old_encounter_seed':seed,'old_won':original_won,
                             'features':opening_features(stage,obs),'wins':k,'n':len(wins),
-                            'binomial_ci95':[float(ci.low),float(ci.high)]})
+                            'binomial_ci95':ci})
         results[stage]=records
         print(stage,'replay complete',flush=True)
     results['metadata']={'rng_seed_start':236000,'rng_seed_end':236127,
