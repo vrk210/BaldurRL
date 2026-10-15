@@ -18,7 +18,7 @@ transition model the M5/M6 default, which is the part of the work that was kept.
 | `PROGRESS.md` | The experiment's seed declarations and progress log |
 | `deviations.py`, `deviations.json` | Review script and output: where the planner deviates from the anchor |
 
-Results and the review summary are in `reports/m5_m6_planning.md` on the main line.
+Results and the review summary are in `docs/RESULTS.md` on the main line (branch `m5-m6-table-model`, PR #11).
 
 ## Fix before reusing
 
@@ -39,4 +39,4 @@ From the review (details in `review_and_ppo_tuning_handoff.md`):
    deviating at about 13% of decisions, which cost 15–19 points. Use a
    significance-based rule or restrict deviations to well-supported actions.
 
-Seeds already used by this experiment are listed in `docs/SEEDS.md`.
+Seeds already used by this experiment are recorded in `evaluation/seeds.py` on the main line.
