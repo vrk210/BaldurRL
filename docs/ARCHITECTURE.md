@@ -57,6 +57,8 @@ Gym action indices represent decisions. A decision carries a semantic `Action` a
 
 All three later stages use terminal win/loss reward for their main comparison. M2 also supports an isolated bounded damage-shaping training experiment. External evaluation always measures combat outcomes and behavior on seeded episodes, independent of the training reward scheme.
 
+**Simulator role (decided 2026-10-15).** No new abstract stages are planned. M5 and M6 already separate good policies from weak ones. Hand heuristics win about 79–81%. MaskablePPO with default settings plateaus 4–5 points below them, and on M2 it comes within about 2 points of the exact optimum. More invented difficulty would not move the project toward BG3. The simulator stays as a regression and research test bed and as a stand-in game behind the integration protocols. Trained simulator policies do not transfer, because their observation vectors and action indices don't exist in BG3. Revisit this once logged BG3 fights show which mechanics drive outcomes; the next stage should then be calibrated to those logs, not invented. Measured results are in [RESULTS.md](RESULTS.md).
+
 ## Dependency direction
 
 ```text

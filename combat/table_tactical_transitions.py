@@ -72,8 +72,9 @@ class TableTacticalTransitionModel(TacticalTransitionModel):
     """Same state encoding and interface as the independent replay oracle.
 
     Inherit its validated observation decoder: live input is decoded once per
-    decision, while search uses compact states. A separate fast decoder here
-    would risk accepting inputs the environment cannot restore.
+    decision (about 0.2 ms), while search uses compact states. A direct decoder
+    here was 20–40x faster but skipped `simulation_from_observation`'s checks,
+    so a reused model planned from 2.5 HP as 2 HP (PR #11 review, 2026-10-15).
     """
 
     def __init__(self, env: TacticalCombatEnv) -> None:

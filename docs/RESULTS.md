@@ -1,10 +1,12 @@
 # Simulator results, M0–M6
 
-**Status, 2026-10-15:** the simulator stages are no longer the main line of work.
-They are hard enough to tell good combat policies from weak ones, and more
-abstract difficulty wouldn't bring the project closer to playing BG3. The
-simulator remains a test bed and a stand-in game behind the BG3 harness
-protocols. The next simulator work should be calibrated to logged BG3 fights.
+Measured results of the simulator stages. Conclusions drawn from them live next
+to the decisions they inform:
+
+- The simulator's role: [ARCHITECTURE.md](ARCHITECTURE.md#stage-progression).
+- Planning conclusions: [EXPECTIMAX_PLANNING.md](EXPECTIMAX_PLANNING.md#conclusions-and-when-to-revisit).
+- Evaluation rules: `AGENTS.md` and `evaluation/seeds.py`.
+- BG3 tactical hypotheses: [GAME_KNOWLEDGE.md](GAME_KNOWLEDGE.md#simulator-tactical-evidence-hypotheses-for-bg3).
 
 This file replaces the per-experiment reports that were in `reports/` until
 2026-10-15. Those reports have the full tables, reproduction commands and
@@ -30,37 +32,6 @@ Seed ranges and sample sizes differ between rows, so compare within a row only.
 M0, M1A and M3 are at the ceiling. On M2, the heuristic and optimum figures are
 exact expected win rates on seeds 9000–13999, and the PPO figure is the
 three-seed mean of 5,000 played fights on the same seeds.
-
-## What we learned
-
-1. **PPO is a competent learner, not a superior one.** It gets within about 2
-   points of the exact optimum on M2 and matches heuristics on M4. On M5/M6 it
-   plateaus about 4–5 points below a good hand heuristic by 500k steps. Only
-   default hyperparameters were tried.
-2. **Search with an exact model is the only method that beat the heuristics**,
-   and only on M4. There, exact enemy-phase enumeration added real information
-   before each value estimate.
-3. **Search exploits value errors.** Each of these lost to the policy it was
-   meant to improve: hand-built leaves (M4: 48%), noisy rollout estimates (M5:
-   −21 points at 32 rollouts per action) and learned value networks (M5/M6
-   guided planner: −15 and −19 points). Taking the best of many noisy action
-   values selects errors. Any planner on the real game needs exact transitions
-   with accurate values, or a conservative rule backed by significance rather
-   than a fixed margin.
-4. **Good hand heuristics are strong baselines.** Most of the M5/M6 spread is one
-   or two basic rules. The remaining gains are second-order: target priority,
-   resource timing, and an encounter-dependent plan on M6.
-5. **Validation loss is not play strength.** On M4, lower-loss value networks
-   played worse. Select on play, using paired seeds.
-6. **Evaluation discipline caught several wrong conclusions.** Paired seeds,
-   5,000-fight evaluations, a frozen test range and independent reviews
-   corrected: an early Cleave diagnosis, the best-checkpoint bias, the M6 headline
-   spread, and the expert-iteration teacher mismatch.
-
-What carries over to BG3: the transition-model and oracle-verification approach,
-expectimax, paired evaluation, the seed registry, and points 2, 3, 5 and 6.
-Trained policies do not, because their observations and action indices are
-fixed simulator vectors. The tactics below are hypotheses for BG3, not facts.
 
 ## M0–M4: PPO against hand heuristics
 
@@ -190,7 +161,10 @@ Paired differences (points, with SE):
 - **Seeds 3000–7999 aren't an untouched test set.** They also informed the
   v1 → v2 retune.
 
-**Tactics that won in these rules** (hypotheses for BG3):
+**Tactics that won in these rules.** These are hypotheses for BG3. The 2026-10-15
+mining study tested them further with 13 paired contrasts on seeds
+232000–235999; see [GAME_KNOWLEDGE.md](GAME_KNOWLEDGE.md#simulator-tactical-evidence-hypotheses-for-bg3)
+and `evaluation/sim_mining.py`.
 
 - **Kill priority.** Focus the lowest-HP target. Healer-first loses 2.8 points
   because the Healer's self-heal absorbs focus fire.
@@ -268,15 +242,6 @@ reasons:
 
 The conclusion is "this configuration loses", not "expert iteration can't work".
 The code and full review are on branch `archive/m5-m6-guided-planning`.
-
-## Open lines (2026-10-15)
-
-| Line | Status |
-|---|---|
-| Headroom probe: heuristic improved by many rollouts per action, with a significance gate | Proposed; seeds 220000–229999 reserved |
-| Mining simulator logs into tactics for `GAME_KNOWLEDGE.md` | Completed 2026-10-15: [seven evidence-graded BG3 hypotheses](GAME_KNOWLEDGE.md#simulator-tactical-evidence-hypotheses-for-bg3), [reproducible analysis](../evaluation/sim_mining.py); 13 paired contrasts on seeds 232000–235999 |
-| Simulator behind the BG3 snapshot and command interface | In progress with the harness work |
-| PPO tuning sweep, cloning the heuristic then PPO | Not started; waits on the headroom probe |
 
 ## Removed reports
 

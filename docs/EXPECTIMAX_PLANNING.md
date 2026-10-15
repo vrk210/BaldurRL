@@ -173,9 +173,10 @@ Verification against the replay oracle:
 - **Benchmark** (`evaluation/tactical_transition_benchmark.py`, seeds
   210000–210009, every legal action at every fifth random-play decision): 345 M5
   and 346 M6 cases, identical successor sets, largest probability difference
-  1.0e-14. One-process pass times fell from 2.76 s to 0.17 s on M5 (16×) and from
-  12.2 s to 0.23 s on M6 (53×). Timings cover transition enumeration only;
-  model construction and observation decoding are excluded. This is
+  1.0e-14. Total `outcomes()` time fell from 2.76 s to 0.17 s on M5 (16×) and
+  from 12.2 s to 0.23 s on M6 (53×). Model construction and observation decoding
+  happen before timing starts and are excluded. Each model's outcome cache and
+  the shared distribution tables fill during the timed calls. This is
   per-transition speed, not whole-game speed.
 - **Adversarial audit** (`evaluation/tactical_transition_audit.py`, review of
   2026-10-11, seeds 211000–211029): 118,089
@@ -245,6 +246,29 @@ Two options trade exactness for cost on stages with long enemy phases:
 outcome (and, for the planner, the search root value); `fit` trains the MLP by
 binary cross-entropy on outcome, search-value, mixed, or lambda-return targets
 with early stopping on a separate validation seed range.
+
+## Conclusions and when to revisit
+
+Drawn from the M2, M4 and M5/M6 results in [RESULTS.md](RESULTS.md):
+
+- **Search helped only where exact enumeration came before the leaf.** On M4,
+  exact enemy phases plus a learned leaf beat every baseline (+3.0 points at
+  depth 2). On M5/M6 the replay model made enemy-phase search too slow. The
+  table model removes most of the per-transition cost but not the branching.
+- **Search exploits value errors.** The race leaf on M4 (48%), 32-rollout
+  estimates on M5 (−21 points) and learned M5/M6 leaves with a fixed 3-point
+  deviation margin (−15 and −19 points) all lost to the policy they extended.
+  What worked on M4 was exact transitions plus a value retrained on the
+  planner's own games. When a planner extends a baseline policy, gate deviations
+  on statistical evidence, not a fixed margin.
+- **Select on paired play, not validation loss.** Lower-loss M4 value networks
+  played worse, and search-value or λ-return targets never beat outcome targets.
+- **Revisit M5/M6 learned-leaf planning** only with the fixes listed on branch
+  `archive/m5-m6-guided-planning`: one planner configuration for collection and
+  evaluation, pooled training data, significance-gated deviations, and
+  breadth-first budget use before horizons beyond one decision.
+- **For BG3**, planning needs a transition model of the real game, which needs
+  logged fights first.
 
 ## Evaluation
 

@@ -151,3 +151,20 @@ def test_cleave_keeps_original_reach_and_terminal_canonicalization():
         if enemy.alive:
             enemy.hp = 1
     compare('m6', env._observation())
+
+
+
+def test_planner_reusing_its_model_rejects_fractional_hp():
+    """The review's reproduction: a planner reuses its model for a later observation of the same encounter."""
+    from agents.expectimax_agent import ExpectimaxAgent
+
+    env = make_env('m5')
+    obs, _ = env.reset(seed=210005)
+    mask = env.action_masks()
+    value = lambda observations: np.full(len(observations), 0.5)  # noqa: E731
+    agent = ExpectimaxAgent('m5', depth=1, leaf_value=value, afterstate_value=value, decision_horizon=1)
+    agent.choose_action(obs, mask)
+    later = obs.copy()
+    later[list(env.observation_fields).index(f'ally_{int(obs[0])}_hp')] = 2.5
+    with pytest.raises(ValueError, match='Invalid m5 decision observation'):
+        agent.choose_action(later, mask)
