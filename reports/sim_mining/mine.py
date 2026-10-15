@@ -69,7 +69,7 @@ class MiningPolicy(TacticalHeuristicAgent):
         config = VARIANTS[stage][BASE[stage]]
         kwargs = {'healer_first': {'priority':'role'}, 'sw10':{'second_wind_threshold':10},
                   'cleave2':{'cleave_min_targets':2}, 'trip_threat':{'trip_target':'threat'},
-                  'dodge':{'dodge':True}, 'one_diver':{'advance':'healthiest'},
+                  'dodge':{'dodge':True}, 'one_diver':{'advance':'adaptive'},
                   'disengage':{'disengage':True}, 'hold':{'advance':'never'},
                   'dive':{'advance':'all'}}
         super().__init__(stage, replace(config, **kwargs.get(name, {})))
@@ -78,6 +78,11 @@ class MiningPolicy(TacticalHeuristicAgent):
 
     def _priority_key(self, enemy: Any) -> tuple[float,...]:
         return (-enemy.hp, enemy.slot) if self._split else super()._priority_key(enemy)
+
+    def _movement(self, mask: np.ndarray, me: Any, allies: list[Any], enemies: list[Any]) -> int | None:
+        if self.name == 'one_diver' and any(a.alive and a.deep for a in allies):
+            return None
+        return super()._movement(mask, me, allies, enemies)
 
     def choose_action(self, observation: np.ndarray, action_mask: np.ndarray) -> int:
         self._split = self.name == 'split_focus' and int(observation[0]) == 1

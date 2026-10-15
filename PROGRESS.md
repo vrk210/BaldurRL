@@ -18,7 +18,8 @@ held until round 2; (4) Second Wind threshold 10 rather than 12; (5) Cleave at
 2 rather than 3 living targets; (6) Trip greatest estimated threat rather than
 focus; (7) existing incoming-damage Dodge trigger enabled; (8) never spend
 Action Surge (turn-hygiene cost).
-M6 changes: (9) healthiest-only dive rather than adaptive (split plan);
+M6 changes: (9) adaptive opening trigger, but stop advancing once one living ally is deep
+(single-diver plan);
 (10) Disengage before an otherwise planned dive when Surge remains;
 (11) incoming-damage Dodge trigger; (12) hold everywhere; (13) dive everywhere.
 Direction hypotheses: baseline better except Dodge (unknown); conditional plan
@@ -48,9 +49,13 @@ losses can win under other dice; it cannot identify truly unwinnable fights or
 fraction of losses attributable to decisions. No action-value maxima and no
 training. Record binomial uncertainty, sampled-state selection and costs.
 
-Seeds: exploration 230000–231999 unused; confirmation 232000–235999;
+Seeds: exploration 230000–230007 smoke validation; 230008–231999 unused; confirmation 232000–235999;
 spare 236000–236127 combat RNG only (no newly sampled encounters).
 Compute: serial worker, compact outcomes only, target <3 CPU-hours.
 
 Deliverables: <=2-page main playbook, separate inventory/provenance appendix,
 committed reproduction script; raw outputs runs/sim_mining (ignored).
+
+Pre-run clarification: split_focus measures ally-1 target-priority change,
+not a pure general focus-fire effect. one_diver retains adaptive durability
+trigger; only the number of divers changes.
