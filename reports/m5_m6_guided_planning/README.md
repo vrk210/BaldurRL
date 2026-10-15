@@ -1,7 +1,12 @@
 # Archived: M5/M6 guided planning and expert iteration
 
 This branch preserves an experiment that was shelved on 2026-10-15. It is not
-meant to be merged as is. It sits on top of the commit that made the table
+meant to be merged as is.
+
+**Removal condition:** delete this branch when M5/M6 learned-leaf planning is
+either revived, with the fixes below ported into a fresh branch, or ruled out
+for the BG3 planner design. Its conclusions already live in
+`docs/EXPECTIMAX_PLANNING.md` ("Conclusions and when to revisit") on the main line. It sits on top of the commit that made the table
 transition model the M5/M6 default, which is the part of the work that was kept.
 
 ## What is here
