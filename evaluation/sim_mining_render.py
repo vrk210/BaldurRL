@@ -97,6 +97,7 @@ counterfactual; **C** = observational hypothesis. Brackets are 95% CIs; new A
 intervals adjust across all 13 predeclared contrasts. Effects are win-rate
 percentage points (pp), conditional on the tested continuation, not guarantees.
 New target/resource tests use M5, positioning uses M6, and Dodge uses both.
+Resource effects assume fresh encounter-start pools.
 
 1. **TODO_VERIFY — Focus an affordable kill; do not automatically prioritize the healer.**
    **A · general:** both allies using lowest current target HP beat changing
