@@ -18,6 +18,8 @@ Read [BOOTSTRAP.md](BOOTSTRAP.md), [SESSIONS.md](SESSIONS.md), and [ENCOUNTERS.m
 
 Use the original [H0 installation guide](../../bg3/h0/README.md) for activation and the actual collector path. The doctor checks file/configuration evidence; live bootstrap output and callbacks must still be verified. A not-yet-created capture namespace before the first game launch is an expected missing preflight prerequisite, not proof that a path is wrong.
 
+Windows offline CI covers Python 3.11/3.13, real Lua with stubbed game APIs, PowerShell parsing, and packaging behavior with a fake converter. These checks do not replace a real Divine package or a loaded BG3 encounter.
+
 ## First Windows session
 
 1. Install and activate H0, launch a disposable single-player save, and record game/SE versions. Confirm the H0 bootstrap, session GUID, listener registrations, and actual writable IO root. Keep logging enabled using documented settings. Investigate UNAVAILABLE/HALTED output.

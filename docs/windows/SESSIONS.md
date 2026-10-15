@@ -110,7 +110,7 @@ console output. See [`bg3/probes/README.md`](../../bg3/probes/README.md) for the
 call example.
 
 The probe's pure Lua behavior is exercised offline with a Lua 5.4 stub harness.
-It has been source-reviewed but not run in BG3 or on Windows. Live checks remain:
+Windows CI runs the filesystem and stubbed-Lua tests; the probe has not been run inside BG3. Live checks remain:
 
 - verify the exact Script Extender IO root, reported game/extender versions, and
   `SaveFile` output;
