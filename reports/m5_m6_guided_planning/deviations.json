@@ -1,0 +1,84 @@
+{
+ "m5": {
+  "decisions": 3164,
+  "deviations": 426,
+  "episodes_with_deviation": 83,
+  "gap_mean": 0.05212130718357745,
+  "gap_median": 0.041359720237565234,
+  "top": [
+   [
+    "ATTACK -> DODGE",
+    169
+   ],
+   [
+    "ATTACK -> END_TURN",
+    74
+   ],
+   [
+    "ACTION_SURGE -> END_TURN",
+    35
+   ],
+   [
+    "ATTACK -> CLEAVE",
+    29
+   ],
+   [
+    "SECOND_WIND -> END_TURN",
+    26
+   ],
+   [
+    "SECOND_WIND -> DODGE",
+    24
+   ],
+   [
+    "SECOND_WIND -> TRIP",
+    21
+   ],
+   [
+    "SECOND_WIND -> ATTACK",
+    15
+   ]
+  ]
+ },
+ "m6": {
+  "decisions": 2779,
+  "deviations": 355,
+  "episodes_with_deviation": 70,
+  "gap_mean": 0.05440960241804504,
+  "gap_median": 0.049780576855695036,
+  "top": [
+   [
+    "ADVANCE -> END_TURN",
+    104
+   ],
+   [
+    "ADVANCE -> TRIP",
+    91
+   ],
+   [
+    "ADVANCE -> ATTACK",
+    44
+   ],
+   [
+    "ADVANCE -> ACTION_SURGE",
+    38
+   ],
+   [
+    "END_TURN -> ADVANCE",
+    33
+   ],
+   [
+    "SECOND_WIND -> TRIP",
+    16
+   ],
+   [
+    "SECOND_WIND -> ATTACK",
+    10
+   ],
+   [
+    "END_TURN -> SECOND_WIND",
+    10
+   ]
+  ]
+ }
+}

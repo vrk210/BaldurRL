@@ -38,7 +38,9 @@ def make_leaf(stage: str, spec: str):
 
 def make_policy(stage: str, name: str, *, model: str | None = None, leaf: str | None = None,
                 depth: int | None = 1, always_search: bool = False, node_budget: int | None = None,
-                afterstate_leaf: str | None = None, decision_horizon: int | None = None) -> Policy:
+                afterstate_leaf: str | None = None, decision_horizon: int | None = None,
+                prior: str | None = None, horizon: int = 1, root_top_k: int = 0,
+                interior_top_k: int = 2, deviation_margin: float = 0.03) -> Policy:
     """Build a policy; ``heuristic:<variant>`` selects a named M5/M6 heuristic variant."""
     from agents.heuristic_agent import M4ThreatAwareAgent, make_heuristic_agent
 
@@ -48,6 +50,27 @@ def make_policy(stage: str, name: str, *, model: str | None = None, leaf: str | 
         return make_heuristic_agent(stage, name.split(":", 1)[1])
     if name == "threat":
         return M4ThreatAwareAgent()
+    if name in ("guided", "prior"):
+        from agents.guided_planner import GuidedPlannerAgent
+        from agents.policy_prior import MLPPolicyPrior
+
+        policy_prior = MLPPolicyPrior.load(prior) if prior else None
+        if policy_prior is not None and policy_prior.layout.stage != stage:
+            raise ValueError("Prior stage mismatch")
+        if name == "prior":
+            if policy_prior is None:
+                raise ValueError("A prior checkpoint is required")
+            return policy_prior
+        if stage not in ("m5", "m6") or leaf is None:
+            raise ValueError("Guided M5/M6 planning requires a leaf value")
+        leaf_value = make_leaf(stage, leaf)
+        if getattr(getattr(leaf_value, "layout", None), "stage", stage) != stage:
+            raise ValueError("Value stage mismatch")
+        anchor = make_heuristic_agent(stage, "tuned" if stage == "m5" else "adaptive")
+        return GuidedPlannerAgent(stage, leaf_value, anchor, prior=policy_prior,
+                                  horizon=horizon, root_top_k=root_top_k,
+                                  interior_top_k=interior_top_k, node_budget=64 if node_budget is None else node_budget,
+                                  deviation_margin=deviation_margin)
     if name == "ppo":
         import torch
         from sb3_contrib import MaskablePPO
@@ -153,11 +176,16 @@ def main() -> None:
     parser.add_argument("--name", required=True)
     parser.add_argument("--stage", default="m4")
     parser.add_argument("--policy", required=True,
-                        help="heuristic, heuristic:<variant>, threat, ppo, or expectimax")
+                        help="heuristic, heuristic:<variant>, threat, ppo, expectimax, guided, or prior")
     parser.add_argument("--model")
     parser.add_argument("--leaf")
     parser.add_argument("--afterstate-leaf")
     parser.add_argument("--decision-horizon", type=int, default=None)
+    parser.add_argument("--prior")
+    parser.add_argument("--horizon", type=int, default=1)
+    parser.add_argument("--root-top-k", type=int, default=0)
+    parser.add_argument("--interior-top-k", type=int, default=2)
+    parser.add_argument("--deviation-margin", type=float, default=0.03)
     parser.add_argument("--depth", type=int, default=1)
     parser.add_argument("--node-budget", type=int, default=None)
     parser.add_argument("--seed-start", type=int, required=True)
@@ -166,7 +194,9 @@ def main() -> None:
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
     spec = dict(name=args.policy, model=args.model, leaf=args.leaf, depth=args.depth, node_budget=args.node_budget,
-                afterstate_leaf=args.afterstate_leaf, decision_horizon=args.decision_horizon)
+                afterstate_leaf=args.afterstate_leaf, decision_horizon=args.decision_horizon,
+                prior=args.prior, horizon=args.horizon, root_top_k=args.root_top_k,
+                interior_top_k=args.interior_top_k, deviation_margin=args.deviation_margin)
     seeds = list(range(args.seed_start, args.seed_start + args.episodes))
     tick = perf_counter()
     rows = evaluate_parallel(args.stage, spec, seeds, args.workers)

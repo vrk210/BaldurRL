@@ -109,6 +109,26 @@ def targets_for(data: dict[str, np.ndarray], mode: str) -> np.ndarray:
     outcome = data["win"].astype(np.float64)
     if mode == "outcome":
         return outcome
+    if mode.startswith("td:"):
+        lam = _unit_weight(mode)
+        next_value = np.asarray(data["next_value"], dtype=float)
+        done = np.asarray(data["done"], dtype=bool)
+        if not np.all(np.isfinite(next_value)) or np.any((next_value < 0) | (next_value > 1)):
+            raise ValueError("TD targets need finite successor win probabilities")
+        result = np.empty_like(next_value)
+        following = 0.0
+        for i in range(len(result) - 1, -1, -1):
+            boundary = i == len(result) - 1 or data["seed"][i] != data["seed"][i + 1]
+            if boundary != bool(done[i]):
+                raise ValueError("TD data must contain complete contiguous episodes")
+            if done[i]:
+                following = outcome[i]
+            else:
+                if data["step"][i + 1] != data["step"][i] + 1:
+                    raise ValueError("TD data has a missing or reordered decision")
+                following = (1 - lam) * next_value[i] + lam * following
+            result[i] = following
+        return result
     raw = data["search_value"].astype(np.float64)
     search = np.where(np.isfinite(raw), raw, outcome)
     if mode == "search":

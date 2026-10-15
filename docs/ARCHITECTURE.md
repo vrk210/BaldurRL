@@ -96,3 +96,17 @@ BG3 collection → integration snapshots/events → observation adapter → poli
 ```
 
 The collection harness preserves BG3 entity, ability, and resource IDs. The adapter later chooses fields and maps IDs for M0, M1, M2, or richer policies. The harness must not emit the current PPO vector directly. The `integration/` package is independent of `combat/`, Gymnasium, and training code; `combat/` does not import it. The current simulator evaluation JSONL traces remain a separate format containing already encoded observations and masks. The Python semantic command protocol and a synthetic mock executor are implemented separately from passive observations. Commands preserve original BG3 ability IDs and require current legality evidence; acceptance does not confirm execution. BG3 collection, observation adaptation, and real action execution are not implemented yet. See the integration contract for session transport and recovery limits.
+
+M5/M6 guided planning (`agents/guided_planner.py`, archived experiment) uses exact
+chance transitions including enemy phases, a decision horizon, top-k policy
+proposals, and equal node budgets per root action. Its decision search is
+approximate; chance outcomes are never sampled or capped. The best named stage
+heuristic is always a candidate and is retained unless the estimated gain exceeds
+the configured margin. That margin is a guard against small value errors, not a
+guarantee of improvement.
+
+`agents/policy_prior.py` contains masked heuristic/learned priors.
+`expert_iteration.py` collects teacher labels before optional random exploration,
+then fits a value and a masked policy network. Search values label the conservative
+teacher; episode outcomes and TD targets describe the explored behavior policy.
+No environment transition, reward, observation, or action index changes.
