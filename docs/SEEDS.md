@@ -45,5 +45,5 @@ used so far.
 | 210000–210009 | Table transition benchmark | `docs/EXPECTIMAX_PLANNING.md` |
 | 210010–212399 | Review of the M5/M6 follow-up: adversarial transition audit (211000–211029), environment fingerprints | `reports/m5_m6_planning.md` |
 | 220000–229999 | **Reserved:** M5/M6 headroom probe (rollout-improved heuristic) | Reserved 2026-10-15; the experiment's report replaces this entry |
-| 230000–239999 | **Reserved:** simulator data mining and tactics playbook | Reserved 2026-10-15; the experiment's report replaces this entry |
+| 230000–239999 | Simulator tactics mining: 230000–230007 smoke/tests; 232000–235999 once-only paired confirmations (M5/M6); 236000–236127 combat RNG replay of old encounters only. 230008–231999 and 236128–239999 unused | `docs/GAME_KNOWLEDGE.md` (Simulator tactical evidence), `evaluation/sim_mining.py` |
 | 240000 and above | Unallocated | |
