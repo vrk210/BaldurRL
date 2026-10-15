@@ -331,6 +331,8 @@ reports a synthetic `resolved`, `failed`, or `uncertain` outcome. It never mutat
 HP/resources/turns, rolls dice, invokes BG3, or derives rewards. Fixture
 confirmation is clearly labeled and is not evidence of actual game execution.
 
+The [Windows preparation runbook](windows/README.md) connects static preflight, session capture/archival, read-only actor probes, and bounded encounter-trial analysis. These tools preserve this v1 contract and do not establish live legality or execute actions.
+
 ## Windows live-verification checklist
 
 ### Entity/state
