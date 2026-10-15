@@ -171,7 +171,8 @@ Verification against the replay oracle:
   1.0e-14. One-process pass times fell from 2.76 s to 0.17 s on M5 (16×) and from
   12.2 s to 0.23 s on M6 (53×), including table initialization. This is
   per-transition speed, not whole-game speed.
-- **Adversarial audit** (review of 2026-10-11, seeds 211000–211029): 118,089
+- **Adversarial audit** (`evaluation/tactical_transition_audit.py`, review of
+  2026-10-11, seeds 211000–211029): 118,089
   state–action cases from random and heuristic play plus constructed edge states
   (lethal Advance at 1 and 3 HP with and without Disengage, spent Reactions,
   Prone with Dodge, Healer HP caps and spent charges, dead enemies and allies,
@@ -181,8 +182,12 @@ Verification against the replay oracle:
 Both checks compare the table model with the environment code, so neither can
 catch a rule that is itself wrong in `tactics.py`.
 
+Rerun both after any change to M5/M6 rules in `tactics.py`, `tactical_env.py` or
+the table model (the audit takes about 50 minutes):
+
 ```bash
 python -m evaluation.tactical_transition_benchmark --episodes 10 --out runs/transitions.json
+python -m evaluation.tactical_transition_audit --episodes 30 --out runs/transition_audit.json
 ```
 
 Faster transitions do not make unlimited full-turn search cheap: a three-enemy
