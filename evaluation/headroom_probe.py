@@ -1,10 +1,47 @@
-"""Paired, parallel headroom experiments with streamed decision diagnostics.
+"""Paired significance-gated M5/M6 headroom study; predeclared 2026-10-15.
 
-python -m evaluation.headroom_probe run --stage m5 --phase pilot --seed-start 220010 \\
-    --episodes 4 --workers 2 --out runs/headroom_probe/pilot_m5
-python -m evaluation.headroom_probe recheck --run runs/headroom_probe/confirm_m5
+Confirmation is fixed by CONFIRMATION_CONFIG, committed before collecting any
+confirmation encounters. Each stage is run ONCE on 223000–223999 (1,000 fights),
+paired with tuned M5/adaptive M6 on the same encounter seeds. This fixes initial
+encounters, not identical realized dice after policies diverge. No PPO or
+mechanics changes. No exact-first-step enumeration: binary paired outcomes
+permit exact conditional tests and conservative adaptive sampling.
+
+Selected C: alpha .05, cumulative looks32/128/1024, nonpositive candidate-wise
+futility. Every legal action receives32 common-seed samples; surviving actions
+use exactly matching prefixes of the anchor stream. Bonferroni divides alpha
+by ALL original alternatives times ALL three looks, even after pruning. This
+controls false-positive comparisons per decision, not whole-episode loss.
+
+Selection used221000–221011 (A/B) and221100–221111(C), both stages. A=.01,
+16/64/256; B=.05,16/64/512, neither pruned. Selection preference was C then B
+then A, provided projected confirmation cost<22CPUh and independently rescored
+mean advantage not significantly negative. This rule was committed in fdecbb4
+before C collection. C cost26.08/27.84CPU sec per M5/M6 fight; all6/3 rescored
+selection deviations had positive means (fresh1024-pair stream20261016).
+Projected confirmation14.98CPUh plus<1h development/selection, about2h wall
+with8total workers. The 12-fight win rates were not the selection criterion.
+
+Analysis: report paired win difference, conservative boundary-aware >=95% CI
+(Bonferroni97.5% Clopper-Pearson intervals on two discordant probabilities),
+paired-normal approximate95% CI, and exact two-sided McNemar p. No further
+configuration selection or confirmation reruns. Report deviation rates per
+all/nonforced decisions and fights, action-pair counts/estimated advantages,
+and cost/decision, total process CPU. Uniform sample of12 deviations per
+stage is independently rescored with1024pairs, fresh master seed20261016.
+Pilot encounters220010–220013; new unit tests220000–220007. Frozen130000–132999
+and spare228000–229999 remain untouched. Raw outputs: runs/headroom_probe/.
+A null CI bounds only this tested policy's advantage; it does not upper-bound
+all possible one-step policies or the optimum. Early futility can miss gains.
+
+Reproduce confirmation (stage m5 then m6; use4workers each concurrently):
+python -m evaluation.headroom_probe run --stage m5 --phase confirmation \
+ --seed-start 223000 --episodes 1000 --workers 4 --alpha .05 --looks 32 128 1024 \
+ --prune-nonpositive --out runs/headroom_probe/confirm_m5
+
 """
 import json
+import subprocess
 from argparse import ArgumentParser
 from collections import Counter, defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -19,6 +56,14 @@ from agents.heuristic_agent import make_heuristic_agent
 from agents.improved_heuristic_agent import ImprovedHeuristicAgent, paired_pvalue
 from combat.stages import make_env
 from evaluation.paired import paired_comparison
+
+CONFIRMATION_CONFIG = {
+    "stages": ("m5", "m6"), "seed_start": 223000, "episodes": 1000,
+    "alpha": 0.05, "looks": [32, 128, 1024], "futility_margin": 0.0,
+    "prune_nonpositive": True, "agent_seed": 20261015,
+    "recheck_samples": 12, "recheck_budget": 1024, "recheck_seed": 20261016,
+}
+
 
 RANGES = {"pilot": (220000, 220999), "selection": (221000, 222999),
           "confirmation": (223000, 227999), "spare": (228000, 229999)}
@@ -204,9 +249,18 @@ def main() -> None:
     if args.episodes < 1 or args.workers < 1 or not lo <= args.seed_start <= args.seed_start + args.episodes - 1 <= hi:
         parser.error("episodes/workers must be positive and encounter range inside declared phase")
     ImprovedHeuristicAgent(args.stage, alpha=args.alpha, looks=tuple(args.looks), futility_margin=args.futility_margin)
+    if args.phase == "confirmation":
+        fields = ("seed_start", "episodes", "alpha", "looks", "futility_margin",
+                  "prune_nonpositive", "agent_seed")
+        if any(getattr(args, key) != CONFIRMATION_CONFIG[key] for key in fields):
+            parser.error("confirmation arguments must match committed CONFIRMATION_CONFIG")
+        subprocess.run(["git", "diff", "--exit-code", "HEAD", "--",
+                        "evaluation/headroom_probe.py", "agents/improved_heuristic_agent.py"],
+                       check=True, capture_output=True)
     args.out.mkdir(parents=True, exist_ok=False)
     config = vars(args).copy()
     config["out"] = str(args.out)
+    config["code_revision"] = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     (args.out / "manifest.json").write_text(json.dumps(config, indent=2) + "\n")
     jobs = [dict(config, encounter=args.seed_start + i, ordinal=i) for i in range(args.episodes)]
     tick = perf_counter()

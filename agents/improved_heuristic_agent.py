@@ -103,7 +103,7 @@ class ImprovedHeuristicAgent:
                 scores = tuple((a, float(np.mean(outcomes[a]))) for a in legal)
                 counts = tuple((a, int(np.sum(d > 0)), int(np.sum(d < 0))) for a, d in diffs.items())
                 pvalues = tuple((a, paired_pvalue(pos, neg)) for a, pos, neg in counts)
-                passing = [a for a, p in pvalues if a in active and p <= threshold]
+                passing = [a for a, p in pvalues if a in active and diffs[a].mean() > 0 and p <= threshold]
                 if passing:
                     chosen = max(passing, key=lambda a: (np.mean(outcomes[a]), -a))
                     reason = "significant"

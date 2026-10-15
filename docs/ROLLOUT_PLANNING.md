@@ -115,25 +115,3 @@ optimal win rate. See the [pilot data](../reports/m4_rollout_pilot_18000_18099.j
 
 For planning without sampling noise, see [expectimax planning](EXPECTIMAX_PLANNING.md),
 which enumerates exact chance outcomes and scores the frontier with a learned value.
-
-## Significance-gated headroom probe
-
-`agents.improved_heuristic_agent.ImprovedHeuristicAgent` is a separate M5/M6
-agent anchored to tuned/adaptive. It scores every legal action with common
-simulation seeds under the anchor continuation. At prespecified cumulative
-sample sizes it tests paired win/loss differences with a one-sided exact
-McNemar test, dividing alpha by both the number of alternatives and number of
-looks. It chooses the highest estimated value among passing alternatives;
-otherwise it retains the anchor. Futility stopping also retains the anchor.
-The resulting familywise false-switch bound applies to one decision; it is
-not a guarantee of whole-fight improvement. `alpha=0` skips sampling and exactly
-reproduces the anchor. Early futility and finite budgets can miss small gains.
-The agent never reads the live combat RNG or encounter seed.
-
-`python -m evaluation.headroom_probe` provides parallel paired experiments,
-streamed per-decision diagnostics, actual process CPU accounting and fresh-seed
-rescoring of a uniform sample of deviations. Planner seeds are derived from a
-master seed, stage and episode ordinal, independently of the numeric encounter
-seed and worker scheduling. Phase-specific seed ranges and exclusive output
-creation guard accidental reuse; `PROGRESS.md` predeclares the confirmation
-configuration and analysis. See `reports/m5_m6_headroom_probe.md` for results.
