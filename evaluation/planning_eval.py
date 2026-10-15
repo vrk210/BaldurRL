@@ -19,6 +19,7 @@ import numpy as np
 
 from agents.policy import Policy
 from combat.stages import make_env
+from evaluation.seeds import require_not_frozen
 
 
 def make_leaf(stage: str, spec: str):
@@ -162,12 +163,18 @@ def main() -> None:
     parser.add_argument("--node-budget", type=int, default=None)
     parser.add_argument("--seed-start", type=int, required=True)
     parser.add_argument("--episodes", type=int, required=True)
+    parser.add_argument("--final-test", action="store_true",
+                        help="Allow a frozen final-test seed range (see evaluation.seeds); use it once")
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
     spec = dict(name=args.policy, model=args.model, leaf=args.leaf, depth=args.depth, node_budget=args.node_budget,
                 afterstate_leaf=args.afterstate_leaf, decision_horizon=args.decision_horizon)
     seeds = list(range(args.seed_start, args.seed_start + args.episodes))
+    try:
+        require_not_frozen(range(args.seed_start, args.seed_start + args.episodes), final_test=args.final_test)
+    except ValueError as exc:
+        parser.error(str(exc))
     tick = perf_counter()
     rows = evaluate_parallel(args.stage, spec, seeds, args.workers)
     summary = summarize(rows)

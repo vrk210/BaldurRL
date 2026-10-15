@@ -70,7 +70,7 @@ The agent chooses actions. The environment coordinates episodes, turns, legality
 - Use caller-supplied `numpy.random.Generator` instances, not global randomness, for combat rules.
 - Check known ability IDs and shared resource costs before applying an effect; keep target and HP restrictions specific to that effect.
 - Keep the four M0 action indices and seven M0 observation fields in `docs/M0_SPEC.md` stable. Stage-specific indices and fields are specified separately. Keep masks separate from observations, and use only the environment's seeded RNG for combat transitions.
-- Before collecting data or evaluating policies, reserve encounter seed ranges in [docs/SEEDS.md](docs/SEEDS.md); never reuse a range that has already informed a decision.
+- Before collecting data or evaluating policies, reserve encounter seed ranges in `evaluation/seeds.py` (check with `python -m evaluation.seeds --check START COUNT`); never reuse a range that has already informed a decision. Evaluation CLIs refuse frozen final-test ranges unless `--final-test` is passed.
 - Do not print inside reusable mechanics functions.
 - Do not silently catch programming errors or prematurely optimize.
 

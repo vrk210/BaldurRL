@@ -75,7 +75,8 @@ The compact committed JSON contains final raw-output digests and all evidence.
 ``pytest -q tests/test_sim_mining.py`` exercises wrappers/statistics; run the
 full suite serially. No mechanics, masks, observations or existing variants
 were changed. Successful final analysis commands used 303.05 CPU-seconds; the provisional
-trace scan added about 40 seconds. No network training. Actual seed accounting is in SEEDS.md;
+trace scan added about 40 seconds. No network training. Actual encounter seed accounting is
+in evaluation/seeds.py; 236000–236127 were replay combat RNG seeds only.
 130000–132999 was never used.
 """
 from __future__ import annotations

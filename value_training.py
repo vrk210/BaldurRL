@@ -23,6 +23,7 @@ from agents.policy import Policy
 from agents.value_functions import RaceValue, make_layout, value_features
 from combat.stages import make_env
 from evaluation.planning_eval import make_policy
+from evaluation.seeds import require_not_frozen
 
 
 class EpsilonPolicy:
@@ -255,6 +256,8 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "collect":
+        # Training data must never come from a final-test range.
+        require_not_frozen(range(args.seed_start, args.seed_start + args.episodes))
         policy = make_policy(args.stage, args.policy, model=args.model, leaf=args.leaf, depth=args.depth,
                              always_search=True, node_budget=args.node_budget, afterstate_leaf=args.afterstate_leaf,
                              decision_horizon=args.decision_horizon)

@@ -20,6 +20,7 @@ from combat.env import MAX_ROUNDS
 from combat.stages import make_env
 from combat.table_tactical_transitions import TableTacticalTransitionModel
 from combat.tactical_transitions import TacticalTransitionModel
+from evaluation.seeds import require_not_frozen
 from combat.transitions import Status
 
 BEST_HEURISTIC = {'m5': 'tuned', 'm6': 'adaptive'}
@@ -127,6 +128,7 @@ def main() -> None:
     args = parser.parse_args()
     if args.episodes < 1 or args.mutate_every < 1:
         parser.error('episodes and mutate-every must be positive')
+    require_not_frozen(range(args.seed_start, args.seed_start + args.episodes))
     result = audit(range(args.seed_start, args.seed_start + args.episodes), args.mutate_every)
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out).write_text(json.dumps(vars(args) | result, indent=2) + '\n')
