@@ -197,6 +197,31 @@ and `evaluation/sim_mining.py`.
 - Rescoring the deviations with 1,024 rollouts mostly favored the heuristic, so
   this was finite-sample selection error, not evidence of a ceiling.
 
+### Paired headroom probe (2026-10-15)
+
+One predeclared configuration ran once on seeds 223000–223999 (1,000 paired
+encounters per stage), continuing with tuned M5 or adaptive M6. The probe used
+common rollout seeds and exact paired gates adjusted over all alternatives
+and three sampling looks (32/128/1,024).
+
+| Stage | Probe | Heuristic | Difference, pp | Conservative 95% CI, pp | Approximate paired-normal 95% CI, pp | Exact McNemar p |
+|---|---:|---:|---:|---|---|---:|
+| M5 | 80.3% | 78.6% | +1.70 | [−1.23, +4.61] | [−0.08, +3.48] | .07842 |
+| M6 | 81.6% | 79.6% | +2.00 | [−1.03, +5.02] | [+0.14, +3.86] | .04460 |
+
+Both conservative intervals include zero; their upper bounds apply to this
+tested policy. M6's exact test and approximate interval provide nominal
+pointwise evidence; p values are unadjusted for the two stage comparisons.
+The study measured 18.44 CPU-hours, excluding tests and process startup.
+The probe changed 421/28,557 M5 decisions and 387/28,615 M6 decisions, affecting
+32.6% and 29.4% of fights. Fresh 1,024-pair rescoring of 12 deviations per
+stage found mean local gains of +4.96 and +3.17 pp, with conditional Monte
+Carlo SE 0.45 pp each; these checks exclude state-sampling uncertainty.
+Full method, limitations and interpretation are beside the
+[agent implementation](../agents/improved_heuristic_agent.py); all action-pair
+counts, estimated gains and reproduction references are in the
+[evidence fixture](../evaluation/headroom_probe_results.json).
+
 ## M5/M6: exact transitions and planners
 
 **Transition models.**
