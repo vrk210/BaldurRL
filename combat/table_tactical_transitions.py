@@ -69,7 +69,12 @@ def _damage(attack: int, ac: int, spec: DamageSpec, mode: RollMode, divisor: int
 
 
 class TableTacticalTransitionModel(TacticalTransitionModel):
-    """Same state encoding and interface as the independent replay oracle."""
+    """Same state encoding and interface as the independent replay oracle.
+
+    Inherit its validated observation decoder: live input is decoded once per
+    decision, while search uses compact states. A separate fast decoder here
+    would risk accepting inputs the environment cannot restore.
+    """
 
     def __init__(self, env: TacticalCombatEnv) -> None:
         super().__init__(env)
@@ -121,15 +126,6 @@ class TableTacticalTransitionModel(TacticalTransitionModel):
         # Terminal observations report the first living ally, as does the env.
         result[:, 0] = [s[2] if s[0] == Status.ONGOING and not s[1] else next((i for i, b in enumerate(self._ally_base) if s[b] > 0), 0) for s in states]
         return result
-
-    def state_from_observation(self, observation: np.ndarray) -> State:
-        if not self.same_encounter(observation):
-            raise ValueError('Observation does not belong to this encounter')
-        values = [0] * (self._enemy_base + sum(self._enemy_width))
-        values[:4] = [int(Status.ONGOING), 0, int(observation[0]), int(observation[-1])]
-        for index, col in self._state_cols.items():
-            values[index] = int(observation[col])
-        return tuple(values)
 
     def _finish(self, values: list[int]) -> State:
         if not any(values[b] for b in self._ally_base):

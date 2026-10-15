@@ -30,6 +30,62 @@ def compare(stage, obs):
 
 
 @pytest.mark.parametrize('stage', ['m5', 'm6'])
+@pytest.mark.parametrize('field,value', [
+    ('ally_0_hp', 2.5),
+    ('ally_0_hp', -1),
+    ('ally_0_hp', 21),
+    ('ally_0_hp', np.nan),
+    ('ally_0_hp', np.inf),
+    ('ally_0_action_count', 3),
+    ('ally_0_bonus_action_count', -1),
+    ('ally_0_dodging', 2),
+    ('enemy_0_last_attacker', 3),
+    ('active_actor_index', 2),
+    ('round_number', 0),
+])
+def test_reused_model_rejects_invalid_dynamic_fields(stage, field, value):
+    env = make_env(stage)
+    obs, _ = env.reset(seed=210005)
+    table = TableTacticalTransitionModel.from_observation(stage, obs)
+    table.state_from_observation(obs)  # Exercise decoding after valid construction.
+    changed = obs.copy()
+    changed[list(env.observation_fields).index(field)] = value
+    with pytest.raises(ValueError, match=f'Invalid {stage} decision observation'):
+        table.state_from_observation(changed)
+
+
+@pytest.mark.parametrize('stage', ['m5', 'm6'])
+@pytest.mark.parametrize('case', [
+    'enemy_hp_above_max', 'nonhealer_heal_charge',
+    'dead_active_ally', 'defeated_allies', 'defeated_enemies',
+])
+def test_reused_model_preserves_live_decision_validation(stage, case):
+    env = make_env(stage)
+    obs, _ = env.reset(seed=210005)
+    oracle = TacticalTransitionModel.from_observation(stage, obs)
+    table = TableTacticalTransitionModel.from_observation(stage, obs)
+    assert table.state_from_observation(obs) == oracle.state_from_observation(obs)
+    fields = list(env.observation_fields)
+    changed = obs.copy()
+    if case == 'enemy_hp_above_max':
+        changed[fields.index('enemy_0_hp')] = env.enemies[0].max_hp + 1
+    elif case == 'nonhealer_heal_charge':
+        slot = next(i for i, enemy in enumerate(env.enemies) if enemy.role.name != 'HEALER')
+        changed[fields.index(f'enemy_{slot}_heal_count')] = 1
+    else:
+        hp_fields = {
+            'dead_active_ally': ['ally_0_hp'],
+            'defeated_allies': ['ally_0_hp', 'ally_1_hp'],
+            'defeated_enemies': [f'enemy_{i}_hp' for i in range(3)],
+        }[case]
+        for field in hp_fields:
+            changed[fields.index(field)] = 0
+    for model in (oracle, table):
+        with pytest.raises(ValueError, match='Invalid|ongoing living ally'):
+            model.state_from_observation(changed)
+
+
+@pytest.mark.parametrize('stage', ['m5', 'm6'])
 def test_random_play_states_against_independent_oracle(stage):
     env = make_env(stage)
     policy = RandomAgent(210000)

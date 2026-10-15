@@ -159,6 +159,11 @@ functions as the environment. Lifecycle resets come from `begin_tactical_turn` /
 `end_tactical_turn`, and turn order and dead-actor skipping from `TurnManager`.
 Enemy phases merge identical states after each actor.
 
+Both models decode live observations through the same validated reconstruction
+path. Reusing an encounter must still reject fractional or out-of-range values,
+invalid resource state, defeated sides, and a dead active ally; terminal
+observations are outside this live-decision contract.
+
 Verification against the replay oracle:
 
 - **Unit tests** (`tests/test_table_tactical_transitions.py`): random-play states,
@@ -169,7 +174,8 @@ Verification against the replay oracle:
   210000–210009, every legal action at every fifth random-play decision): 345 M5
   and 346 M6 cases, identical successor sets, largest probability difference
   1.0e-14. One-process pass times fell from 2.76 s to 0.17 s on M5 (16×) and from
-  12.2 s to 0.23 s on M6 (53×), including table initialization. This is
+  12.2 s to 0.23 s on M6 (53×). Timings cover transition enumeration only;
+  model construction and observation decoding are excluded. This is
   per-transition speed, not whole-game speed.
 - **Adversarial audit** (`evaluation/tactical_transition_audit.py`, review of
   2026-10-11, seeds 211000–211029): 118,089
