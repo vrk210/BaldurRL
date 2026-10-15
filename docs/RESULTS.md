@@ -274,7 +274,7 @@ The code and full review are on branch `archive/m5-m6-guided-planning`.
 | Line | Status |
 |---|---|
 | Headroom probe: heuristic improved by many rollouts per action, with a significance gate | Proposed; seeds 220000–229999 reserved |
-| Mining simulator logs into tactics for `GAME_KNOWLEDGE.md` | Proposed; seeds 230000–239999 reserved |
+| Mining simulator logs into tactics for `GAME_KNOWLEDGE.md` | Completed 2026-10-15: [seven evidence-graded BG3 hypotheses](GAME_KNOWLEDGE.md#simulator-tactical-evidence-hypotheses-for-bg3), [reproducible analysis](../evaluation/sim_mining.py); 13 paired contrasts on seeds 232000–235999 |
 | Simulator behind the BG3 snapshot and command interface | In progress with the harness work |
 | PPO tuning sweep, cloning the heuristic then PPO | Not started; waits on the headroom probe |
 
