@@ -71,6 +71,9 @@ def test_lambda_returns_and_target_modes():
     assert targets_for(data, "lambda:1") == pytest.approx(outcome)
     with pytest.raises(ValueError):
         targets_for(data, "bogus")
+    for mode in ("mix:1.5", "lambda:-0.1", "mix:nan"):
+        with pytest.raises(ValueError):
+            targets_for(data, mode)
 
 
 def test_collect_labels_every_decision_with_the_episode_outcome():
@@ -171,3 +174,6 @@ def test_epsilon_wrapper_keeps_search_values_of_planner_decisions():
     assert not np.all(np.isnan(data["search_value"]))
     random_only = collect("m4", EpsilonPolicy(planner(), 1.0, seed=0), range(500, 501))
     assert np.all(np.isnan(random_only["search_value"]))
+    for epsilon in (-0.1, 1.5):
+        with pytest.raises(ValueError):
+            EpsilonPolicy(planner(), epsilon, seed=0)

@@ -105,8 +105,9 @@ distribution helpers added next to its mechanics.
 
 ### M5/M6 transition model
 
-`combat/tactical_transitions.py` registers `TacticalTransitionModel` for M5 and
-M6. Their rules (roles, Trip/Prone, Dodge, healing, three targeting policies,
+`combat/tactical_transitions.py` defines `TacticalTransitionModel`, now kept as
+the independent replay oracle for M5/M6; the registry selects the faster table
+model described below. Their rules (roles, Trip/Prone, Dodge, healing, three targeting policies,
 ranks, opportunity attacks) are not restated. Instead the model drives the real
 environment code with an enumerating random source (`_PathRng`): every sequence
 of draws is replayed in odometer order, and identical successor states are
@@ -132,8 +133,8 @@ an allied decision is fully observable, so states convert to observations and ba
 Cost is the limitation. A three-target Cleave has hundreds of merged outcomes, a
 three-enemy `END_TURN` up to a few thousand, and each enumerated path runs real
 environment code (tens of microseconds). Single transitions take from under a
-millisecond to several seconds, so full-turn search on M5/M6 is impractical
-without a faster, table-driven model.
+millisecond to several seconds, so full-turn search on M5/M6 was impractical
+with this model alone. That motivated the table model below.
 
 Verification (`tests/test_tactical_transitions.py`, plus a larger scratch run):
 - **Raw path enumeration.** 241 (state, action) cases from random-play M5/M6
@@ -144,6 +145,48 @@ Verification (`tests/test_tactical_transitions.py`, plus a larger scratch run):
   across many thousands of outcomes.
 - **Cross-check.** Normal-mode attack distributions equal the independent M0–M4
   `attack_damage_distribution` derivation.
+
+### M5/M6 table model (default)
+
+`combat/table_tactical_transitions.py` registers `TableTacticalTransitionModel`
+for M5 and M6. It has the oracle's state layout and planner interface, including
+`turn_passed`. It enumerates d20 paths through `rolls.roll_attack`, convolves
+damage sums through the shared mechanics functions, and merges damage and healing
+after HP caps before building tuple successors. Costs, target selection, heal
+eligibility (`tactics.enemy_heal_target`), reach, opportunity attackers
+(`tactics.opportunity_attackers`) and roll modes come from the same rule
+functions as the environment. Lifecycle resets come from `begin_tactical_turn` /
+`end_tactical_turn`, and turn order and dead-actor skipping from `TurnManager`.
+Enemy phases merge identical states after each actor.
+
+Verification against the replay oracle:
+
+- **Unit tests** (`tests/test_table_tactical_transitions.py`): random-play states,
+  healing and deaths, retaliation against dead allies, last-round truncation,
+  death during Advance (including terminal defeat), Disengage and spent Reactions,
+  and Cleave's fixed pre-roll reach set.
+- **Benchmark** (`evaluation/tactical_transition_benchmark.py`, seeds
+  210000–210009, every legal action at every fifth random-play decision): 345 M5
+  and 346 M6 cases, identical successor sets, largest probability difference
+  1.0e-14. One-process pass times fell from 2.76 s to 0.17 s on M5 (16×) and from
+  12.2 s to 0.23 s on M6 (53×), including table initialization. This is
+  per-transition speed, not whole-game speed.
+- **Adversarial audit** (review of 2026-10-11, seeds 211000–211029): 118,089
+  state–action cases from random and heuristic play plus constructed edge states
+  (lethal Advance at 1 and 3 HP with and without Disengage, spent Reactions,
+  Prone with Dodge, Healer HP caps and spent charges, dead enemies and allies,
+  round-50 truncation with and without lethal damage). Zero mismatches in
+  successor sets, probabilities, legal actions or restored observations.
+
+Both checks compare the table model with the environment code, so neither can
+catch a rule that is itself wrong in `tactics.py`.
+
+```bash
+python -m evaluation.tactical_transition_benchmark --episodes 10 --out runs/transitions.json
+```
+
+Faster transitions do not make unlimited full-turn search cheap: a three-enemy
+`END_TURN` still has thousands of merged outcomes.
 
 ## Search implementation
 

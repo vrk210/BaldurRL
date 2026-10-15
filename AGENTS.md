@@ -57,7 +57,8 @@ The agent chooses actions. The environment coordinates episodes, turns, legality
 | `combat/tactical_env.py` | M5/M6 Gymnasium environment: sampling, turns, masks, observations, rewards, termination, per-stage `STAGE_RULES` | Combat formulas; call `tactics.py`/`mechanics.py` |
 | `combat/simulation.py` | Restore independent simulators (M0–M6) from live observations | Live RNG access, policies, combat formulas |
 | `combat/transitions.py` | Exact planner transitions: `TransitionModel` protocol, stage registry, M0–M4 roster model | Policies; combat formulas (use `distributions.py`) |
-| `combat/tactical_transitions.py` | Exact M5/M6 transitions by enumerating random paths through the real environment code, one draw per attack | Policies; restated combat rules |
+| `combat/tactical_transitions.py` | Independent M5/M6 replay oracle: exact transitions by enumerating random paths through the real environment code, one draw per attack | Policies; restated combat rules |
+| `combat/table_tactical_transitions.py` | Default M5/M6 planner transitions: table-driven, using the shared `tactics.py` rule functions; must match the replay oracle | Policies; duplicated combat formulas |
 | `agents/` | Random, stage heuristic (including named M5/M6 variants), rollout, trained, and expectimax policies; leaf value functions; action selection only | Direct environment-state mutation; combat formulas |
 | `evaluation/` | Reproducible stage evaluation: win rate, remaining HP, rounds, action and target usage, kill order by role, paired comparisons, M5/M6 behavior summaries, planner timing | Combat rules |
 
@@ -69,6 +70,7 @@ The agent chooses actions. The environment coordinates episodes, turns, legality
 - Use caller-supplied `numpy.random.Generator` instances, not global randomness, for combat rules.
 - Check known ability IDs and shared resource costs before applying an effect; keep target and HP restrictions specific to that effect.
 - Keep the four M0 action indices and seven M0 observation fields in `docs/M0_SPEC.md` stable. Stage-specific indices and fields are specified separately. Keep masks separate from observations, and use only the environment's seeded RNG for combat transitions.
+- Before collecting data or evaluating policies, reserve encounter seed ranges in [docs/SEEDS.md](docs/SEEDS.md); never reuse a range that has already informed a decision.
 - Do not print inside reusable mechanics functions.
 - Do not silently catch programming errors or prematurely optimize.
 

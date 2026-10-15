@@ -261,16 +261,23 @@ def use_advance(
     attacks: list[OpportunityAttack] = []
     if not ally.disengaged:
         engaged = archer_engaged(allies, enemies)
-        for slot, enemy in enumerate(enemies):
+        for slot in opportunity_attackers(enemies):
+            enemy = enemies[slot]
             if not ally.alive:
                 break
-            if enemy.alive and enemy.rank is Rank.FRONT and enemy.resources.get(Resource.REACTION) >= 1:
-                enemy.resources.spend({Resource.REACTION: 1})
-                mode = enemy_attack_mode(enemy, ally, engaged_archer=engaged)
-                attacks.append(OpportunityAttack(slot, resolve_attack_with_mode(enemy, ally, rng, mode)))
+            enemy.resources.spend({Resource.REACTION: 1})
+            mode = enemy_attack_mode(enemy, ally, engaged_archer=engaged)
+            attacks.append(OpportunityAttack(slot, resolve_attack_with_mode(enemy, ally, rng, mode)))
     if ally.alive:
         ally.deep = True
     return tuple(attacks)
+
+
+def opportunity_attackers(enemies: Sequence[TacticalEnemy]) -> tuple[int, ...]:
+    """Living front-rank enemies with a Reaction, in opportunity-attack order."""
+    return tuple(slot for slot, enemy in enumerate(enemies)
+                 if enemy.alive and enemy.rank is Rank.FRONT
+                 and enemy.resources.get(Resource.REACTION) >= 1)
 
 
 # --- Enemy behavior --------------------------------------------------------------
@@ -320,6 +327,11 @@ def use_heal(healer: TacticalEnemy, target: TacticalEnemy, heal: DamageSpec, rng
     return heal_character(target, rolled + heal.bonus)
 
 
+def enemy_heal_target(enemy: TacticalEnemy, enemies: Sequence[TacticalEnemy]) -> int | None:
+    """Choose healing before attacking when the catalog and HP conditions permit it."""
+    return heal_target(enemies) if can_use_tactical(enemy, Action.HEAL) else None
+
+
 def run_enemy_turn(
     slot: int,
     allies: Sequence[TacticalFighter],
@@ -333,10 +345,9 @@ def run_enemy_turn(
     enemy = enemies[slot]
     if not enemy.alive:
         return None
-    if can_use_tactical(enemy, Action.HEAL):
-        target = heal_target(enemies)
-        if target is not None:
-            return EnemyTurnResult("heal", target, healed=use_heal(enemy, enemies[target], heal, rng))
+    target = enemy_heal_target(enemy, enemies)
+    if target is not None:
+        return EnemyTurnResult("heal", target, healed=use_heal(enemy, enemies[target], heal, rng))
     target = choose_enemy_target(enemy, allies, rng)
     if target is None:
         return None
