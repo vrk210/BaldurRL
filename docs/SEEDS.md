@@ -44,6 +44,6 @@ used so far.
 | 140000–199999 | M5/M6 value data extension; guided-planning data 180000–180659 and review checks 180600–180699 | `reports/m5_m6_planning.md` |
 | 210000–210009 | Table transition benchmark | `docs/EXPECTIMAX_PLANNING.md` |
 | 210010–212399 | Review of the M5/M6 follow-up: adversarial transition audit (211000–211029), environment fingerprints | `reports/m5_m6_planning.md` |
-| 220000–229999 | **Reserved:** M5/M6 headroom probe (rollout-improved heuristic) | Reserved 2026-10-15; the experiment's report replaces this entry |
+| 220000–229999 | M5/M6 headroom probe: tests 220000–220007; pilots 220010–220013; selection 221000–221011 and 221100–221111; confirmation 223000–223999 (1,000 per stage). All other assigned seeds, including spare 228000–229999, unused | `agents/improved_heuristic_agent.py`, `evaluation/headroom_probe_results.json`, `runs/headroom_probe/` |
 | 230000–239999 | **Reserved:** simulator data mining and tactics playbook | Reserved 2026-10-15; the experiment's report replaces this entry |
 | 240000 and above | Unallocated | |

@@ -111,3 +111,24 @@ def test_candidate_futility_uses_matching_prefixes_and_keeps_family_size(monkeyp
     streams = {a: [s for called, s in calls if called == a] for a in counts}
     assert all(seeds == streams[anchor][:len(seeds)] for seeds in streams.values())
     env.close()
+
+
+@pytest.mark.parametrize('stage', ['m5', 'm6'])
+def test_defaults_match_the_confirmed_configuration(stage):
+    from evaluation.headroom_probe import CONFIRMATION_CONFIG
+
+    config = CONFIRMATION_CONFIG
+    default = ImprovedHeuristicAgent(stage, seed=101)
+    explicit = ImprovedHeuristicAgent(stage, seed=101, alpha=config['alpha'],
+                                      looks=tuple(config['looks']),
+                                      futility_margin=config['futility_margin'],
+                                      prune_nonpositive=config['prune_nonpositive'])
+    assert (default.alpha, default.looks, default.futility_margin, default.prune_nonpositive) == (
+        explicit.alpha, explicit.looks, explicit.futility_margin, explicit.prune_nonpositive)
+    env = make_env(stage)
+    obs, _ = env.reset(seed=220005)
+    mask = env.action_masks()
+    assert default.choose_action(obs, mask) == explicit.choose_action(obs, mask)
+    assert default.last_diagnostics.scores == explicit.last_diagnostics.scores
+    assert default.last_diagnostics.paired_counts == explicit.last_diagnostics.paired_counts
+    env.close()

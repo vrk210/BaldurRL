@@ -162,7 +162,9 @@ def run_episode(job: dict) -> dict:
 def summarize(out: Path, rows: list[dict]) -> dict:
     paired = paired_summary({r["encounter"]: int(r["won"]) for r in rows},
                             {r["encounter"]: int(r["heuristic_won"]) for r in rows})
-    names = make_env(json.loads((out / "manifest.json").read_text())["stage"]).action_names
+    metadata_env = make_env(json.loads((out / "manifest.json").read_text())["stage"])
+    names = metadata_env.action_names
+    metadata_env.close()
     types = defaultdict(list)
     for path in sorted(out.glob("decisions_*.jsonl")):
         for line in path.open():
@@ -214,7 +216,7 @@ def recheck(run: Path, samples: int, budget: int, seed: int) -> None:
                             chosen=row["chosen"], paired_difference=float(diff.mean()),
                             paired_se=float(diff.std(ddof=1) / sqrt(budget)),
                             chosen_only_wins=int(sum(diff > 0)), anchor_only_wins=int(sum(diff < 0))))
-    payload = dict(seed=seed, samples=samples, budget=budget, total_deviations=total, results=results,
+    payload = dict(seed=seed, samples=samples, actual_samples=len(results), budget=budget, total_deviations=total, results=results,
                    cpu_seconds=process_time() - cpu)
     with (run / "recheck.json").open("x") as handle:
         json.dump(payload, handle, indent=2)

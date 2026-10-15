@@ -1,4 +1,43 @@
-"""Conservative one-step improvement with paired multiplicity-safe gates."""
+"""Nominal M6 headroom evidence; conservative CIs remain inconclusive (2026-10-15).
+
+Confirmation: 1,000 paired encounters per stage, seeds 223000–223999.
+M5: probe 80.3% vs tuned 78.6%; delta +1.70 pp;
+  conservative 95% CI [-1.23, +4.61] pp; exact McNemar p=0.07842.
+  approximate paired-normal 95% CI [-0.08, +3.48] pp.
+M6: probe 81.6% vs adaptive 79.6%; delta +2.00 pp;
+  conservative 95% CI [-1.03, +5.02] pp; exact McNemar p=0.0446.
+  approximate paired-normal 95% CI [+0.14, +3.86] pp.
+P values are pointwise, unadjusted for the two stage comparisons.
+Conservative intervals crossing zero do not establish improvement. Their upper bounds
+apply to this tested policy, not all one-step policies or the optimum.
+
+Method: tuned/adaptive continuation; common simulation seeds; one-sided
+exact paired McNemar gates, alpha=.05 divided by all alternatives and
+three looks (32/128/1024). Nonpositive candidates stop after each look.
+Every legal action is estimated. Per-action budgets are logged. Gate
+control is per decision, not an episode-wide safety guarantee.
+Configuration and analysis committed before confirmation: 6c2162e.
+
+Measured experiment cost 18.44 CPU-hours (worker/recheck bodies; tests/startup excluded).
+M5: 1.134 planning wall seconds/decision; 421/28557 deviations
+  (1.47%); 326/1000 fights (32.6%).
+M6: 1.160 planning wall seconds/decision; 387/28615 deviations
+  (1.35%); 294/1000 fights (29.4%).
+M5 most frequent switch: ACTION_SURGE -> END_TURN, n=107, estimated gain +8.91 pp.
+M6 most frequent switch: ACTION_SURGE -> END_TURN, n=116, estimated gain +10.38 pp.
+Fresh 1,024-pair checks, M5: 12 states, 10 positive; mean local gain +4.96 pp
+  (conditional Monte Carlo SE 0.45 pp; this is a sampled-state check).
+Fresh 1,024-pair checks, M6: 12 states, 9 positive; mean local gain +3.17 pp
+  (conditional Monte Carlo SE 0.45 pp; this is a sampled-state check).
+All action-pair counts/mean estimated gains, approximate paired CIs and
+raw-output references: evaluation/headroom_probe_results.json.
+Pilots/tests: 220000–220007, 220010–220013; selection: 221000–221011,
+221100–221111. Spare and frozen final-test ranges remain untouched.
+Only 1,000 fights/stage: small 1–2 pp whole-fight gains may remain unresolved.
+Limits: early futility/finite budgets miss gains; values use heuristic
+continuation. Simulator tactics have not been validated in BG3.
+Reproduce via evaluation.headroom_probe (committed confirmation constant).
+"""
 from dataclasses import dataclass
 from functools import lru_cache
 from math import comb, isfinite
@@ -41,9 +80,9 @@ class ImprovedHeuristicAgent:
     fight. Futility only retains the anchor and cannot inflate that bound.
     alpha=0 is infinite strictness. No live combat seed or RNG is accessed.
     """
-    def __init__(self, stage: str, *, seed: int = 0, alpha: float = 0.01,
-                 looks: tuple[int, ...] = (16, 64, 256), futility_margin: float = 0.0,
-                 prune_nonpositive: bool = False) -> None:
+    def __init__(self, stage: str, *, seed: int = 0, alpha: float = 0.05,
+                 looks: tuple[int, ...] = (32, 128, 1024), futility_margin: float = 0.0,
+                 prune_nonpositive: bool = True) -> None:
         if stage not in ("m5", "m6"):
             raise ValueError("Improved heuristic supports m5 and m6")
         if not isfinite(alpha) or not 0 <= alpha <= 1:

@@ -32,3 +32,18 @@ def test_episode_same_ordinal_same_stream_independent_of_execution_order(tmp_pat
     first, second = [run_episode(config) for config in configs]
     for key in ('planner_seed', 'won', 'heuristic_won', 'decisions', 'deviations'):
         assert first[key] == second[key]
+
+
+def test_confirmation_rejects_uncommitted_configuration_before_writing(monkeypatch, tmp_path, capsys):
+    import sys
+    from evaluation.headroom_probe import main
+
+    out = tmp_path / 'not-created'
+    monkeypatch.setattr(sys, 'argv', ['headroom_probe', 'run', '--stage', 'm5',
+                        '--phase', 'confirmation', '--seed-start', '223000',
+                        '--episodes', '999', '--out', str(out)])
+    with pytest.raises(SystemExit) as error:
+        main()
+    assert error.value.code == 2
+    assert 'must match committed CONFIRMATION_CONFIG' in capsys.readouterr().err
+    assert not out.exists()

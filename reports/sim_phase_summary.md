@@ -74,6 +74,6 @@ three-seed mean of 5,000 played fights on the same seeds.
 | M5/M6 table transition model | Merged as the default ([report](m5_m6_planning.md)) |
 | Guided planner and expert iteration | Shelved on `archive/m5-m6-guided-planning`, with the review |
 | PPO tuning sweep | Not started. Superseded by the headroom probe below |
-| Headroom probe: heuristic improved by many rollouts per action | Proposed; seeds 220000–229999 reserved |
+| Headroom probe: heuristic improved by many rollouts per action | M5 +1.70 pp [-1.23, +4.61]; M6 +2.00 pp [-1.03, +5.02]; conservative 95% CIs, 1,000 paired fights/stage. [Method and result](../agents/improved_heuristic_agent.py) |
 | Mining existing simulator logs into a tactics playbook | Proposed; seeds 230000–239999 reserved |
 | Simulator behind the BG3 snapshot and command interface | In progress separately with the harness work |
