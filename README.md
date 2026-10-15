@@ -8,7 +8,7 @@ live-verification checklist. It has not been tested in the game.
 
 ## Simulator stages
 
-M0 is the fixed 1v1 regression baseline. M1A varies one opponent's statistics. M1B has two opponents and target choice. M2 adds a one-use simplified Cleave. M3 controls two allies against two enemies. M4 is 2v3 with scaled enemies. M5 is 2v3 against a Brute, an Archer, and a Healer with varied enemy targeting, advantage/disadvantage, Trip/Prone, and Dodge. M6 adds front/back ranks, Advance/Disengage, and opportunity attacks to M5. M5/M6 rules are simulator choices designed for decision headroom, not verified BG3 rules. See [M0 specification](docs/M0_SPEC.md), [stage specifications](docs/STAGES_SPEC.md), and the [M5/M6 report](reports/m5_m6_decision_stages.md).
+M0 is the fixed 1v1 regression baseline. M1A varies one opponent's statistics. M1B has two opponents and target choice. M2 adds a one-use simplified Cleave. M3 controls two allies against two enemies. M4 is 2v3 with scaled enemies. M5 is 2v3 against a Brute, an Archer, and a Healer with varied enemy targeting, advantage/disadvantage, Trip/Prone, and Dodge. M6 adds front/back ranks, Advance/Disengage, and opportunity attacks to M5. M5/M6 rules are simulator choices designed for decision headroom, not verified BG3 rules. See [M0 specification](docs/M0_SPEC.md), [stage specifications](docs/STAGES_SPEC.md), and the [results](docs/RESULTS.md#m5m6-decision-rich-stages).
 
 Train or evaluate by stage:
 
@@ -53,7 +53,8 @@ Evaluate it in parallel with per-decision timing:
 ```
 
 See [expectimax planning](docs/EXPECTIMAX_PLANNING.md) and the
-[M4 report](reports/m4_expectimax.md).
+[M4 results](docs/RESULTS.md#m4-expectimax-with-exact-chance-nodes).
+Results for every stage are collected in [docs/RESULTS.md](docs/RESULTS.md).
 
 ## Inspecting decisions
 

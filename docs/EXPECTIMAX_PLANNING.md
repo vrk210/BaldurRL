@@ -252,5 +252,5 @@ with early stopping on a separate validation seed range.
 processes (results do not depend on the worker count), records per-seed
 outcomes and per-decision wall time, and provides paired win-rate differences.
 
-See [the M4 report](../reports/m4_expectimax.md) for results, cost, and failure
+See [the M4 results](RESULTS.md#m4-expectimax-with-exact-chance-nodes) for results, cost, and failure
 modes.
