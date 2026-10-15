@@ -1,6 +1,7 @@
 -- BaldurRL source-reviewed, live-unverified read-only server probe.
--- Call with the UUID of the actor actually selected by the operator.  This
--- script does not infer selection from the host and performs no game action.
+-- Loaded at bootstrap; !baldurrl_inspect <selected-actor-uuid> saves a diagnostic
+-- inside the current capture session. No host-selection inference or game action.
+-- dump_json is an opaque JSON string from Ext.DumpExport, not a parsed component.
 
 local JSON_NULL = {}
 
@@ -75,7 +76,7 @@ local function output(message)
     end
 end
 
-function BaldurRL_ServerInspect(selected_actor, output_path)
+local function inspect(selected_actor, output_path)
     local report = {
         report_version = 1,
         source_reviewed = true,
@@ -124,8 +125,16 @@ function BaldurRL_ServerInspect(selected_actor, output_path)
                     else
                         local component_result = query(name, function()
                             -- Dump immediately; no component userdata escapes this scope.
-                            return Ext.DumpExport(actor[name])
+                            local dump = Ext.DumpExport(actor[name])
+                            assert(type(dump) == 'string', 'Ext.DumpExport did not return a JSON string')
+                            return dump
                         end)
+                        if component_result.status == "ok" then
+                            -- Name the raw representation explicitly. Parsing and
+                            -- re-encoding engine dumps could lose null/array shape.
+                            component_result.dump_json = component_result.value
+                            component_result.value = nil
+                        end
                         report.components[name] = component_result
                         if component_result.status == "error" then
                             report.errors[#report.errors + 1] = component_result.error
@@ -153,4 +162,6 @@ function BaldurRL_ServerInspect(selected_actor, output_path)
     output("[BaldurRL probe] " .. payload)
     return saved, payload
 end
+
+return inspect
 

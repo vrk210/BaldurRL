@@ -139,6 +139,53 @@ def test_wrong_action_identity_fails(tmp_path, change, phrase):
     assert phrase in check(report, "action")["reason"].lower()
 
 
+@pytest.mark.parametrize('target', [None, 'target'])
+@pytest.mark.parametrize('story', [None, 99])
+def test_unrelated_actor_using_shared_ability_does_not_fail_trial(tmp_path, target, story):
+    records = tmp_path / 'records'
+    events = attack_events()
+    unrelated = GameEvent(1, 4, EventKind.ABILITY_USED if target is None else EventKind.ABILITY_USED_ON_TARGET,
+                          actor_id='other', target_id=target, ability_id='Attack_MainHand', story_action_id=story)
+    write_records(records, (snapshot(1, 1), *events[:2], unrelated,
+                            replace(events[2], sequence=5), snapshot(6, 0)))
+    assert analyze_trial(replace(trial(), after_sequence=6), records)['status'] == 'PASS'
+
+
+def test_wrong_actor_without_action_correlation_is_inconclusive(tmp_path):
+    records = tmp_path / 'records'
+    events = attack_events(actor='other', story=None)
+    write_records(records, (snapshot(1, 1), *events, snapshot(5, 0)))
+    report = analyze_trial(trial(after_sequence=5, story_action_id=None), records)
+    assert check(report, 'action')['status'] == 'INCONCLUSIVE'
+
+
+@pytest.mark.parametrize('after,expected,status', [
+    (0.2, -0.1, 'PASS'), (0.2000001, -0.1, 'PASS'),
+    (0.2001, -0.1, 'FAIL'), (0.3, -1, 'FAIL'),
+])
+def test_resource_delta_allows_rounding_but_rejects_actual_cost_mismatch(tmp_path, after, expected, status):
+    records = tmp_path / 'records'
+    write_records(records, (snapshot(1, 0.3), *attack_events(), snapshot(5, after)))
+    spec = trial(after_sequence=5, expected_resource_deltas=[
+        {'resource_id': 'ActionPoint', 'level': 0, 'expected_delta': expected},
+    ])
+    assert check(analyze_trial(spec, records), 'resources')['status'] == status
+
+
+def test_public_feedback_reads_results_and_validated_attestations(tmp_path):
+    session = autonomous_session(tmp_path / 'session', None, resolved=True)
+    write_records(session.records, fixture_records())
+    feedback = session.read_feedback()
+    assert [item.status for item in feedback if isinstance(item, CommandAcknowledgement)] == [
+        AcknowledgementStatus.ACCEPTED, AcknowledgementStatus.RESOLVED,
+    ]
+    assert [item.snapshot_sequence for item in feedback if isinstance(item, PostExecutionObservation)] == [5]
+    (session.acknowledgements / 'command-1.observation.json').write_text(json.dumps(
+        PostExecutionObservation(1, 'command-1', 1, 'bad boundary').to_dict()))
+    with pytest.raises(ValueError, match='completion observation boundary'):
+        session.read_feedback()
+
+
 def test_distinct_and_missing_story_ids_make_multiple_actions_fail(tmp_path):
     records = tmp_path / "records"
     write_records(records, (

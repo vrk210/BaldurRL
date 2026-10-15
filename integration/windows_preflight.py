@@ -1,4 +1,10 @@
-"""Read-only static preflight checks for the passive BG3 H0 collector."""
+"""Read-only static checks for H0; READY never proves that the mod loaded.
+
+Pass --game-dir as the BG3 installation root or bin directory. Optional
+--script-extender-root and --modsettings default from LOCALAPPDATA. Missing,
+malformed and unsupported prerequisites exit 1; --json emits the v1 report.
+Settings and load orders are inspected only, never changed.
+"""
 
 from __future__ import annotations
 
@@ -70,6 +76,7 @@ def _repo_checks(repo_root: Path) -> list[Check]:
         "Observation.lua",
         "Wire.lua",
         "Emitter.lua",
+        "Inspect.lua",
     )
     checks: list[Check] = []
     if not mod.is_dir():
@@ -185,17 +192,23 @@ def run_preflight(
         else:
             try:
                 root = ET.parse(modsettings_path).getroot()
+                # Patch 7 removed ModOrder; Mods now carries the active list.
+                # Retain the old interpretation when a legacy ModOrder exists:
+                # its Mods descriptions alone did not establish activation.
+                orders = [node for node in root.iter('node') if node.get('id') == 'ModOrder']
+                containers = orders or [node for node in root.iter('node') if node.get('id') == 'Mods']
+                layout = 'legacy ModOrder' if orders else 'Mods/ModuleShortDesc (Patch 7+)'
+                module_type = 'Module' if orders else 'ModuleShortDesc'
                 active = any(
-                    module.get("id") == "Module"
-                    and any(attribute.get("id") == "UUID" and attribute.get("value") == MODULE_UUID for attribute in module.iter("attribute"))
-                    for order in root.iter("node")
-                    if order.get("id") == "ModOrder"
+                    module.get("id") == module_type
+                    and any(attribute.get("id") == "UUID" and attribute.get("value", "").lower() == MODULE_UUID for attribute in module.findall("attribute"))
+                    for order in containers
                     for module in order.iter("node")
                 )
                 checks.append(_check(
                     "mod_activation",
                     "present_unverified" if active else "missing",
-                    f"module UUID {MODULE_UUID} is in ModOrder; live activation is not verified" if active else f"module UUID {MODULE_UUID} is not in ModOrder",
+                    f"module UUID {MODULE_UUID} {'found' if active else 'not found'} in {layout}; live activation is not verified",
                     modsettings_path,
                     "Verify the active load order and H0 bootstrap in BG3." if active else "Activate BaldurRL H0 and export the load order, then rerun preflight.",
                 ))
@@ -221,7 +234,7 @@ def _print_human(report: dict[str, object]) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Read-only Windows preflight for the passive BG3 H0 harness")
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--game-dir", required=True, type=Path, help="BG3 installation root or bin directory")
     parser.add_argument("--script-extender-root", type=Path, help="Script Extender writable root (the parent of BaldurRL/H0)")
     parser.add_argument("--modsettings", type=Path, help="modsettings.lsx to inspect for the H0 UUID")

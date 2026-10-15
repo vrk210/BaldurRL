@@ -249,3 +249,39 @@ def test_mod_layout_static_only():
     attributes = {node.get("id"): node.get("value") for node in ET.parse(MOD / "meta.lsx").iter("attribute")}
     assert attributes["Folder"] == MOD.name and attributes["UUID"]
     assert (LUA / "BootstrapServer.lua").is_file() and (LUA / "BootstrapClient.lua").is_file()
+
+
+def test_packaged_inspection_command_saves_in_current_session(harness):
+    harness.commands['baldurrl_inspect']('baldurrl_inspect')
+    assert 'Usage:' in harness.messages[-1]
+    harness.commands['baldurrl_inspect']('baldurrl_inspect', 'selected')
+    assert 'Load a save' in harness.messages[-1]
+    harness.life('SessionLoaded')
+    harness.lua.execute('''
+        -- Python callbacks are userdata in Lupa; expose Lua functions just as
+        -- the extender does so capability checks exercise the actual command.
+        local save, print = Ext.IO.SaveFile, Ext.Utils.Print
+        Ext.IO.SaveFile = function(...) return save(...) end
+        Ext.Utils.Print = function(...) return print(...) end
+        Ext.Entity = {Get = function(uuid)
+            assert(uuid == 'selected')
+            local actor = {SpellBook = {}}
+            function actor:GetAllComponentNames() return {'SpellBook'} end
+            return actor
+        end}
+        Ext.DumpExport = function(component) return '{"Spells":[]}' end
+    ''')
+    harness.commands['baldurrl_inspect']('baldurrl_inspect', 'selected')
+    session = harness.root / 'BaldurRL/H0/00000001-0000-4000-8000-000000000001'
+    report = json.loads((session / 'diagnostics/inspect-00000001.json').read_text())
+    assert report['selected_actor_id'] == 'selected'
+    assert json.loads(report['components']['SpellBook']['dump_json']) == {'Spells': []}
+    assert not report['live_verified']
+    harness.commands['baldurrl_inspect']('baldurrl_inspect', 'selected')
+    assert len(list((session / 'diagnostics').glob('*.json'))) == 2
+    harness.life('SessionLoading')
+    harness.commands['baldurrl_inspect']('baldurrl_inspect', 'selected')
+    assert 'Load a save' in harness.messages[-1]
+    harness.life('SessionLoaded')
+    harness.commands['baldurrl_inspect']('baldurrl_inspect', 'selected')
+    assert (harness.root / 'BaldurRL/H0/00000002-0000-4000-8000-000000000001/diagnostics/inspect-00000001.json').is_file()

@@ -18,7 +18,7 @@ def write_repo(root: Path, *, config: str = "{}", uuid: str = MODULE_UUID) -> No
     (mod / "ScriptExtender" / "Config.json").write_text(config, encoding="utf-8")
     lua = mod / "ScriptExtender" / "Lua"
     lua.mkdir()
-    for name in ("BootstrapServer.lua", "BootstrapClient.lua", "Observation.lua", "Wire.lua", "Emitter.lua"):
+    for name in ("BootstrapServer.lua", "BootstrapClient.lua", "Observation.lua", "Wire.lua", "Emitter.lua", "Inspect.lua"):
         (lua / name).write_text("-- fixture", encoding="utf-8")
 
 
@@ -38,7 +38,15 @@ def write_runtime(root: Path, *, active_uuid: str = MODULE_UUID) -> tuple[Path, 
     modsettings = root / "profile with spaces" / "modsettings.lsx"
     modsettings.parent.mkdir(exist_ok=True)
     modsettings.write_text(
-        f'<save><node id="ModOrder"><children><node id="Module"><attribute id="UUID" value="{active_uuid}" /></node></children></node></save>',
+        # Patch 7 export structure from BG3ModManager cd6a840 (not a live capture).
+        '<?xml version="1.0" encoding="UTF-8"?><save>'
+        '<version major="4" minor="7" revision="1" build="3"/>'
+        '<region id="ModuleSettings"><node id="root"><children>'
+        '<node id="Mods"><children><node id="ModuleShortDesc">'
+        '<attribute id="Folder" type="LSString" value="BaldurRL_H0"/>'
+        '<attribute id="PublishHandle" type="uint64" value="0"/>'
+        f'<attribute id="UUID" type="guid" value="{active_uuid}"/>'
+        '</node></children></node></children></node></region></save>',
         encoding="utf-8",
     )
     return extender, modsettings
@@ -68,6 +76,7 @@ def test_ready_static_report_uses_explicit_spaced_paths(tmp_path):
     checks = by_name(report)
     assert Path(checks["game_bin"]["path"]) == (game / "bin").resolve()
     assert checks["mod_activation"]["status"] == "present_unverified"
+    assert 'Patch 7+' in checks['mod_activation']['evidence']
     assert all({"status", "evidence", "path", "next_action"} <= check.keys() for check in report["checks"])
 
 
@@ -80,15 +89,23 @@ def test_accepts_explicit_bin_directory(tmp_path):
     assert report["static_ready"] is True
 
 
-def test_uuid_listed_outside_mod_order_is_not_active(tmp_path):
+@pytest.mark.parametrize('layout,active', [('legacy', True), ('legacy_descriptions_only', False), ('unrelated', False)])
+def test_legacy_and_unrelated_uuid_locations(tmp_path, layout, active):
     repo = tmp_path / "repo"
     write_repo(repo)
     game = write_install(tmp_path)
     extender, modsettings = write_runtime(tmp_path)
-    modsettings.write_text(f'<save><node id="Mods"><node id="ModuleShortDesc"><attribute id="UUID" value="{MODULE_UUID}" /></node></node></save>')
+    description = f'<node id="Mods"><children><node id="ModuleShortDesc"><attribute id="UUID" value="{MODULE_UUID}" /></node></children></node>'
+    if layout == 'legacy':
+        body = f'<node id="ModOrder"><children><node id="Module"><attribute id="UUID" value="{MODULE_UUID}" /></node></children></node>' + description
+    elif layout == 'legacy_descriptions_only':
+        body = '<node id="ModOrder"><children/></node>' + description
+    else:
+        body = f'<node id="Unrelated"><attribute id="UUID" value="{MODULE_UUID}" /></node>'
+    modsettings.write_text(f'<save>{body}</save>')
     report = run_preflight(game, script_extender_root=extender, modsettings=modsettings, repo_root=repo, system="Windows")
-    assert by_name(report)["mod_activation"]["status"] == "missing"
-    assert report["static_ready"] is False
+    assert by_name(report)["mod_activation"]["status"] == ('present_unverified' if active else 'missing')
+    assert report["static_ready"] is active
 
 
 def test_missing_required_lua_source_fails_closed(tmp_path):

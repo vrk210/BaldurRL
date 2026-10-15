@@ -1,3 +1,17 @@
+<#
+.SYNOPSIS
+Create an isolated harness venv and inspect a Windows BG3 installation read-only.
+.DESCRIPTION
+Does not install BG3/Script Extender, change settings/load orders, or launch BG3.
+GameDir accepts the installation root or bin. ScriptExtenderRoot and Modsettings
+default from LOCALAPPDATA in the Python preflight. -Json emits its v1 report;
+present_unverified is static evidence only. The preflight exit code is preserved.
+.PARAMETER InstallTestDependencies
+Opt in to installing the pinned pytest/Lupa packages from requirements-harness-test.txt.
+Omit this switch for standard-library-only runtime tools.
+.EXAMPLE
+.\scripts\windows\bootstrap-harness.ps1 -GameDir 'D:\Games\Baldurs Gate 3' -Json
+#>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string]$GameDir,

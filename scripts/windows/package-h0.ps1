@@ -1,3 +1,15 @@
+<#
+.SYNOPSIS
+Package the H0 source with separately installed LSLib/Divine and record SHA-256 hashes.
+.DESCRIPTION
+Uses bg3/h0 with Mods at the package root. -DryRun prints argv and source hashes
+without invoking Divine. Conversion writes a temporary file; only a successful,
+nonempty result replaces the destination. The UTF-8 JSON manifest records source
+and output hashes. -Force explicitly permits replacing an existing package.
+The manifest and package are separate files, not a crash-atomic transaction.
+.EXAMPLE
+.\scripts\windows\package-h0.ps1 -DivinePath 'C:\Tools\Divine.exe' -OutputPath 'D:\BaldurRL\H0.pak' -DryRun
+#>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string]$DivinePath,

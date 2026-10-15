@@ -3,6 +3,18 @@
 The capture root is supplied explicitly.  This module never searches a game
 installation and only reads the immediate collector session directories below
 that root.
+
+Run --capture-root PATH --archive-root OTHER_PATH [--once]. Roots must not
+overlap. Watch mode discovers new sessions; Ctrl-C releases owned locks.
+Each failed session is quarantined until restart, retains its lock, and writes
+state=failed health/manifest diagnostics where safe. Other sessions continue.
+--once processes all sessions and exits 1 if any failed. Review the failure
+before restarting; never delete another runner's lock automatically.
+
+Unchanged committed bytes, parsed records and hashes are cached in memory;
+metadata scans still detect new or changed files. Restart verifies bytes again.
+This does not detect stat-preserving tampering or guarantee crash durability.
+Health describes offline schema validity, never live completeness or legality.
 """
 
 from __future__ import annotations
@@ -17,9 +29,9 @@ import time
 from argparse import ArgumentParser
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
-from .publish import publish_ready
+from .publish import file_signature, publish_ready
 from .reader import RecordDirectoryReader, validate_sequence
 from .schema import GameEvent, GameSnapshot
 
@@ -57,25 +69,33 @@ def _safe_session(session: Path, capture_root: Path) -> tuple[str, Path]:
     return session.name, resolved
 
 
-def discover_sessions(capture_root: str | Path) -> tuple[Path, ...]:
+def discover_sessions(
+    capture_root: str | Path, *,
+    on_error: Callable[[Path, Exception], None] | None = None,
+) -> tuple[Path, ...]:
     """Return immediate, non-symlink session directories containing staging/."""
     root = Path(capture_root).resolve()
     if not root.is_dir():
         raise ValueError(f"Capture root does not exist: {root}")
     sessions: list[Path] = []
     for candidate in sorted(root.iterdir(), key=lambda item: item.name):
-        if candidate.is_symlink():
-            if (candidate / "staging").is_dir():
-                raise ValueError(f"Session directory must not be a symlink: {candidate}")
-            continue
-        if not candidate.is_dir():
-            continue
-        _, resolved = _safe_session(candidate, root)
-        staging = resolved / "staging"
-        if staging.is_symlink():
-            raise ValueError(f"Staging directory must not be a symlink: {staging}")
-        if staging.is_dir():
-            sessions.append(resolved)
+        try:
+            if candidate.is_symlink():
+                if (candidate / "staging").is_dir():
+                    raise ValueError(f"Session directory must not be a symlink: {candidate}")
+                continue
+            if not candidate.is_dir():
+                continue
+            _, resolved = _safe_session(candidate, root)
+            staging = resolved / "staging"
+            if staging.is_symlink():
+                raise ValueError(f"Staging directory must not be a symlink: {staging}")
+            if staging.is_dir():
+                sessions.append(resolved)
+        except (OSError, ValueError) as exc:
+            if on_error is None:
+                raise
+            on_error(candidate, exc)
     return tuple(sessions)
 
 
@@ -288,11 +308,18 @@ class SessionRunner:
             self.revision_source = "repository_lookup"
         self.collector_hashes = _collector_hashes(self.repository)
         self._locks: dict[Path, _SessionLock] = {}
+        self._failures: dict[Path, dict[str, Any]] = {}
+        self._copies: dict[tuple[Path, Path], tuple[tuple[int, ...], tuple[int, ...]]] = {}
+        self._hashes: dict[Path, tuple[tuple[int, ...], str]] = {}
+        self._diagnostics: dict[Path, tuple[tuple[int, ...], Path, tuple[int, ...]]] = {}
+        self._publication_cache: dict[Path, tuple[tuple[int, ...] | None, ...]] = {}
+        self._readers: dict[Path, RecordDirectoryReader] = {}
 
     def close(self) -> None:
         for lock in self._locks.values():
             lock.release()
         self._locks.clear()
+        self._failures.clear()
 
     def __enter__(self) -> SessionRunner:
         return self
@@ -308,22 +335,33 @@ class SessionRunner:
 
     def poll(self) -> tuple[dict[str, Any], ...]:
         reports: list[dict[str, Any]] = []
+        def discovery_error(path: Path, error: Exception) -> None:
+            # Unsafe/unreadable paths cannot be locked or written through.
+            report = self._failures.setdefault(path, {
+                'session_id': path.name, 'state': 'failed',
+                'failure': {'message': f'Session {path.name} at {path}: {error}', 'source_files_sha256': {}},
+            })
+            reports.append(report)
         try:
-            sessions = discover_sessions(self.capture_root)
+            sessions = discover_sessions(self.capture_root, on_error=discovery_error)
         except (OSError, ValueError):
             self.close()
             raise
         for session in sessions:
             session_id, source = _safe_session(session, self.capture_root)
+            if source in self._failures:
+                reports.append(self._failures[source])
+                continue
             try:
                 self._lock(source)
                 reports.append(self._process(session_id, source))
             except (OSError, ValueError) as exc:
-                self.close()
-                raise type(exc)(f"Session {session_id} at {source}: {exc}") from exc
-        return tuple(reports)
+                report = self._record_failure(session_id, source, exc)
+                self._failures[source] = report
+                reports.append(report)
+        return tuple(sorted(reports, key=lambda report: report['session_id']))
 
-    def _process(self, session_id: str, source: Path) -> dict[str, Any]:
+    def _bind_archive(self, session_id: str, source: Path) -> tuple[Path, Path, dict[str, Any]]:
         archive = self.archive_root / session_id
         manifest_path = archive / "manifest" / "session-v1.json"
         _ensure_directory(self.archive_root)
@@ -337,7 +375,8 @@ class SessionRunner:
             except (OSError, UnicodeError, json.JSONDecodeError) as exc:
                 raise ValueError(f"Invalid existing manifest {manifest_path}: {exc}") from exc
             expected = str(source)
-            if prior.get("source", {}).get("session_path") != expected:
+            if (not isinstance(prior, dict) or not isinstance(prior.get('source'), dict)
+                    or prior['source'].get('session_path') != expected):
                 raise ValueError(
                     f"Archive session ID {session_id!r} is already bound to a different source: {manifest_path}"
                 )
@@ -345,12 +384,78 @@ class SessionRunner:
             # Bind the archive name before copying any bytes.  A failed/corrupt
             # first pass must not leave an unbound directory that another source
             # with the same session ID can later reuse.
-            _atomic_json(manifest_path, {
+            prior = {
                 "manifest_version": REPORT_VERSION,
                 "session_id": session_id,
                 "source": {"session_path": str(source)},
                 "state": "processing",
-            })
+            }
+            _atomic_json(manifest_path, prior)
+        return archive, manifest_path, prior
+
+    def _record_failure(self, session_id: str, source: Path, error: Exception) -> dict[str, Any]:
+        failure: dict[str, Any] = {'message': f'Session {session_id} at {source}: {error}',
+                                   'source_files_sha256': {}}
+        report: dict[str, Any] = {'session_id': session_id, 'state': 'failed', 'failure': failure}
+        # A lock conflict or foreign archive must never let us write another
+        # runner's diagnostics. Report persistence failures in stdout instead.
+        if source not in self._locks:
+            return report
+        try:
+            archive, manifest_path, prior = self._bind_archive(session_id, source)
+            for directory, pattern in (('staging', 'record-*.*'), ('records', '*.json')):
+                input_directory = source / directory
+                if input_directory.is_symlink():
+                    failure.setdefault('hash_errors', {})[str(input_directory)] = 'Refused symlinked input directory'
+                    continue
+                for path in sorted(input_directory.glob(pattern)):
+                    try:
+                        failure['source_files_sha256'][path.relative_to(source).as_posix()] = self._digest(path)
+                    except (OSError, ValueError) as exc:
+                        failure.setdefault('hash_errors', {})[str(path)] = str(exc)
+            health = {'report_version': REPORT_VERSION, 'state': 'failed',
+                      'offline_schema_valid': False, 'live_completeness_verified': False,
+                      'decision_ready': False, 'failure': failure}
+            health_path = archive / 'diagnostics' / 'health-v1.json'
+            _ensure_directory(health_path.parent)
+            if health_path.is_symlink():
+                raise ValueError(f'Health file must not be a symlink: {health_path}')
+            _atomic_json(health_path, health)
+            _atomic_json(manifest_path, prior | {'state': 'failed', 'failure': failure})
+            report.update(manifest=str(manifest_path), health=health)
+        except (OSError, ValueError) as exc:
+            report['diagnostic_error'] = str(exc)
+        return report
+
+    def _unchanged_copy(self, source: Path, destination: Path) -> bool:
+        prior = self._copies.get((source, destination))
+        return (prior is not None and destination.exists()
+                and prior == (file_signature(source), file_signature(destination)))
+
+    def _copy(self, source: Path, destination: Path) -> None:
+        if not self._unchanged_copy(source, destination):
+            signature = file_signature(source)
+            _copy_immutable(source, destination)
+            self._copies[source, destination] = signature, file_signature(destination)
+
+    def _digest(self, path: Path) -> str:
+        signature = file_signature(path)
+        prior = self._hashes.get(path)
+        if prior is None or prior[0] != signature:
+            self._hashes[path] = signature, _sha256(path)
+        return self._hashes[path][1]
+
+    def _archive_diagnostic(self, source: Path, directory: Path, **kwargs: str) -> None:
+        signature = file_signature(source)
+        prior = self._diagnostics.get(source)
+        if (prior is not None and prior[0] == signature and prior[1].exists()
+                and file_signature(prior[1]) == prior[2]):
+            return
+        path = _archive_content_addressed(source, directory, **kwargs)
+        self._diagnostics[source] = signature, path, file_signature(path)
+
+    def _process(self, session_id: str, source: Path) -> dict[str, Any]:
+        archive, manifest_path, _ = self._bind_archive(session_id, source)
 
         staging_archive = archive / "staging"
         records_archive = archive / "records"
@@ -365,44 +470,44 @@ class SessionRunner:
             raise ValueError(f"Records path must be a directory: {source_records}")
 
         staging_files = tuple(sorted((source / "staging").glob("record-*.*")))
+        incomplete: list[str] = []
         for path in staging_files:
             if path.suffix not in (".pending", ".ready"):
                 continue
             if path.is_symlink() or not path.is_file():
                 raise ValueError(f"Staging source must be a regular file: {path}")
+            if self._unchanged_copy(path, staging_archive / path.name):
+                continue
             marker = path if path.suffix == ".ready" else path.with_suffix(".ready")
             committed = marker.is_file() and not marker.is_symlink() and marker.read_bytes().endswith(b"\n")
             if committed:
-                _copy_immutable(path, staging_archive / path.name)
+                self._copy(path, staging_archive / path.name)
             else:
                 # These bytes may still be growing.  A content-addressed name
                 # preserves each observed diagnostic without later overwrite.
-                _archive_content_addressed(path, diagnostics_archive / "incomplete")
+                self._archive_diagnostic(path, diagnostics_archive / "incomplete")
+                if path.suffix == '.pending':
+                    incomplete.append(path.name)
 
-        published = publish_ready(source / "staging", source_records)
+        published = publish_ready(source / "staging", source_records, cache=self._publication_cache)
         record_files = tuple(sorted(source_records.glob("*.json")))
         for path in record_files:
-            _copy_immutable(path, records_archive / path.name)
+            self._copy(path, records_archive / path.name)
 
         source_diagnostics = source / "diagnostics"
         if source_diagnostics.exists():
             if source_diagnostics.is_symlink() or not source_diagnostics.is_dir():
                 raise ValueError(f"Diagnostics path must be a directory: {source_diagnostics}")
             for path in sorted(source_diagnostics.glob("*.json")):
-                _archive_content_addressed(
+                self._archive_diagnostic(
                     path, diagnostics_archive / "probes", prefix=path.stem, suffix=path.suffix,
                 )
 
-        reader = RecordDirectoryReader(source_records)
+        reader = self._readers.setdefault(source_records, RecordDirectoryReader(source_records))
         records = reader.read_all()
         health = _health(records)
         _atomic_json(diagnostics_archive / "health-v1.json", health)
 
-        incomplete = []
-        for pending in sorted((source / "staging").glob("record-*.pending")):
-            marker = pending.with_suffix(".ready")
-            if not marker.exists() or not marker.read_bytes().endswith(b"\n"):
-                incomplete.append(pending.name)
         stats = {
             "staging_file_count": sum(path.is_file() for path in staging_files),
             "record_file_count": len(record_files),
@@ -411,6 +516,7 @@ class SessionRunner:
         }
         manifest = {
             "manifest_version": REPORT_VERSION,
+            "state": "archived",
             "session_id": session_id,
             "source": {
                 "capture_root": str(self.capture_root),
@@ -427,22 +533,22 @@ class SessionRunner:
             },
             "collector_source_sha256": self.collector_hashes,
             "archived_files_sha256": {
-                "staging/" + path.name: _sha256(path) for path in sorted(staging_archive.glob("*")) if path.is_file()
+                "staging/" + path.name: self._digest(path) for path in sorted(staging_archive.glob("*")) if path.is_file()
             } | {
-                "records/" + path.name: _sha256(path) for path in sorted(records_archive.glob("*")) if path.is_file()
+                "records/" + path.name: self._digest(path) for path in sorted(records_archive.glob("*")) if path.is_file()
             } | {
-                "diagnostics/" + path.relative_to(diagnostics_archive).as_posix(): _sha256(path)
+                "diagnostics/" + path.relative_to(diagnostics_archive).as_posix(): self._digest(path)
                 for path in sorted(diagnostics_archive.rglob("*"))
                 if path.is_file()
             },
             "stats": stats,
         }
         _atomic_json(manifest_path, manifest)
-        return {"session_id": session_id, "manifest": str(manifest_path), "health": health, "stats": stats}
+        return {"session_id": session_id, "state": "archived", "manifest": str(manifest_path), "health": health, "stats": stats}
 
 
 def main() -> None:
-    parser = ArgumentParser(description="Publish and archive passive BG3 collector sessions")
+    parser = ArgumentParser(description=__doc__)
     parser.add_argument("--capture-root", type=Path, required=True)
     parser.add_argument("--archive-root", type=Path, required=True)
     parser.add_argument("--once", action="store_true", help="Process the currently discovered sessions once")
@@ -453,6 +559,7 @@ def main() -> None:
     args = parser.parse_args()
     if not math.isfinite(args.poll_interval) or args.poll_interval <= 0:
         parser.error("--poll-interval must be a positive finite number")
+    failed = False
     try:
         with SessionRunner(
             args.capture_root, args.archive_root, game_version=args.game_version,
@@ -460,6 +567,7 @@ def main() -> None:
         ) as runner:
             while True:
                 for report in runner.poll():
+                    failed = failed or report['state'] == 'failed'
                     print(json.dumps(report, sort_keys=True), flush=True)
                 if args.once:
                     break
@@ -468,6 +576,8 @@ def main() -> None:
         pass
     except (OSError, ValueError) as exc:
         parser.exit(1, f"error: {exc}\n")
+    if failed:
+        parser.exit(1, 'error: One or more sessions failed; inspect their reports before restarting.\n')
 
 
 if __name__ == "__main__":

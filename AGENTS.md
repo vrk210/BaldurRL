@@ -85,3 +85,10 @@ Do not jump ahead unless explicitly requested.
 ## Documentation maintenance
 
 Changes to combat mechanics, actions, observations, legal-action rules, rewards, termination, or architecture boundaries must update the appropriate documentation in the same change.
+
+Prefer self-documenting code and tests, with local rationale and the conditions
+for revisiting a decision beside the implementation. Keep cross-cutting
+architecture and contracts in a few maintained documents. Put completed task
+plans and implementation history in PRs or Git history rather than new docs.
+Add a standalone document when it serves an ongoing purpose; necessary temporary
+handoffs must state when they should be removed.

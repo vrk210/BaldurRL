@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -92,8 +93,10 @@ def test_completed_corruption_is_error_and_raw_bytes_are_archived(tmp_path):
     body = stage(session, 1)
     (session / "staging" / "record-00000001.ready").write_bytes(b"1\n")
     with SessionRunner(capture, archive, repository=tmp_path) as runner:
-        with pytest.raises(ValueError, match=r"Session bad.*byte count mismatch"):
-            runner.poll()
+        report, = runner.poll()
+        assert report['state'] == 'failed'
+        assert 'byte count mismatch' in report['failure']['message']
+        assert (session / LOCK_NAME).exists()
     assert (archive / "bad" / "staging" / "record-00000001.pending").read_bytes() == body
     assert not (session / LOCK_NAME).exists()
 
@@ -107,8 +110,9 @@ def test_idempotence_and_differing_immutable_archive_conflict(tmp_path):
         runner.poll()
         assert runner.poll()[0]["stats"]["published_this_poll"] == 0
         (archive / "stable" / "records" / "record-00000001.json").write_bytes(b"different")
-        with pytest.raises(ValueError, match="differing archived file"):
-            runner.poll()
+        report, = runner.poll()
+        assert report['state'] == 'failed'
+        assert 'differing archived file' in report['failure']['message']
 
 
 @pytest.mark.parametrize("archive_relative", [".", "inside"])
@@ -171,11 +175,13 @@ def test_archive_session_id_cannot_be_reused_by_different_source(tmp_path):
     with SessionRunner(first, archive, repository=tmp_path) as runner:
         runner.poll()
     with SessionRunner(second, archive, repository=tmp_path) as runner:
-        with pytest.raises(ValueError, match="different source"):
-            runner.poll()
+        report, = runner.poll()
+        assert 'different source' in report['failure']['message']
+        assert 'different source' in report['diagnostic_error']
+    assert read_json(archive / 'same-id' / 'manifest' / 'session-v1.json')['source']['session_path'] == str((first / 'same-id').resolve())
 
 
-def test_lock_conflict_is_visible_and_error_releases_owned_locks(tmp_path):
+def test_lock_conflict_is_isolated_without_writing_foreign_session(tmp_path):
     capture, archive = tmp_path / "capture", tmp_path / "archive"
     capture.mkdir()
     first, second = capture / "a", capture / "b"
@@ -183,13 +189,19 @@ def test_lock_conflict_is_visible_and_error_releases_owned_locks(tmp_path):
     stage(second, 1)
     (second / LOCK_NAME).write_text("pid=someone-else\n", encoding="utf-8")
     runner = SessionRunner(capture, archive, repository=tmp_path)
-    with pytest.raises(ValueError, match=r"Session b.*lock already exists"):
-        runner.poll()
+    reports = runner.poll()
+    assert reports[0]['state'] == 'archived'
+    assert reports[1]['state'] == 'failed'
+    assert 'lock already exists' in reports[1]['failure']['message']
+    assert (first / LOCK_NAME).exists()
+    assert (second / LOCK_NAME).exists()
+    assert not (archive / 'b').exists()
+    runner.close()
     assert not (first / LOCK_NAME).exists()
     assert (second / LOCK_NAME).exists()
 
 
-def test_later_discovery_error_releases_owned_locks(tmp_path):
+def test_later_discovery_error_is_isolated_without_following_unsafe_path(tmp_path):
     capture, archive = tmp_path / "capture", tmp_path / "archive"
     capture.mkdir()
     first = capture / "first"
@@ -200,8 +212,13 @@ def test_later_discovery_error_releases_owned_locks(tmp_path):
     outside = tmp_path / "outside"
     (outside / "staging").mkdir(parents=True)
     (capture / "linked").symlink_to(outside, target_is_directory=True)
-    with pytest.raises(ValueError, match="must not be a symlink"):
-        runner.poll()
+    good, bad = runner.poll()
+    assert good['state'] == 'archived' and bad['state'] == 'failed'
+    assert 'must not be a symlink' in bad['failure']['message']
+    assert not (outside / LOCK_NAME).exists()
+    assert not (archive / 'linked').exists()
+    assert (first / LOCK_NAME).exists()
+    runner.close()
     assert not (first / LOCK_NAME).exists()
 
 
@@ -233,8 +250,8 @@ def test_symlinked_session_records_and_archive_directories_are_rejected(tmp_path
     stage(session, 1)
     (session / "records").symlink_to(outside, target_is_directory=True)
     with SessionRunner(capture, archive, repository=tmp_path) as runner:
-        with pytest.raises(ValueError, match="Records directory must not be a symlink"):
-            runner.poll()
+        report, = runner.poll()
+        assert 'Records directory must not be a symlink' in report['failure']['message']
 
     capture_two, archive_two = tmp_path / "capture-two", tmp_path / "archive-two"
     capture_two.mkdir()
@@ -242,8 +259,8 @@ def test_symlinked_session_records_and_archive_directories_are_rejected(tmp_path
     (archive_two / "plain").mkdir(parents=True)
     (archive_two / "plain" / "staging").symlink_to(outside, target_is_directory=True)
     with SessionRunner(capture_two, archive_two, repository=tmp_path) as runner:
-        with pytest.raises(ValueError, match="Directory must not be a symlink"):
-            runner.poll()
+        report, = runner.poll()
+        assert 'Directory must not be a symlink' in report['failure']['message']
 
 
 def test_probe_pure_logic_with_optional_lua_runtime():
@@ -268,7 +285,7 @@ def test_probe_pure_logic_with_optional_lua_runtime():
                 Print = function(value) printed_payload = value end,
             },
             Entity = {Get = function(id) if id == "selected" then return actor end end},
-            DumpExport = function(value) return value.observed and "observed-dump" or "unexpected" end,
+            DumpExport = function(value) return '{"observed":true}' end,
             IO = {SaveFile = function(path, payload)
                 saved_path = path
                 saved_payload = payload
@@ -276,12 +293,119 @@ def test_probe_pure_logic_with_optional_lua_runtime():
             end},
         }
     """)
-    lua.execute((Path(__file__).parents[1] / "bg3" / "probes" / "server_inspect.lua").read_text())
-    saved, payload = lua.globals().BaldurRL_ServerInspect("selected", "session/diagnostics/probe.json")
+    inspect = lua.execute((Path(__file__).parents[1] / "bg3/h0/Mods/BaldurRL_H0/ScriptExtender/Lua/Inspect.lua").read_text())
+    saved, payload = inspect("selected", "session/diagnostics/probe.json")
     report = json.loads(payload)
     assert saved is True
     assert report["selected_actor_id"] == "selected"
-    assert report["components"]["SpellBook"] == {"status": "ok", "value": "observed-dump"}
+    assert report["components"]["SpellBook"] == {"status": "ok", "dump_json": '{"observed":true}'}
+    assert json.loads(report['components']['SpellBook']['dump_json']) == {'observed': True}
     assert report["components"]["TurnBased"]["status"] == "absent"
     assert lua.globals().saved_path == "session/diagnostics/probe.json"
+    _, missing_payload = inspect('not-selected', 'session/diagnostics/missing.json')
+    assert 'selected actor was not found' in json.loads(missing_payload)['errors']
+    lua.execute('Ext.DumpExport = function() return nil end')
+    _, broken_payload = inspect('selected', 'session/diagnostics/broken.json')
+    broken = json.loads(broken_payload)
+    assert broken['components']['SpellBook']['status'] == 'error'
+    assert 'JSON string' in broken['components']['SpellBook']['error']
+
+
+def test_failed_old_session_does_not_block_new_sessions_or_restart(tmp_path):
+    capture, archive = tmp_path / 'capture', tmp_path / 'archive'
+    capture.mkdir()
+    bad = capture / 'aaa-old-corrupt'
+    body = stage(bad, 1, {'record_type': 'snapshot', 'schema_version': 1, 'sequence': 1, 'bogus': True})
+    stage(capture / 'bbb-new-good', 1)
+    for attempt in range(2):
+        with SessionRunner(capture, archive, repository=tmp_path) as runner:
+            failed, good = runner.poll()
+            assert failed['state'] == 'failed' and good['state'] == 'archived'
+            assert (bad / LOCK_NAME).exists()
+            manifest = read_json(archive / bad.name / 'manifest' / 'session-v1.json')
+            assert manifest['state'] == 'failed'
+            assert manifest['failure']['source_files_sha256']['staging/record-00000001.pending'] == hashlib.sha256(body).hexdigest()
+            assert read_json(archive / bad.name / 'diagnostics' / 'health-v1.json')['state'] == 'failed'
+            stage(capture / 'bbb-new-good', attempt + 2)
+            failed, good = runner.poll()
+            assert good['stats']['record_file_count'] == attempt + 2
+            assert failed['state'] == 'failed'
+        assert not (bad / LOCK_NAME).exists()
+
+
+def test_once_exits_nonzero_after_archiving_good_session(tmp_path, monkeypatch, capsys):
+    capture, archive = tmp_path / 'capture', tmp_path / 'archive'
+    capture.mkdir()
+    stage(capture / 'aaa-bad', 1, {'record_type': 'snapshot', 'schema_version': 1, 'sequence': 1, 'bogus': True})
+    stage(capture / 'bbb-good', 1)
+    monkeypatch.setattr(sys, 'argv', ['session_runner', '--capture-root', str(capture), '--archive-root', str(archive), '--once'])
+    with pytest.raises(SystemExit) as exc:
+        main()
+    assert exc.value.code == 1
+    reports = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    assert [report['state'] for report in reports] == ['failed', 'archived']
+    assert (archive / 'bbb-good' / 'records' / 'record-00000001.json').exists()
+
+
+def test_incremental_poll_only_reads_new_payloads(tmp_path, monkeypatch):
+    capture, archive = tmp_path / 'capture', tmp_path / 'archive'
+    capture.mkdir()
+    session = capture / 'session'
+    stage(session, 1)
+    with SessionRunner(capture, archive, repository=tmp_path) as runner:
+        runner.poll()
+        old_files = {path for root in (session, archive / 'session') for path in root.rglob('record-*.*')}
+        original_bytes, original_text, original_open = Path.read_bytes, Path.read_text, Path.open
+
+        def check(path):
+            assert path not in old_files, f'Read unchanged archived payload again: {path}'
+
+        def read_bytes(path, *args, **kwargs):
+            check(path)
+            return original_bytes(path, *args, **kwargs)
+
+        def read_text(path, *args, **kwargs):
+            check(path)
+            return original_text(path, *args, **kwargs)
+
+        def open_file(path, *args, **kwargs):
+            check(path)
+            return original_open(path, *args, **kwargs)
+
+        monkeypatch.setattr(Path, 'read_bytes', read_bytes)
+        monkeypatch.setattr(Path, 'read_text', read_text)
+        monkeypatch.setattr(Path, 'open', open_file)
+        assert runner.poll()[0]['stats']['published_this_poll'] == 0
+        stage(session, 2)
+        assert runner.poll()[0]['stats']['record_file_count'] == 2
+
+
+def test_restart_revalidates_committed_bytes(tmp_path):
+    capture, archive = tmp_path / 'capture', tmp_path / 'archive'
+    capture.mkdir()
+    session = capture / 'session'
+    stage(session, 1)
+    with SessionRunner(capture, archive, repository=tmp_path) as runner:
+        runner.poll()
+    (session / 'staging' / 'record-00000001.pending').write_bytes(b'bad')
+    with SessionRunner(capture, archive, repository=tmp_path) as runner:
+        assert runner.poll()[0]['state'] == 'failed'
+
+
+def test_incremental_cache_rejects_same_size_changed_source(tmp_path):
+    capture, archive = tmp_path / 'capture', tmp_path / 'archive'
+    capture.mkdir()
+    session = capture / 'session'
+    body = stage(session, 1)
+    with SessionRunner(capture, archive, repository=tmp_path) as runner:
+        runner.poll()
+        pending = session / 'staging' / 'record-00000001.pending'
+        changed = body.replace(b'died', b'miss')
+        assert len(changed) == len(body)
+        pending.write_bytes(changed)
+        info = pending.stat()
+        os.utime(pending, ns=(info.st_atime_ns, info.st_mtime_ns + 1_000_000_000))
+        report, = runner.poll()
+        assert report['state'] == 'failed'
+        assert 'differing archived file' in report['failure']['message']
 

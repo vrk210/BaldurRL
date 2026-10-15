@@ -3,6 +3,18 @@
 This module never executes a game action.  It compares an operator-authored
 trial specification with an immutable observation stream and, for autonomous
 trials, the existing command protocol records.
+
+Use `init trial.json --kind human_attack` to create a template, then fill its
+observed IDs, before/after snapshot sequences, measured resource deltas and
+completion evidence. `analyze trial.json --records SESSION/records` exits 0 for
+PASS, 1 for FAIL and 2 for INCONCLUSIVE or a validation error. Autonomous trials
+also need --session-dir SESSION and linked resolved-result/capture attestations;
+acceptance alone never proves completion. Missing resources remain unknown.
+
+Resource comparisons allow 1e-6 absolute rounding error (no relative tolerance),
+so fractional movement amounts can be compared without masking whole-unit costs.
+Turn/round boundaries make resource attribution inconclusive. --output must be
+outside the raw evidence directories. A synthetic PASS is not live verification.
 """
 
 from __future__ import annotations
@@ -11,7 +23,7 @@ import argparse
 from dataclasses import dataclass
 from enum import Enum
 import json
-from math import isfinite
+from math import isclose, isfinite
 from pathlib import Path
 import re
 import sys
@@ -319,8 +331,12 @@ def _check_actions(trial: Trial, events: Sequence[GameEvent]) -> Check:
     groups = _action_groups(events)
     actor_groups = [group for group in groups if any(event.actor_id == trial.actor_entity_id for event in group)]
     wrong_actor = [event for group in groups for event in group if (
-        event.actor_id != trial.actor_entity_id and event.ability_id == trial.ability_id
-        and (event.target_id is None or event.target_id == trial.target_entity_id)
+        event.actor_id is not None and event.actor_id != trial.actor_entity_id and event.ability_id == trial.ability_id
+        # Ability IDs and targets can be shared by unrelated creatures. Only a
+        # declared correlation ID ties another actor's event to this trial.
+        and trial.story_action_id is not None
+        and event.story_action_id == trial.story_action_id
+        and event.target_id == trial.target_entity_id
     )]
     if wrong_actor:
         return Check("action", Status.FAIL, "Expected ability/target was attempted by the wrong actor",
@@ -429,7 +445,7 @@ def _resource_check(trial: Trial, before: GameSnapshot, after: GameSnapshot,
             missing.append(f"{expected.resource_id!r} level {expected.level!r}")
         else:
             item["observed_delta"] = right.amount - left.amount
-            if item["observed_delta"] != expected.expected_delta:
+            if not isclose(item["observed_delta"], expected.expected_delta, rel_tol=0, abs_tol=1e-6):
                 mismatches.append(
                     f"{expected.resource_id!r} level {expected.level!r}: "
                     f"expected {expected.expected_delta}, observed {item['observed_delta']}"
@@ -460,14 +476,13 @@ def _read_protocol(session_dir: Path) -> tuple[dict[str, ActionCommand],
         raise ValueError(f"Session directory is missing protocol subdirectory/directories: {', '.join(missing)}")
     session = CommandSession(session_dir)
     commands = session.read_commands()
-    acknowledgements = session.read_acknowledgements()
-    feedback = session._read_feedback()  # One exact validated collection, including observation attestations.
+    feedback = session.read_feedback()
     command_map = {command.command_id: command for command in commands}
     histories: dict[str, list[CommandAcknowledgement]] = {}
     confirmations: dict[str, PostExecutionObservation] = {}
-    for acknowledgement in acknowledgements:
-        histories.setdefault(acknowledgement.command_id, []).append(acknowledgement)
-    for item in feedback.values():
+    for item in feedback:
+        if isinstance(item, CommandAcknowledgement):
+            histories.setdefault(item.command_id, []).append(item)
         if isinstance(item, PostExecutionObservation):
             if item.command_id in confirmations:
                 raise ValueError(f"Duplicate post-execution observation for {item.command_id!r}")
@@ -735,9 +750,9 @@ def _parser() -> argparse.ArgumentParser:
     init.add_argument("--kind", required=True, choices=[kind.value for kind in TrialKind])
     analyze = subparsers.add_parser("analyze", help="analyze one bounded offline trial")
     analyze.add_argument("trial", type=Path)
-    analyze.add_argument("--records", required=True, type=Path)
-    analyze.add_argument("--session-dir", type=Path)
-    analyze.add_argument("--output", type=Path)
+    analyze.add_argument("--records", required=True, type=Path, help="one session's immutable records directory")
+    analyze.add_argument("--session-dir", type=Path, help="required for autonomous trials; --records must be its records subdirectory")
+    analyze.add_argument("--output", type=Path, help="report path outside the trial and raw evidence; JSON also prints to stdout")
     return parser
 
 

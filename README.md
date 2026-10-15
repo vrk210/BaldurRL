@@ -6,7 +6,7 @@ The [passive BG3 H0 collector](bg3/h0/README.md) includes Script Extender Lua
 source, installation/run instructions, offline compatibility tests, and a Windows
 live-verification checklist. It has not been tested in the game.
 
-The [Windows preparation runbook](docs/windows/README.md) adds static preflight, packaging, session archival, read-only probes, and encounter-trial analysis. These tools prepare live verification; they do not execute BG3 actions.
+The [Windows first-session runbook](bg3/h0/README.md#first-windows-session) covers static preflight, packaging, session archival, read-only probes, and encounter-trial analysis. These tools prepare live verification; they do not execute BG3 actions.
 
 ## Simulator stages
 
