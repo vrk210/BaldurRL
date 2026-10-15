@@ -52,7 +52,7 @@ try {
     }
     Move-Item -LiteralPath $temporary -Destination $output -Force:$Force
     $manifestPath = $output + ".manifest.json"
-    [ordered]@{
+    $manifestJson = [ordered]@{
         schema_version = 1
         source = $source
         source_files = $sourceManifest
@@ -61,7 +61,9 @@ try {
             sha256 = (Get-FileHash -LiteralPath $output -Algorithm SHA256).Hash.ToLowerInvariant()
             bytes = (Get-Item -LiteralPath $output).Length
         }
-    } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $manifestPath -Encoding utf8
+    } | ConvertTo-Json -Depth 6
+    $utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($manifestPath, $manifestJson, $utf8WithoutBom)
     Write-Host "Created $output"
     Write-Host "Manifest $manifestPath"
 }

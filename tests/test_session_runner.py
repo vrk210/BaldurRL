@@ -90,7 +90,7 @@ def test_completed_corruption_is_error_and_raw_bytes_are_archived(tmp_path):
     capture.mkdir()
     session = capture / "bad"
     body = stage(session, 1)
-    (session / "staging" / "record-00000001.ready").write_text("1\n", encoding="utf-8")
+    (session / "staging" / "record-00000001.ready").write_bytes(b"1\n")
     with SessionRunner(capture, archive, repository=tmp_path) as runner:
         with pytest.raises(ValueError, match=r"Session bad.*byte count mismatch"):
             runner.poll()

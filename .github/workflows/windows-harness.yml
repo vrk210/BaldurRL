@@ -105,7 +105,33 @@ jobs:
 
           & scripts/windows/package-h0.ps1 -DivinePath $success -OutputPath $output
           if ((Get-Content -LiteralPath $output -Raw).Trim() -ne "fake package") { throw "Fake packaging output mismatch" }
-          if (-not (Test-Path -LiteralPath ($output + ".manifest.json") -PathType Leaf)) { throw "Missing package manifest" }
+          $manifest = $output + ".manifest.json"
+          if (-not (Test-Path -LiteralPath $manifest -PathType Leaf)) { throw "Missing package manifest" }
+          $verifyScript = Join-Path $env:RUNNER_TEMP "verify package manifest.py"
+          $verifySource = @'
+          import hashlib
+          import json
+          import pathlib
+          import sys
+
+          manifest_path = pathlib.Path(sys.argv[1])
+          raw = manifest_path.read_bytes()
+          assert not raw.startswith(b"\xef\xbb\xbf"), "manifest has a UTF-8 BOM"
+          manifest = json.loads(raw.decode("utf-8"))
+          source = pathlib.Path(manifest["source"])
+          for item in manifest["source_files"]:
+              path = source / pathlib.PurePosixPath(item["path"])
+              payload = path.read_bytes()
+              assert len(payload) == item["bytes"]
+              assert hashlib.sha256(payload).hexdigest() == item["sha256"]
+          output = pathlib.Path(manifest["output"]["path"])
+          payload = output.read_bytes()
+          assert len(payload) == manifest["output"]["bytes"]
+          assert hashlib.sha256(payload).hexdigest() == manifest["output"]["sha256"]
+          '@
+          [System.IO.File]::WriteAllText($verifyScript, $verifySource, (New-Object System.Text.UTF8Encoding($false)))
+          python $verifyScript $manifest
+          if ($LASTEXITCODE -ne 0) { throw "Python manifest verification failed" }
 
           "preserve force gate" | Set-Content -LiteralPath $output -NoNewline
           try {

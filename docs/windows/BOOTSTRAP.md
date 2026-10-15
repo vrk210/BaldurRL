@@ -47,7 +47,7 @@ Dry run prints JSON containing the exact argv and SHA-256 source-file manifest. 
 divine.exe --game bg3 --action create-package --source <repo>\bg3\h0 --destination <temporary-output>
 ```
 
-The selected source has `Mods` at its root. The script rejects output beneath that source and existing output unless `-Force` is supplied. Divine writes a temporary output in the destination directory; only a successful, nonempty result replaces the requested package. A versioned `<output>.manifest.json` records source-file and output SHA-256 hashes. The Divine command line follows the upstream CLI, but this script and real converter invocation have not been run on Windows.
+The selected source has `Mods` at its root. The script rejects output beneath that source and existing output unless `-Force` is supplied. Divine writes a temporary output in the destination directory; only a successful, nonempty result replaces the requested package. A versioned `<output>.manifest.json` records source-file and output SHA-256 hashes. The manifest is UTF-8 JSON without a byte-order mark so Python and other tools can read it consistently, including when packaging runs under Windows PowerShell 5.1. The Divine command line follows the upstream CLI, but this script and real converter invocation have not been run on Windows.
 
 ## Remaining live checks
 
