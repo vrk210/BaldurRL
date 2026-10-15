@@ -298,7 +298,7 @@ class TacticalHeuristicAgent:
         return self._incoming(me, allies, enemies) >= 0.75 * me.hp
 
 
-# Named variants evaluated in reports/m5_m6_decision_stages.md. "naive" applies
+# Named variants evaluated in docs/RESULTS.md (M5/M6 section). "naive" applies
 # the M4 priorities and ignores every M5/M6 option; the others were developed on
 # development seeds 20000+ (never the held-out range).
 _TUNED = {"cleave_min_targets": 3, "second_wind_threshold": 12}
