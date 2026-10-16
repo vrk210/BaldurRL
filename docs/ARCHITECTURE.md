@@ -43,7 +43,8 @@ The simulator therefore uses **semantic state and semantic actions**, rather tha
 | `combat/distributions.py` | Exact attack-damage and Second Wind outcome distributions enumerated through the mechanics rule functions | Sampling, state mutation, policies |
 | `combat/env.py` | Gymnasium coordinator: reset, flat observation encoding, action-index mapping and masks, one Fighter decision per step, fixed Goblin turn, reward call, termination, truncation | Duplicated combat formulas; call mechanics |
 | `combat/simulation.py` | Independent M0–M6 simulator reconstruction from live observations and caller-supplied seeds | Live RNG access, policies, duplicated combat formulas |
-| `combat/tactical_transitions.py` | Exact M5/M6 transitions: enumerating random source over the real environment step, attack draws collapsed to exact cached distributions, enemy phase stepped one actor at a time | Policies, value estimates, restated combat rules |
+| `combat/tactical_transitions.py` | Independent M5/M6 replay oracle: enumerating random source over the real environment step, attack draws collapsed to exact cached distributions, enemy phase stepped one actor at a time | Policies, value estimates, restated combat rules |
+| `combat/table_tactical_transitions.py` | Default exact M5/M6 planner dynamics: cached HP tables, shared costs/targeting/reach/lifecycle rule functions, turn coordination; verified against the replay oracle | Policies, value estimates, duplicated combat formulas |
 | `combat/transitions.py` | Exact planner-facing transitions: `TransitionModel` protocol, stage registry, M0–M4 `RosterTransitionModel` (merged successor distributions including the automatic phase after `END_TURN`) | Policies, value estimates, duplicated combat formulas |
 | `agents/` | Action-selection policies (random, heuristics, rollout and expectimax planners) and leaf value functions | Direct state mutation or combat formulas |
 | `evaluation/` | Reproducible seeded episodes and external metrics: win rate, final HP, rounds, action usage | Combat rules |
@@ -55,6 +56,8 @@ M0 remains the fixed 1v1 regression environment specified in `M0_SPEC.md`. The l
 Gym action indices represent decisions. A decision carries a semantic `Action` and, for a targeted attack, an enemy slot index. Target selection is separate from the shared ability identity. The environment owns target legality, turn order, outcomes, and reward selection; mechanics still own attack and ability effects. Character state holds resources and known abilities. Agents receive only the flat observation and action mask and return an index.
 
 All three later stages use terminal win/loss reward for their main comparison. M2 also supports an isolated bounded damage-shaping training experiment. External evaluation always measures combat outcomes and behavior on seeded episodes, independent of the training reward scheme.
+
+**Simulator role (decided 2026-10-15).** No new abstract stages are planned. M5 and M6 already separate good policies from weak ones. Hand heuristics win about 79–81%. MaskablePPO with default settings plateaus 4–5 points below them, and on M2 it comes within about 2 points of the exact optimum. More invented difficulty would not move the project toward BG3. The simulator stays as a regression and research test bed and as a stand-in game behind the integration protocols. Trained simulator policies do not transfer, because their observation vectors and action indices don't exist in BG3. Revisit this once logged BG3 fights show which mechanics drive outcomes; the next stage should then be calibrated to those logs, not invented. Measured results are in [RESULTS.md](RESULTS.md).
 
 ## Dependency direction
 

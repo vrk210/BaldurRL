@@ -57,7 +57,8 @@ The agent chooses actions. The environment coordinates episodes, turns, legality
 | `combat/tactical_env.py` | M5/M6 Gymnasium environment: sampling, turns, masks, observations, rewards, termination, per-stage `STAGE_RULES` | Combat formulas; call `tactics.py`/`mechanics.py` |
 | `combat/simulation.py` | Restore independent simulators (M0–M6) from live observations | Live RNG access, policies, combat formulas |
 | `combat/transitions.py` | Exact planner transitions: `TransitionModel` protocol, stage registry, M0–M4 roster model | Policies; combat formulas (use `distributions.py`) |
-| `combat/tactical_transitions.py` | Exact M5/M6 transitions by enumerating random paths through the real environment code, one draw per attack | Policies; restated combat rules |
+| `combat/tactical_transitions.py` | Independent M5/M6 replay oracle: exact transitions by enumerating random paths through the real environment code, one draw per attack | Policies; restated combat rules |
+| `combat/table_tactical_transitions.py` | Default M5/M6 planner transitions: table-driven, using the shared `tactics.py` rule functions; must match the replay oracle | Policies; duplicated combat formulas |
 | `agents/` | Random, stage heuristic (including named M5/M6 variants), rollout, trained, and expectimax policies; leaf value functions; action selection only | Direct environment-state mutation; combat formulas |
 | `evaluation/` | Reproducible stage evaluation: win rate, remaining HP, rounds, action and target usage, kill order by role, paired comparisons, M5/M6 behavior summaries, planner timing | Combat rules |
 
@@ -69,6 +70,8 @@ The agent chooses actions. The environment coordinates episodes, turns, legality
 - Use caller-supplied `numpy.random.Generator` instances, not global randomness, for combat rules.
 - Check known ability IDs and shared resource costs before applying an effect; keep target and HP restrictions specific to that effect.
 - Keep the four M0 action indices and seven M0 observation fields in `docs/M0_SPEC.md` stable. Stage-specific indices and fields are specified separately. Keep masks separate from observations, and use only the environment's seeded RNG for combat transitions.
+- Before collecting data or evaluating policies, reserve encounter seed ranges in `evaluation/seeds.py` (check with `python -m evaluation.seeds --check START COUNT`); never reuse a range that has already informed a decision. Evaluation CLIs refuse frozen final-test ranges unless `--final-test` is passed.
+- Compare policies on the same encounter seeds (`evaluation.paired`), with enough fights to resolve the effect: about 5,000 per policy for 1–2 point differences. Select configurations on play, not validation loss. Report a failed pilot as "this configuration loses", together with its configuration.
 - Do not print inside reusable mechanics functions.
 - Do not silently catch programming errors or prematurely optimize.
 
@@ -95,3 +98,28 @@ Do not jump ahead unless explicitly requested.
 ## Documentation maintenance
 
 Changes to combat mechanics, actions, observations, legal-action rules, rewards, termination, or architecture boundaries must update the appropriate documentation in the same change.
+
+Prefer self-documenting code and tests, with local rationale and the conditions
+for revisiting a decision beside the implementation. Keep cross-cutting
+architecture and contracts in a few maintained documents. Put completed task
+plans and implementation history in PRs or Git history rather than new docs.
+Add a standalone document when it serves an ongoing purpose; necessary temporary
+handoffs must state when they should be removed.
+
+Experiment artifacts are temporary by default. Write raw logs, transcripts,
+research bundles and result JSON under an ignored location such as `runs/`,
+with one canonical location per experiment; do not commit them by default.
+
+Before summarizing or retiring artifacts, inspect them for missing/non-finite
+data, inconsistent configurations or provenance, failures, and unexpected or
+promising results. Alert the user to anything worth investigating. Preserve
+the smallest relevant evidence and its provenance until the question is resolved.
+
+Keep concise findings in an existing results or knowledge document: what was
+tested and why, configuration/code revision, seeds/sample size, uncertainty,
+limitations, and unresolved questions. Raw output is not a substitute for this
+summary. Retire summarized, regenerable output once no active investigation
+needs it. Retain artifacts only for a concrete ongoing purpose, such as unique
+live captures, active training data, or small regression fixtures; record their
+location and retention/removal condition. Do not routinely discard irreplaceable
+data or evidence for an unresolved issue.

@@ -1,0 +1,283 @@
+"""Paired significance-gated M5/M6 headroom study; predeclared 2026-10-15.
+
+Confirmation is fixed by CONFIRMATION_CONFIG, committed before collecting any
+confirmation encounters. Each stage is run ONCE on 223000–223999 (1,000 fights),
+paired with tuned M5/adaptive M6 on the same encounter seeds. This fixes initial
+encounters, not identical realized dice after policies diverge. No PPO or
+mechanics changes. No exact-first-step enumeration: binary paired outcomes
+permit exact conditional tests and conservative adaptive sampling.
+
+Selected C: alpha .05, cumulative looks 32/128/1024, nonpositive candidate-wise
+futility. Every legal action receives 32 common-seed samples; surviving actions
+use exactly matching prefixes of the anchor stream. Bonferroni divides alpha
+by ALL original alternatives times ALL three looks, even after pruning. This
+controls false-positive comparisons per decision, not whole-episode loss.
+
+Selection used 221000–221011 (A/B) and 221100–221111 (C), both stages. A=.01,
+16/64/256; B=.05,16/64/512, neither pruned. Selection preference was C then B
+then A, provided projected confirmation cost <22 CPU-hours and independently rescored
+mean advantage not significantly negative. This rule was committed in fdecbb4
+before C collection. C cost 26.08/27.84 CPU seconds per M5/M6 fight; all 6/3 rescored
+selection deviations had positive means (fresh 1,024-pair stream 20261016).
+Projected confirmation 14.98 CPU-hours plus <1 hour development/selection, about 2 hours wall
+with 8 total workers. The 12-fight win rates were not the selection criterion.
+
+Analysis: report paired win difference, conservative boundary-aware >=95% CI
+(Bonferroni 97.5% Clopper-Pearson intervals on two discordant probabilities),
+paired-normal approximate 95% CI, and exact two-sided McNemar p. No further
+configuration selection or confirmation reruns. Report deviation rates per
+all/nonforced decisions and fights, action-pair counts/estimated advantages,
+and cost/decision, total process CPU. Uniform sample of 12 deviations per
+stage is independently rescored with 1,024 pairs, fresh master seed 20261016.
+Pilot encounters 220010–220013; new unit tests 220000–220007. Frozen 130000–132999
+and spare 228000–229999 remain untouched. Raw outputs: runs/headroom_probe/.
+A null CI bounds only this tested policy's advantage; it does not upper-bound
+all possible one-step policies or the optimum. Early futility can miss gains.
+
+Reproduce confirmation (stage m5 then m6; use 4 workers each concurrently):
+python -m evaluation.headroom_probe run --stage m5 --phase confirmation \
+ --seed-start 223000 --episodes 1000 --workers 4 --alpha .05 --looks 32 128 1024 \
+ --prune-nonpositive --out runs/headroom_probe/confirm_m5
+
+"""
+import json
+import subprocess
+from argparse import ArgumentParser
+from collections import Counter, defaultdict
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from dataclasses import asdict
+from math import sqrt, exp, lgamma, log, log1p
+from pathlib import Path
+from time import perf_counter, process_time
+
+import numpy as np
+
+from agents.heuristic_agent import make_heuristic_agent
+from agents.improved_heuristic_agent import ImprovedHeuristicAgent, paired_pvalue
+from combat.stages import make_env
+from evaluation.paired import paired_comparison
+
+CONFIRMATION_CONFIG = {
+    "stages": ("m5", "m6"), "seed_start": 223000, "episodes": 1000,
+    "alpha": 0.05, "looks": [32, 128, 1024], "futility_margin": 0.0,
+    "prune_nonpositive": True, "agent_seed": 20261015,
+    "recheck_samples": 12, "recheck_budget": 1024, "recheck_seed": 20261016,
+}
+
+
+RANGES = {"pilot": (220000, 220999), "selection": (221000, 222999),
+          "confirmation": (223000, 227999), "spare": (228000, 229999)}
+
+
+def paired_summary(first: dict[int, int], second: dict[int, int]) -> dict:
+    """Exact McNemar and conservative boundary-aware >=95% paired CI.
+
+    Bonferroni combines 97.5% Clopper-Pearson intervals for the two discordant
+    probabilities. This preserves coverage at zero discordances; a normal
+    paired interval is also supplied for precision, explicitly approximate.
+    """
+    result = paired_comparison(first, second)
+    n = result["episodes"]
+    plus, minus = result["first_only_wins"], result["second_only_wins"]
+    def cdf(k: int, probability: float) -> float:
+        if probability <= 0:
+            return 1.0
+        if probability >= 1:
+            return float(k >= n)
+        return min(1.0, sum(exp(lgamma(n + 1) - lgamma(i + 1) - lgamma(n - i + 1)
+                                + i * log(probability) + (n - i) * log1p(-probability))
+                            for i in range(k + 1)))
+    def invert(k: int, target: float) -> float:
+        lo, hi = 0.0, 1.0
+        for _ in range(55):
+            mid = (lo + hi) / 2
+            if cdf(k, mid) > target:
+                lo = mid
+            else:
+                hi = mid
+        return (lo + hi) / 2
+    def bounds(k):
+        return (invert(k - 1, .9875) if k else 0.0,
+                invert(k, .0125) if k < n else 1.0)
+    lo_p, hi_p = bounds(plus)
+    lo_m, hi_m = bounds(minus)
+    result["ci95_conservative"] = [lo_p - hi_m, hi_p - lo_m]
+    result["ci95_normal_approx"] = [result["difference"] - 1.96 * result["paired_se"],
+                                    result["difference"] + 1.96 * result["paired_se"]]
+    result["mcnemar_exact_two_sided_p"] = min(1.0, 2 * paired_pvalue(max(plus, minus), min(plus, minus)))
+    return result
+
+
+def run_episode(job: dict) -> dict:
+    stage, ordinal, encounter = job["stage"], job["ordinal"], job["encounter"]
+    # Ordinal is independent of the encounter's numeric seed; worker scheduling
+    # changes neither the planner stream nor the paired result.
+    planner_seed = int(np.random.SeedSequence([job["agent_seed"], int(stage[1:]), ordinal])
+                       .generate_state(1, dtype=np.uint64)[0])
+    agent = ImprovedHeuristicAgent(stage, seed=planner_seed, alpha=job["alpha"],
+                                  looks=tuple(job["looks"]), futility_margin=job["futility_margin"],
+                                  prune_nonpositive=job.get("prune_nonpositive", False))
+    heuristic = make_heuristic_agent(stage, "tuned" if stage == "m5" else "adaptive")
+    env = make_env(stage)
+    cpu = process_time()
+    out = Path(job["out"])
+    obs, _ = env.reset(seed=encounter)
+    done, step, deviations, nonforced, planning, rollouts = False, 0, 0, 0, 0.0, 0
+    stops = Counter()
+    with (out / f"decisions_{encounter}.jsonl").open("x") as handle:
+        while not done:
+            mask = env.action_masks()
+            action = agent.choose_action(obs, mask)
+            diag = agent.last_diagnostics
+            row = asdict(diag)
+            row.update(encounter=encounter, step=step)
+            if action != diag.anchor:
+                row["observation"] = obs.tolist()
+                row["action_mask"] = mask.tolist()
+                deviations += 1
+            handle.write(json.dumps(row, separators=(",", ":")) + "\n")
+            nonforced += len(diag.legal) > 1
+            planning += diag.planning_seconds
+            rollouts += diag.simulated_episodes
+            stops[diag.stopped] += 1
+            obs, reward, terminated, truncated, info = env.step(action)
+            done = terminated or truncated
+            step += 1
+    won, rounds = bool(terminated and reward == 1), int(info["round"])
+    obs, _ = env.reset(seed=encounter)
+    done = False
+    while not done:
+        obs, reward, terminated, truncated, _ = env.step(heuristic.choose_action(obs, env.action_masks()))
+        done = terminated or truncated
+    baseline_won = bool(terminated and reward == 1)
+    env.close()
+    result = dict(encounter=encounter, ordinal=ordinal, planner_seed=planner_seed, won=won,
+                  heuristic_won=baseline_won, decisions=step, nonforced_decisions=nonforced,
+                  deviations=deviations, rounds=rounds, planning_seconds=planning,
+                  simulated_episodes=rollouts, cpu_seconds=process_time() - cpu, stops=dict(stops))
+    (out / f"episode_{encounter}.json").write_text(json.dumps(result) + "\n")
+    return result
+
+
+def summarize(out: Path, rows: list[dict]) -> dict:
+    paired = paired_summary({r["encounter"]: int(r["won"]) for r in rows},
+                            {r["encounter"]: int(r["heuristic_won"]) for r in rows})
+    metadata_env = make_env(json.loads((out / "manifest.json").read_text())["stage"])
+    names = metadata_env.action_names
+    metadata_env.close()
+    types = defaultdict(list)
+    for path in sorted(out.glob("decisions_*.jsonl")):
+        for line in path.open():
+            row = json.loads(line)
+            if row["anchor"] != row["chosen"]:
+                scores = dict(row["scores"])
+                types[f'{names[row["anchor"]]} -> {names[row["chosen"]]}'].append(scores[row["chosen"]] - scores[row["anchor"]])
+    decisions, nonforced = sum(r["decisions"] for r in rows), sum(r["nonforced_decisions"] for r in rows)
+    deviations = sum(r["deviations"] for r in rows)
+    return dict(paired=paired, decisions=decisions, nonforced_decisions=nonforced,
+                deviations=deviations, deviation_rate=deviations / decisions,
+                deviation_rate_nonforced=deviations / nonforced if nonforced else 0,
+                fights_with_deviation=sum(r["deviations"] > 0 for r in rows),
+                fight_deviation_rate=sum(r["deviations"] > 0 for r in rows) / len(rows),
+                cpu_seconds=sum(r["cpu_seconds"] for r in rows),
+                planning_seconds=sum(r["planning_seconds"] for r in rows),
+                seconds_per_decision=sum(r["planning_seconds"] for r in rows) / decisions,
+                simulated_episodes=sum(r["simulated_episodes"] for r in rows),
+                deviations_by_type={k: dict(count=len(v), mean_estimated_gain=float(np.mean(v))) for k, v in sorted(types.items())})
+
+
+def recheck(run: Path, samples: int, budget: int, seed: int) -> None:
+    config = json.loads((run / "manifest.json").read_text())
+    rng = np.random.default_rng(seed)
+    # Uniform sample over all deviations; fresh stream never used for selection.
+    reservoir, total = [], 0
+    for path in sorted(run.glob("decisions_*.jsonl")):
+        for line in path.open():
+            row = json.loads(line)
+            if row["anchor"] == row["chosen"]:
+                continue
+            total += 1
+            if len(reservoir) < samples:
+                reservoir.append(row)
+            else:
+                index = int(rng.integers(total))
+                if index < samples:
+                    reservoir[index] = row
+    cpu = process_time()
+    agent = ImprovedHeuristicAgent(config["stage"])
+    results = []
+    for row in reservoir:
+        obs = np.asarray(row["observation"], dtype=np.float32)
+        seeds = rng.integers(0, 2**63 - 1, size=budget)
+        anchor = np.array([agent._outcome(obs, row["anchor"], int(s)) for s in seeds])
+        chosen = np.array([agent._outcome(obs, row["chosen"], int(s)) for s in seeds])
+        diff = chosen - anchor
+        results.append(dict(encounter=row["encounter"], step=row["step"], anchor=row["anchor"],
+                            chosen=row["chosen"], paired_difference=float(diff.mean()),
+                            paired_se=float(diff.std(ddof=1) / sqrt(budget)),
+                            chosen_only_wins=int(sum(diff > 0)), anchor_only_wins=int(sum(diff < 0))))
+    payload = dict(seed=seed, samples=samples, actual_samples=len(results), budget=budget, total_deviations=total, results=results,
+                   cpu_seconds=process_time() - cpu)
+    with (run / "recheck.json").open("x") as handle:
+        json.dump(payload, handle, indent=2)
+    print(json.dumps(payload))
+
+
+def main() -> None:
+    parser = ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+    run = sub.add_parser("run")
+    run.add_argument("--stage", choices=("m5", "m6"), required=True)
+    run.add_argument("--phase", choices=RANGES, required=True)
+    run.add_argument("--seed-start", type=int, required=True)
+    run.add_argument("--episodes", type=int, required=True)
+    run.add_argument("--workers", type=int, default=2)
+    run.add_argument("--agent-seed", type=int, default=20261015)
+    run.add_argument("--alpha", type=float, default=0.01)
+    run.add_argument("--looks", type=int, nargs="+", default=[16, 64, 256])
+    run.add_argument("--futility-margin", type=float, default=0.0)
+    run.add_argument("--prune-nonpositive", action="store_true")
+    run.add_argument("--out", type=Path, required=True)
+    check = sub.add_parser("recheck")
+    check.add_argument("--run", type=Path, required=True)
+    check.add_argument("--samples", type=int, default=12)
+    check.add_argument("--budget", type=int, default=1024)
+    check.add_argument("--seed", type=int, default=20261016)
+    args = parser.parse_args()
+    if args.command == "recheck":
+        recheck(args.run, args.samples, args.budget, args.seed)
+        return
+    lo, hi = RANGES[args.phase]
+    if args.episodes < 1 or args.workers < 1 or not lo <= args.seed_start <= args.seed_start + args.episodes - 1 <= hi:
+        parser.error("episodes/workers must be positive and encounter range inside declared phase")
+    ImprovedHeuristicAgent(args.stage, alpha=args.alpha, looks=tuple(args.looks), futility_margin=args.futility_margin)
+    if args.phase == "confirmation":
+        fields = ("seed_start", "episodes", "alpha", "looks", "futility_margin",
+                  "prune_nonpositive", "agent_seed")
+        if any(getattr(args, key) != CONFIRMATION_CONFIG[key] for key in fields):
+            parser.error("confirmation arguments must match committed CONFIRMATION_CONFIG")
+        subprocess.run(["git", "diff", "--exit-code", "HEAD", "--",
+                        "evaluation/headroom_probe.py", "agents/improved_heuristic_agent.py"],
+                       check=True, capture_output=True)
+    args.out.mkdir(parents=True, exist_ok=False)
+    config = vars(args).copy()
+    config["out"] = str(args.out)
+    config["code_revision"] = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    (args.out / "manifest.json").write_text(json.dumps(config, indent=2) + "\n")
+    jobs = [dict(config, encounter=args.seed_start + i, ordinal=i) for i in range(args.episodes)]
+    tick = perf_counter()
+    rows = []
+    with ProcessPoolExecutor(max_workers=args.workers) as pool:
+        futures = [pool.submit(run_episode, job) for job in jobs]
+        for future in as_completed(futures):
+            row = future.result()
+            rows.append(row)
+            print(json.dumps(dict(completed=len(rows), **row)), flush=True)
+    result = summarize(args.out, rows)
+    result["wall_seconds"] = perf_counter() - tick
+    (args.out / "summary.json").write_text(json.dumps(result, indent=2) + "\n")
+    print(json.dumps(result), flush=True)
+
+
+if __name__ == "__main__":
+    main()

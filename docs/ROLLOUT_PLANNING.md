@@ -111,7 +111,8 @@ on this small sample. At one state, 32 simulations favored ending the turn
 76.1% for ending the turn versus 86.3% for the best attack and 86.0% for Cleave,
 supporting finite-sample selection error at that state. This is not evidence
 for the overall performance of a larger-budget planner or the scenario's
-optimal win rate. See the [pilot data](../reports/m4_rollout_pilot_18000_18099.json).
+optimal win rate. The pilot data was removed on 2026-10-15; read it with
+`git show b082262:reports/m4_rollout_pilot_18000_18099.json`.
 
 For planning without sampling noise, see [expectimax planning](EXPECTIMAX_PLANNING.md),
 which enumerates exact chance outcomes and scores the frontier with a learned value.

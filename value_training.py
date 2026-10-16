@@ -23,12 +23,15 @@ from agents.policy import Policy
 from agents.value_functions import RaceValue, make_layout, value_features
 from combat.stages import make_env
 from evaluation.planning_eval import make_policy
+from evaluation.seeds import require_not_frozen
 
 
 class EpsilonPolicy:
     """With probability epsilon, a uniformly random legal action (coverage only)."""
 
     def __init__(self, base: Policy, epsilon: float, seed: int) -> None:
+        if not 0 <= epsilon <= 1:
+            raise ValueError("epsilon must be in [0, 1]")
         self.base = base
         self.epsilon = epsilon
         self.rng = np.random.default_rng(seed)
@@ -112,11 +115,18 @@ def targets_for(data: dict[str, np.ndarray], mode: str) -> np.ndarray:
     if mode == "search":
         return search
     if mode.startswith("mix:"):
-        weight = float(mode.split(":", 1)[1])
+        weight = _unit_weight(mode)
         return weight * search + (1 - weight) * outcome
     if mode.startswith("lambda:"):
-        return lambda_returns(raw, outcome, data["seed"], float(mode.split(":", 1)[1]))
+        return lambda_returns(raw, outcome, data["seed"], _unit_weight(mode))
     raise ValueError(f"Unknown target mode {mode!r}")
+
+
+def _unit_weight(mode: str) -> float:
+    weight = float(mode.split(":", 1)[1])
+    if not np.isfinite(weight) or not 0 <= weight <= 1:
+        raise ValueError("Target weight must be in [0, 1]")
+    return weight
 
 
 def end_turn_rows(stage: str, data: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
@@ -166,7 +176,7 @@ def fit(stage: str, train: dict, val: dict, *, target: str, hidden: list[int], e
             loss = loss_fn(net(x_train[batch]).squeeze(1), y_train[batch])
             loss.backward()
             optimizer.step()
-            total += float(loss) * len(batch)
+            total += float(loss.detach()) * len(batch)
         scheduler.step()
         net.eval()
         with torch.no_grad():
@@ -246,6 +256,8 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "collect":
+        # Training data must never come from a final-test range.
+        require_not_frozen(range(args.seed_start, args.seed_start + args.episodes))
         policy = make_policy(args.stage, args.policy, model=args.model, leaf=args.leaf, depth=args.depth,
                              always_search=True, node_budget=args.node_budget, afterstate_leaf=args.afterstate_leaf,
                              decision_horizon=args.decision_horizon)

@@ -96,3 +96,106 @@ Listing a topic here does **not** authorize its implementation. These are future
 2. Cite or describe the source of verified mechanics where practical.
 3. Never silently promote `TODO_VERIFY` material into implementation behavior.
 4. Update `M0_SPEC.md` if a mechanic becomes part of the current environment.
+
+## Simulator tactical evidence (hypotheses for BG3)
+
+Use these as simulator-backed starting rules, then verify the named mechanics
+in BG3. **A** = paired single-rule intervention with simultaneous CI excluding
+zero **and** Bonferroni-adjusted exact McNemar p<.05; **B** = replayed local
+counterfactual; **C** = observational hypothesis. Brackets are 95% CIs; new A
+intervals adjust across all 13 predeclared contrasts. Effects are win-rate
+percentage points (pp), conditional on the tested continuation, not guarantees.
+New target/resource tests use M5, positioning uses M6, and Dodge uses both.
+Resource effects assume fresh encounter-start pools.
+
+1. **TODO_VERIFY — Focus an affordable kill; do not automatically prioritize the healer.**
+   **A · general:** both allies using lowest current target HP beat changing
+   ally 2 to highest-HP targeting by +22.38 pp [+19.78, +24.97]. This tests
+   that exact priority change, not a universal value of concentrating attacks.
+   **A · mechanic-dependent:** lowest-HP targeting beats healer-first by
+   +4.05 pp [+1.93, +6.17]; check actual healing triggers, charges and
+   healer durability. **C · general:** expected overkill is
+   13.76% [13.60, 13.92] of modeled uncapped M5 damage.
+   Consider low-damage finishers, but this is not a proven benefit of switching
+   targets. Logs cap damage; waste is reconstructed from exact dice given each
+   observed hit/critical. **C · mechanic-dependent:** modal full kill orders
+   are Archer→Healer→Brute in 54.92% [53.54, 56.29] of all
+   M5 fights and Brute→Archer→Healer in 33.08% [31.79, 34.40]
+   on M6; actual role stats/healing need checking.
+
+   Reproducer: `evaluation.sim_mining_render --from-summary`.
+
+2. **TODO_VERIFY — Spend burst damage while it can remove enemy turns; heal before critical
+   danger.** **A · general:** early Action Surge beats withholding it until
+   round 2 by +11.70 pp [+8.91, +14.49]. **A · mechanic-dependent:** healing
+   at 12/20 HP instead of 10/20 gains +1.65 pp [+0.51, +2.79]; verify BG3 healing
+   amount, action cost and incoming damage before adopting the threshold.
+   **B · mechanic-dependent:** replacing PPO's Attack with the heuristic's
+   focus Trip in sampled disagreement states improves local win probability by +1.53 pp [+0.82, +2.23] on M5 and
+   +0.94 pp [+0.37, +1.51] on M6. Targets can differ; this does not isolate same-target timing.
+   Check Prone duration, accuracy,
+   advantage and its competition with healing. **Unresolved intervention · mechanic-dependent:**
+   requiring 3 targets rather than 2 for half-damage Cleave gives
+   +0.97 pp [-0.09, +2.04]; no validated universal Cleave threshold or
+   threat-target Trip advantage. Verify Cleave's real damage and reach.
+
+   Reproducer: `evaluation.sim_mining_render --from-summary`.
+
+3. **TODO_VERIFY — Commit allies to one positioning plan.** **A · mechanic-dependent:**
+   adaptive positioning beats stopping after one diver by
+   +6.78 pp [+4.88, +8.67], holding everywhere by +2.00 pp [+0.03, +3.97], and
+   diving everywhere by +1.80 pp [+0.06, +3.54]. The tested trigger is front
+   enemy HP / normal hit chance ≥42; dive when durable, otherwise break the
+   front together. Check real reach, path costs and ranged disadvantage.
+   **A · mechanic-dependent:** taking the opportunity attack beats
+   Disengaging before a planned dive while Surge remains by
+   +9.18 pp [+7.11, +11.24]. This does not show Disengage never helps.
+   Earlier Advance timing remains unresolved in local replays.
+
+   Reproducer: `evaluation.sim_mining_render --from-summary`.
+
+4. **TODO_VERIFY — Keep attacking by default; do not add the tested emergency Dodge rule.**
+   **A · mechanic-dependent:** disabling Dodge when estimated incoming damage
+   reaches 75% of current HP gains +1.70 pp [+0.48, +2.92] on M5 and
+   +3.57 pp [+2.07, +5.08] on M6. This rejects that trigger, not every defensive
+   use. Check real enemy targeting, Dodge duration and action economy; no
+   beneficial Dodge state was established by this work.
+
+   Reproducer: `evaluation.sim_mining_render --from-summary`.
+
+5. **TODO_VERIFY — Audit legal actions before ending a turn.** **A · general:** spending
+   Surge versus leaving it unused gains +31.18 pp [+28.31, +34.04].
+   **C · general:** tuned/adaptive never end with a legal attack in these logs;
+   final PPO s0 does so on 1.86% [1.54, 2.18] /
+   5.19% [4.59, 5.78] of M5/M6 END_TURN decisions.
+   These frequencies do not measure the cost of each skipped attack. A legal
+   heal or Trip can reasonably be saved; availability alone is not waste.
+
+   Reproducer: `evaluation.sim_mining_render --from-summary`.
+
+6. **TODO_VERIFY — Do not label one lost fight unwinnable.** **C · unknown:** high total enemy
+   HP (M5) and durable front enemies (M6) predict more baseline losses.
+   M6 durable-minus-soft front loss rate: +7.45 pp [+5.25, +9.65].
+   Every sampled old loss won under some of the 128 replay dice seeds;
+   fixed-policy replay rates span 58.6–89.8% on M5 and 43.0–90.6%
+   on M6. These selected 32 losses per stage do not identify the irreducible
+   dice share of the remaining losses. That needs an optimal-policy bound;
+   verify real encounter balance and randomness before transferring.
+
+   Reproducer: `evaluation.sim_mining_render --from-summary`.
+
+7. **TODO_VERIFY — Use PPO's exceptions as review examples, not replacement rules.**
+   **C · unknown:** PPO s0/s1/s2 win 540/696/632 M5 and 604/615/610
+   M6 encounters that the best heuristic loses, out of 5,000 paired encounters
+   each. None of the predeclared opening-feature strata establishes PPO
+   superiority, and no tested local decision type reliably favors PPO.
+   Pooled PPO-minus-heuristic gaps are -4.14 pp [-5.31, -2.97]
+   / -5.39 pp [-6.59, -4.20] (M5/M6). Changed dice paths can
+   produce these unique wins; inspect concrete BG3 states before inferring a
+   transferable tactic.
+
+   Reproducer: `evaluation.sim_mining_render --from-summary`.
+
+Sources, per-policy audits, full kill orders, inventory and provenance:
+[`evaluation/sim_mining.py`](../evaluation/sim_mining.py) and its committed
+[`sim_mining_summary.json`](../evaluation/sim_mining_summary.json).

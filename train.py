@@ -23,6 +23,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv
 
 from combat.stages import make_env
 from evaluation.evaluate import SB3Policy, evaluate, write_run_card
+from evaluation.seeds import require_not_frozen
 
 
 def make_masked_env(
@@ -125,6 +126,10 @@ def parse_args(argv: list[str] | None = None) -> Namespace:
     parser.add_argument("--device", type=str, default="auto")
     parser.add_argument("--verbose", type=int, default=0)
     args = parser.parse_args(argv)
+    try:  # checkpoint selection reads these results, so a final-test range would leak
+        require_not_frozen(range(args.eval_seed_start, args.eval_seed_start + args.eval_episodes))
+    except ValueError as exc:
+        parser.error(str(exc))
     if args.reward == "damage" and args.stage != "m2":
         parser.error("--reward damage is available only for --stage m2")
     if args.save_dir is None:
