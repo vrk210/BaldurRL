@@ -48,5 +48,5 @@ jobs:
         shell: powershell
         run: |
           python scripts/compare_refactor.py --base "$env:PR_BASE_SHA"
-          if ($LASTEXITCODE -ne 0) { throw "Behavior changed, or changed code never ran in the comparison; see its output" }
+          if ($LASTEXITCODE -ne 0) { throw "Behavior changed, a scenario errored, or changed code never ran in the comparison; see its output" }
       - run: python -m pytest -q

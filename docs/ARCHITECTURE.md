@@ -112,6 +112,7 @@ Tests and the replay oracle remain independent where they catch different errors
 | `tests/m2_oracle.py` | verification-only | pytest verification: m2 oracle. |
 | `tests/test_bg3_h0_lua.py` | verification-only | pytest verification: bg3 h0 lua. |
 | `tests/test_combat_regression.py` | verification-only | pytest verification: combat regression. |
+| `tests/test_compare_refactor.py` | verification-only | pytest verification: compare refactor. |
 | `tests/test_encounter_trial.py` | verification-only | pytest verification: encounter trial. |
 | `tests/test_env.py` | verification-only | pytest verification: env. |
 | `tests/test_evaluation.py` | verification-only | pytest verification: evaluation. |

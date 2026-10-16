@@ -24,8 +24,11 @@ model. This checks regression equivalence, not agreement with BG3.
 A comparison covers only the code its scenarios run. On the working tree, the
 script records every called function and checks the functions the diff changed.
 A changed module none of whose changed functions ran fails the check. Other
-changed functions that never ran are listed, so the PR can say how they were
-verified. Prefer adding a scenario to accepting a gap.
+changed functions that never ran, and module-level changes (which run at import
+whether or not their effect is observed), are listed so the PR can say how they
+were verified. Prefer adding a scenario to accepting a gap. A refactor that
+renames a function the scenarios import fails on one revision; it cannot use
+this check and must show equivalence another way.
 """
 
 from __future__ import annotations
@@ -52,7 +55,7 @@ STAGES = ("m0", "m1a", "m1b", "m2", "m3", "m4", "m5", "m6")
 MAINTAINED_CODE = ("agents/", "combat/", "evaluation/", "integration/", "train.py", "value_training.py")
 # Wall-clock and clock-derived fields; they differ between any two runs.
 VOLATILE_KEYS = frozenset({
-    "seconds", "planned_seconds", "max_decision_seconds", "planning_seconds",
+    "seconds", "planned_seconds", "max_decision_seconds",
     "mean_seconds_per_decision", "mean_seconds_per_episode", "mean_seconds_per_planned_decision",
 })
 UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
@@ -213,6 +216,8 @@ def evaluation(scratch: Path, root: Path) -> dict[str, Any]:
         cards[name] = scratch / f"{name}.json"
         write_run_card(cards[name], policy=name, summary=summary, trace_file=trace.name, stage="m5")
     rows = run_chunk("m4", {"name": "threat"}, list(range(5)))
+    # One agent over two encounters: per-turn caches and encounter changes.
+    search_rows = run_chunk("m4", {"name": "expectimax", "leaf": "race", "depth": 1}, [0, 1])
     return {
         "run_cards": [json.loads(card.read_text(encoding="utf-8")) for card in cards.values()],
         "traces": [(scratch / f"{name}.jsonl").read_text(encoding="utf-8") for name in cards],
@@ -221,6 +226,7 @@ def evaluation(scratch: Path, root: Path) -> dict[str, Any]:
         "behavior": summarize_run("m5", scratch / "tuned.jsonl"),
         "planning_rows": rows,
         "planning_summary": summarize(rows),
+        "expectimax_rows": search_rows,
         "value_data": collect("m4", M4ThreatAwareAgent(), range(3)),
         "training_arguments": [vars(parse_args(["--stage", stage])) for stage in STAGES],
         # Enforcement depends on bounds and status; the use labels are descriptions.
@@ -274,9 +280,9 @@ def integration(scratch: Path, root: Path) -> dict[str, Any]:
         "published": [path.name for path in published],
         "records": [record_to_dict(record) for record in records],
         "sequence": reader.validate_all(),
-        "intervals": len(reconstruct_intervals(records)),
+        "intervals": reconstruct_intervals(records),
         "inspection": inspect_directory(scratch / "records"),
-        "mock_trace": [path.name for path in write_mock_trace(scratch / "mock")],
+        "mock_trace": (write_mock_trace(scratch / "mock"), file_tree(scratch / "mock")),
         "sessions": sessions,
         "archive": file_tree(scratch / "archive"),
         "demo_output": demo_output.getvalue(),
@@ -311,7 +317,7 @@ def fingerprints(root: Path) -> tuple[dict[str, str], dict[str, str]]:
             scratch = Path(directory).resolve()
             try:
                 results[name] = digest(scenario(scratch, root), scratch=scratch, root=root)
-            except Exception as error:
+            except (Exception, SystemExit) as error:
                 errors[name] = f"{type(error).__name__}: {error}"
     return results, errors
 
@@ -350,32 +356,58 @@ def function_spans(source: str) -> list[tuple[int, int, str]]:
     return spans
 
 
-def changed_functions(root: Path, base: str) -> set[tuple[str, str]]:
-    """Map every line the diff adds or removes to its innermost enclosing function."""
-    diff = subprocess.check_output(["git", "diff", "--unified=0", "--no-color", base, "--", *MAINTAINED_CODE],
-                                   cwd=root, text=True)
+def enclosing_definition(spans: list[tuple[int, int, str]], line: int) -> str:
+    """Qualified name of the innermost def or class containing line, or "<module>"."""
+    enclosing = [span for span in spans if span[0] <= line <= span[1]]
+    return max(enclosing)[2] if enclosing else "<module>"
+
+
+def changed_lines(diff: str) -> dict[str, set[int]]:
+    """Working-tree line numbers each Python file's diff hunks touch.
+
+    A pure deletion is attributed to the line before it, which is inside the
+    function that lost the lines unless the deletion follows a function's end.
+    """
     lines: dict[str, set[int]] = {}
     path = None
     for line in diff.splitlines():
         if line.startswith("+++ "):
-            path = line[6:] if line.startswith("+++ b/") else None
-        elif line.startswith("@@") and path and path.endswith(".py"):
-            start, _, count = re.match(r"@@ -\S+ \+(\d+)(,(\d+))? @@", line).groups()
-            first, length = int(start), 1 if count is None else int(count)
+            path = line[6:] if line.startswith("+++ b/") and line.endswith(".py") else None
+        elif line.startswith("@@") and path:
+            hunk = re.match(r"@@ -\S+ \+(\d+)(,(\d+))? @@", line)
+            if hunk is None:
+                raise ValueError(f"Unexpected diff hunk header: {line}")
+            first, length = int(hunk[1]), 1 if hunk[3] is None else int(hunk[3])
             lines.setdefault(path, set()).update(range(first, first + length) if length else {first})
+    return lines
+
+
+def changed_functions(root: Path, base: str) -> set[tuple[str, str]]:
+    """(path, enclosing definition) of every line the diff from base touches."""
+    diff = subprocess.check_output(["git", "diff", "--unified=0", "--no-color", "--no-ext-diff",
+                                    "--src-prefix=a/", "--dst-prefix=b/", base, "--", *MAINTAINED_CODE],
+                                   cwd=root, text=True, encoding="utf-8", errors="replace")
     changed = set()
-    for path, numbers in lines.items():
+    for path, numbers in changed_lines(diff).items():
         spans = function_spans((root / path).read_text(encoding="utf-8"))
-        for number in numbers:
-            enclosing = [span for span in spans if span[0] <= number <= span[1]]
-            changed.add((path, max(enclosing)[2] if enclosing else "<module>"))
+        changed.update((path, enclosing_definition(spans, number)) for number in numbers)
     return changed
+
+
+def run_worker(script: str, tree: Path, *, record_calls: bool) -> dict[str, Any]:
+    """Fingerprint tree in a fresh interpreter; results travel by file, so scenario output can't corrupt them."""
+    with tempfile.TemporaryDirectory(prefix="baldurrl-worker-") as directory:
+        output = Path(directory) / "result.json"
+        command = [sys.executable, script, "--worker", str(tree), "--output", str(output)]
+        subprocess.run([*command, *(["--record-calls"] if record_calls else [])], cwd=tree, check=True)
+        return json.loads(output.read_text(encoding="utf-8"))
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base", help="Git commit whose runtime behavior must be preserved")
     parser.add_argument("--worker", type=Path, help=argparse.SUPPRESS)
+    parser.add_argument("--output", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--record-calls", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.worker:
@@ -384,7 +416,8 @@ def main() -> int:
             (results, errors), called = with_called_functions(root, lambda: fingerprints(root))
         else:
             (results, errors), called = fingerprints(root), set()
-        print(json.dumps({"fingerprints": results, "errors": errors, "called": sorted(called)}, sort_keys=True))
+        report = {"fingerprints": results, "errors": errors, "called": sorted(called)}
+        args.output.write_text(json.dumps(report, sort_keys=True), encoding="utf-8")
         return 0
     if not args.base:
         parser.error("--base is required")
@@ -397,26 +430,26 @@ def main() -> int:
         baseline = Path(directory)
         with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
             bundle.extractall(baseline)
-        before = json.loads(subprocess.check_output([sys.executable, script, "--worker", str(baseline)],
-                                                    cwd=baseline, text=True))
-    after = json.loads(subprocess.check_output([sys.executable, script, "--worker", str(root), "--record-calls"],
-                                               cwd=root, text=True))
-    errors = {f"{revision_name}/{name}": message for revision_name, worker in (("base", before), ("head", after))
+        before = run_worker(script, baseline, record_calls=False)
+    after = run_worker(script, root, record_calls=True)
+    errors = {f"{side}/{name}": message for side, worker in (("base", before), ("head", after))
               for name, message in worker["errors"].items()}
     mismatches = sorted(name for name in before["fingerprints"].keys() | after["fingerprints"].keys()
                         if before["fingerprints"].get(name) != after["fingerprints"].get(name))
     called = {tuple(item) for item in after["called"]}
     changed = changed_functions(root, revision)
-    unexecuted = sorted(changed - called)
-    exercised_modules = {path for path, _ in changed & called}
-    unexercised_modules = sorted({path for path, _ in changed} - exercised_modules)
+    # Module-level lines run at import whether or not their effect is observed, so they never count as exercised.
+    in_functions = {item for item in changed if item[1] != "<module>"}
+    exercised_modules = {path for path, _ in in_functions & called}
+    unexercised_modules = sorted({path for path, _ in in_functions} - exercised_modules)
     print(json.dumps({
         "base": revision,
         "fingerprints": after["fingerprints"],
         "scenario_errors": errors,
         "mismatches": mismatches,
         "unexercised_modules": unexercised_modules,
-        "unexecuted_changed_functions": [f"{path}::{name}" for path, name in unexecuted],
+        "unexecuted_changed_functions": [f"{path}::{name}" for path, name in sorted(in_functions - called)],
+        "module_level_changes": sorted(path for path, name in changed if name == "<module>"),
     }, indent=2))
     return int(bool(errors or mismatches or unexercised_modules))
 
