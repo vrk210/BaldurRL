@@ -31,6 +31,7 @@ class Thing:
 
 
 @pytest.mark.parametrize("line, names", [
+    (0, {"<module>"}),  # deletion before the first line, e.g. an emptied module
     (1, set()),  # module docstring runs nothing
     (2, {"<module>"}),
     (3, set()),  # comment

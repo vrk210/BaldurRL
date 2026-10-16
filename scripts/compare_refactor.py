@@ -349,6 +349,7 @@ def changed_definitions(source: str, lines: set[int]) -> set[str]:
 
     Blank lines, comments and string-only statements outside definitions run
     nothing, so they are skipped rather than reported as module-level changes.
+    Line 0 is a deletion before the first line, such as emptying a module.
     """
     tree = ast.parse(source)
     spans = []
@@ -373,7 +374,7 @@ def changed_definitions(source: str, lines: set[int]) -> set[str]:
         enclosing = [span for span in spans if span[0] <= line <= span[1]]
         if enclosing:
             names.add(max(enclosing)[2])
-        elif any(first <= line <= last for first, last in statements):
+        elif line == 0 or any(first <= line <= last for first, last in statements):
             names.add("<module>")
     return names
 
