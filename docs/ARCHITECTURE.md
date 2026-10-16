@@ -37,7 +37,7 @@ Tests and the replay oracle remain independent where they catch different errors
 | --- | --- | --- |
 | `.github/workflows/repository.yml` | supported | Inventory/lint checks and PR size accounting. |
 | `.github/workflows/windows-harness.yml` | supported | Offline Windows harness verification; no game execution. |
-| `agents/__init__.py` | supported | Package marker; no entry point. |
+| `agents/__init__.py` | supported | Public baseline-policy re-exports; no CLI. |
 | `agents/expectimax_agent.py` | supported | Exact chance search with bounded turn/decision horizons. |
 | `agents/heuristic_agent.py` | supported | Supported stage heuristics and threat-aware baseline. Cleanup debt until simplification: private:_new_fighter. |
 | `agents/improved_heuristic_agent.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
@@ -76,7 +76,7 @@ Tests and the replay oracle remain independent where they catch different errors
 | `combat/stages.py` | supported | M1A–M4 coordinators and M0–M6 factory/metadata. Cleanup debt until simplification: private:_advance_to_next_turn, private:_new_fighter. |
 | `combat/table_tactical_transitions.py` | supported | Default M5/M6 exact planner dynamics; checked against replay. Cleanup debt until simplification: private:_dice_sum_distribution. |
 | `combat/tactical_env.py` | supported | M5/M6 sampling, turns, observations and episode outcomes. Cleanup debt until simplification: private:_new_fighter. |
-| `combat/tactical_transitions.py` | verification-only | Independent replay oracle; also supplies validated observation decoding. |
+| `combat/tactical_transitions.py` | supported | Validated observation decoding used by the production table model; independent replay dynamics retained for verification. |
 | `combat/tactics.py` | supported | M5/M6 conditions, reach, enemy policies and turn lifecycle. |
 | `combat/transitions.py` | supported | Planner protocol, registry and M0–M4 exact dynamics. |
 | `combat/turns.py` | supported | Deterministic turn order, dead-actor skipping and rounds. |
@@ -86,7 +86,7 @@ Tests and the replay oracle remain independent where they catch different errors
 | `docs/M0_SPEC.md` | remove | Relocate durable contracts/references to maintained code/docs, then delete in docs PR. |
 | `docs/ROLLOUT_PLANNING.md` | remove | Relocate durable contracts/references to maintained code/docs, then delete in docs PR. |
 | `docs/STAGES_SPEC.md` | remove | Relocate durable contracts/references to maintained code/docs, then delete in docs PR. |
-| `evaluation/__init__.py` | supported | Package marker; no entry point. |
+| `evaluation/__init__.py` | supported | Existing evaluation API re-exports; no CLI. |
 | `evaluation/compare.py` | supported | CLI: python -m evaluation.compare; outcome/trace comparison. |
 | `evaluation/evaluate.py` | supported | CLI: python -m evaluation.evaluate; seeded episodes, run cards and traces. |
 | `evaluation/headroom_probe.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
