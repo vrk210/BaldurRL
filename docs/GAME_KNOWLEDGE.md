@@ -123,7 +123,7 @@ Resource effects assume fresh encounter-start pools.
    M5 fights and Brute→Archer→Healer in 33.08% [31.79, 34.40]
    on M6; actual role stats/healing need checking.
 
-   Reproducer: `evaluation.sim_mining_render --from-summary`.
+   Archived reproducer: `git show archive/simulator-research-2026-10-15:evaluation/sim_mining_render.py`.
 
 2. **TODO_VERIFY — Spend burst damage while it can remove enemy turns; heal before critical
    danger.** **A · general:** early Action Surge beats withholding it until
@@ -139,7 +139,7 @@ Resource effects assume fresh encounter-start pools.
    +0.97 pp [-0.09, +2.04]; no validated universal Cleave threshold or
    threat-target Trip advantage. Verify Cleave's real damage and reach.
 
-   Reproducer: `evaluation.sim_mining_render --from-summary`.
+   Archived reproducer: `git show archive/simulator-research-2026-10-15:evaluation/sim_mining_render.py`.
 
 3. **TODO_VERIFY — Commit allies to one positioning plan.** **A · mechanic-dependent:**
    adaptive positioning beats stopping after one diver by
@@ -152,7 +152,7 @@ Resource effects assume fresh encounter-start pools.
    +9.18 pp [+7.11, +11.24]. This does not show Disengage never helps.
    Earlier Advance timing remains unresolved in local replays.
 
-   Reproducer: `evaluation.sim_mining_render --from-summary`.
+   Archived reproducer: `git show archive/simulator-research-2026-10-15:evaluation/sim_mining_render.py`.
 
 4. **TODO_VERIFY — Keep attacking by default; do not add the tested emergency Dodge rule.**
    **A · mechanic-dependent:** disabling Dodge when estimated incoming damage
@@ -161,7 +161,7 @@ Resource effects assume fresh encounter-start pools.
    use. Check real enemy targeting, Dodge duration and action economy; no
    beneficial Dodge state was established by this work.
 
-   Reproducer: `evaluation.sim_mining_render --from-summary`.
+   Archived reproducer: `git show archive/simulator-research-2026-10-15:evaluation/sim_mining_render.py`.
 
 5. **TODO_VERIFY — Audit legal actions before ending a turn.** **A · general:** spending
    Surge versus leaving it unused gains +31.18 pp [+28.31, +34.04].
@@ -171,7 +171,7 @@ Resource effects assume fresh encounter-start pools.
    These frequencies do not measure the cost of each skipped attack. A legal
    heal or Trip can reasonably be saved; availability alone is not waste.
 
-   Reproducer: `evaluation.sim_mining_render --from-summary`.
+   Archived reproducer: `git show archive/simulator-research-2026-10-15:evaluation/sim_mining_render.py`.
 
 6. **TODO_VERIFY — Do not label one lost fight unwinnable.** **C · unknown:** high total enemy
    HP (M5) and durable front enemies (M6) predict more baseline losses.
@@ -182,7 +182,7 @@ Resource effects assume fresh encounter-start pools.
    dice share of the remaining losses. That needs an optimal-policy bound;
    verify real encounter balance and randomness before transferring.
 
-   Reproducer: `evaluation.sim_mining_render --from-summary`.
+   Archived reproducer: `git show archive/simulator-research-2026-10-15:evaluation/sim_mining_render.py`.
 
 7. **TODO_VERIFY — Use PPO's exceptions as review examples, not replacement rules.**
    **C · unknown:** PPO s0/s1/s2 win 540/696/632 M5 and 604/615/610
@@ -194,8 +194,9 @@ Resource effects assume fresh encounter-start pools.
    produce these unique wins; inspect concrete BG3 states before inferring a
    transferable tactic.
 
-   Reproducer: `evaluation.sim_mining_render --from-summary`.
+   Archived reproducer: `git show archive/simulator-research-2026-10-15:evaluation/sim_mining_render.py`.
 
 Sources, per-policy audits, full kill orders, inventory and provenance:
-[`evaluation/sim_mining.py`](../evaluation/sim_mining.py) and its committed
-[`sim_mining_summary.json`](../evaluation/sim_mining_summary.json).
+tag `archive/simulator-research-2026-10-15`, paths `evaluation/sim_mining.py`
+and `evaluation/sim_mining_summary.json`. The findings and unresolved questions
+are retained in [RESULTS.md](RESULTS.md).
