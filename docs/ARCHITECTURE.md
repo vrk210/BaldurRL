@@ -39,7 +39,7 @@ Tests and the replay oracle remain independent where they catch different errors
 | `.github/workflows/windows-harness.yml` | supported | Offline Windows harness verification; no game execution. |
 | `agents/__init__.py` | supported | Package marker; no entry point. |
 | `agents/expectimax_agent.py` | supported | Exact chance search with bounded turn/decision horizons. |
-| `agents/heuristic_agent.py` | supported | Supported stage heuristics and threat-aware baseline. Cleanup debt until simplification: private:_new_fighter. |
+| `agents/heuristic_agent.py` | supported | Supported stage heuristics and threat-aware baseline. |
 | `agents/policy.py` | supported | Model-independent policy interface. |
 | `agents/random_agent.py` | supported | Seeded random legal-action baseline. |
 | `agents/rollout_agent.py` | verification-only | Sampling planner reference and reconstruction/isolation baseline; exposed by evaluation.evaluate. |
@@ -71,10 +71,10 @@ Tests and the replay oracle remain independent where they catch different errors
 | `combat/mechanics.py` | supported | Shared attack, damage, healing and resource effects. |
 | `combat/resources.py` | supported | Nonnegative resource pools and atomic affordability/spending. |
 | `combat/rolls.py` | supported | Advantage/disadvantage roll mechanics. |
-| `combat/simulation.py` | supported | Validated reconstruction without access to live RNG. Cleanup debt until simplification: private:_enemy_profile. |
-| `combat/stages.py` | supported | M1A–M4 coordinators and M0–M6 factory/metadata. Cleanup debt until simplification: private:_advance_to_next_turn, private:_new_fighter. |
-| `combat/table_tactical_transitions.py` | supported | Default M5/M6 exact planner dynamics; checked against replay. Cleanup debt until simplification: private:_dice_sum_distribution. |
-| `combat/tactical_env.py` | supported | M5/M6 sampling, turns, observations and episode outcomes. Cleanup debt until simplification: private:_new_fighter. |
+| `combat/simulation.py` | supported | Validated reconstruction without access to live RNG. |
+| `combat/stages.py` | supported | M1A–M4 coordinators and M0–M6 factory/metadata. |
+| `combat/table_tactical_transitions.py` | supported | Default M5/M6 exact planner dynamics; checked against replay. |
+| `combat/tactical_env.py` | supported | M5/M6 sampling, turns, observations and episode outcomes. |
 | `combat/tactical_transitions.py` | verification-only | Independent replay oracle; also supplies validated observation decoding. |
 | `combat/tactics.py` | supported | M5/M6 conditions, reach, enemy policies and turn lifecycle. |
 | `combat/transitions.py` | supported | Planner protocol, registry and M0–M4 exact dynamics. |
@@ -99,7 +99,7 @@ Tests and the replay oracle remain independent where they catch different errors
 | `integration/commands.py` | supported | Model-independent commands, targets, legality evidence and result states. |
 | `integration/encounter_trial.py` | supported | CLI: python -m integration.encounter_trial; evidence analysis; missing live facts remain inconclusive. |
 | `integration/inspect.py` | supported | CLI: python -m integration.inspect; passive record inspection. |
-| `integration/mock_executor.py` | verification-only | CLI: python -m integration.mock_executor; synthetic command acknowledgements. Cleanup debt until simplification: private:_publish, private:_read. |
+| `integration/mock_executor.py` | verification-only | CLI: python -m integration.mock_executor; synthetic command acknowledgements. |
 | `integration/mock_h0.py` | verification-only | CLI: python -m integration.mock_h0; synthetic passive collector. |
 | `integration/publish.py` | supported | CLI: python -m integration.publish; ready-marker record publication. |
 | `integration/reader.py` | supported | Ordered passive-record reader; preserve compatibility. |
@@ -110,6 +110,7 @@ Tests and the replay oracle remain independent where they catch different errors
 | `integration/windows_preflight.py` | supported | CLI: python -m integration.windows_preflight; read-only installation checks. |
 | `pyproject.toml` | supported | Pinned-tool lint configuration; no packaging framework. |
 | `requirements-quality.txt` | supported | Pinned lint tool used by repository CI. |
+| `scripts/compare_refactor.py` | verification-only | CLI: python scripts/compare_refactor.py --base COMMIT; fixed-seed semantic equivalence across revisions. |
 | `scripts/check_repository.py` | supported | CLI: python scripts/check_repository.py; inventory, docs, artifacts and PR budget checks. |
 | `scripts/windows/bootstrap-harness.ps1` | supported | CLI: scripts/windows/bootstrap-harness.ps1; isolated harness environment. |
 | `scripts/windows/package-h0.ps1` | supported | CLI: scripts/windows/package-h0.ps1; Divine packaging and source manifest. |

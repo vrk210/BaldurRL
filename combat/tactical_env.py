@@ -18,7 +18,7 @@ from .actions import Action
 from .actors import ActorRef, CombatRoster, Side
 from .characters import Rank, Role, TacticalEnemy, TacticalFighter, Targeting
 from .damage import DamageSpec
-from .env import MAX_ROUNDS, _new_fighter
+from .env import MAX_ROUNDS, new_fighter
 from .legality import DecisionSpec, tactical_legal_mask
 from .mechanics import use_action_surge, use_second_wind
 from .resources import Resource, ResourcePool
@@ -46,25 +46,14 @@ N_ENEMIES = 3
 ROLE_ORDER = (Role.BRUTE, Role.ARCHER, Role.HEALER)
 TARGETING_ORDER = (Targeting.WEAKEST, Targeting.RETALIATE, Targeting.RANDOM)
 
-# Per-stage tuning data; see the STAGES_SPEC M5/M6 tuning history. V1 is kept
-# only to document and reproduce the first measurement; stages use V2.
-V1_RULES = TacticalRules(
-    profiles={
-        Role.BRUTE: RoleProfile(hp=(24, 32), ac=(14, 16), attack=(4, 6), die=10, bonus=(2, 4), rank=Rank.FRONT),
-        Role.ARCHER: RoleProfile(hp=(10, 16), ac=(12, 14), attack=(5, 7), die=8, bonus=(2, 4), rank=Rank.BACK),
-        Role.HEALER: RoleProfile(hp=(12, 18), ac=(12, 14), attack=(2, 4), die=6, bonus=(0, 2), rank=Rank.BACK),
-    },
-    heal=DamageSpec(1, 8, 2),
-    heal_charges=3,
-    trip_charges=99,  # v1 Trip was limited only by the Bonus Action.
-)
-_V2_ARCHER = RoleProfile(hp=(10, 16), ac=(12, 14), attack=(6, 8), die=8, bonus=(3, 5), rank=Rank.BACK)
-_V2_HEALER = RoleProfile(hp=(12, 18), ac=(12, 14), attack=(2, 4), die=6, bonus=(0, 2), rank=Rank.BACK)
+# Maintained stage tuning; historical measurements are preserved in tagged results.
+_ARCHER_PROFILE = RoleProfile(hp=(10, 16), ac=(12, 14), attack=(6, 8), die=8, bonus=(3, 5), rank=Rank.BACK)
+_HEALER_PROFILE = RoleProfile(hp=(12, 18), ac=(12, 14), attack=(2, 4), die=6, bonus=(0, 2), rank=Rank.BACK)
 M5_RULES = TacticalRules(
     profiles={
         Role.BRUTE: RoleProfile(hp=(24, 32), ac=(14, 16), attack=(5, 7), die=10, bonus=(3, 5), rank=Rank.FRONT),
-        Role.ARCHER: _V2_ARCHER,
-        Role.HEALER: _V2_HEALER,
+        Role.ARCHER: _ARCHER_PROFILE,
+        Role.HEALER: _HEALER_PROFILE,
     },
     heal=DamageSpec(2, 6, 2),
     heal_charges=3,
@@ -74,8 +63,8 @@ M5_RULES = TacticalRules(
 M6_RULES = TacticalRules(
     profiles={
         Role.BRUTE: RoleProfile(hp=(20, 26), ac=(14, 16), attack=(5, 7), die=10, bonus=(3, 5), rank=Rank.FRONT),
-        Role.ARCHER: _V2_ARCHER,
-        Role.HEALER: _V2_HEALER,
+        Role.ARCHER: _ARCHER_PROFILE,
+        Role.HEALER: _HEALER_PROFILE,
     },
     heal=DamageSpec(2, 6, 2),
     heal_charges=2,
@@ -150,7 +139,7 @@ def tactical_observation_high(stage: str) -> np.ndarray:
 
 def make_tactical_ally(stage: str) -> TacticalFighter:
     """The M4 Fighter preset with Cleave, Trip, Dodge, and M6 movement abilities."""
-    base = _new_fighter()
+    base = new_fighter()
     known = {Action.ATTACK, Action.SECOND_WIND, Action.ACTION_SURGE, Action.CLEAVE, Action.TRIP, Action.DODGE}
     resources = {
         Resource.ACTION: 1, Resource.BONUS_ACTION: 1, Resource.SECOND_WIND: 1,

@@ -11,7 +11,7 @@ from .actions import Action
 from .actors import ActorRef, CombatRoster, Side
 from .characters import Fighter, Goblin, refresh_turn_resources
 from .damage import DamageSpec
-from .env import BaldurCombatEnv, MAX_ROUNDS, _advance_to_next_turn, _new_fighter
+from .env import BaldurCombatEnv, MAX_ROUNDS, advance_to_next_turn, new_fighter
 from .legality import DecisionSpec, legal_mask_for, resolve_target
 from .mechanics import (
     AttackResult,
@@ -48,12 +48,12 @@ _ENEMY_COUNTS = {"m1a": 1, "m4": 3}
 _CLEAVE_STAGES = ("m2", "m3", "m4")
 
 
-def _enemy_profile(stage: str) -> dict[str, tuple[int, ...]]:
+def enemy_profile(stage: str) -> dict[str, tuple[int, ...]]:
     return _ENEMY_PROFILES.get(stage, _DEFAULT_ENEMY_PROFILE)
 
 
 def _enemy_high(stage: str) -> list[int]:
-    profile = _enemy_profile(stage)
+    profile = enemy_profile(stage)
     hp, ac, attack, dice, bonus = (profile["hp"], profile["ac"], profile["attack"],
                                   profile["dice"], profile["bonus"])
     return [hp[1] - 1, hp[1] - 1, ac[1] - 1, attack[1] - 1, max(dice), bonus[1] - 1]
@@ -146,14 +146,14 @@ class StagedCombatEnv(gym.Env[np.ndarray, int]):
         return self._observation(), self._info(None)
 
     def _new_ally(self) -> Fighter:
-        ally = _new_fighter()
+        ally = new_fighter()
         if self.stage in _CLEAVE_STAGES:
             ally.resources.set(Resource.CLEAVE, 1)
             ally.known_abilities = ally.known_abilities | {Action.CLEAVE}
         return ally
 
     def _new_enemy(self, slot: int) -> Goblin:
-        profile = _enemy_profile(self.stage)
+        profile = enemy_profile(self.stage)
         hp = int(self.np_random.integers(*profile["hp"]))
         ac = int(self.np_random.integers(*profile["ac"]))
         bonus = int(self.np_random.integers(*profile["attack"]))
@@ -237,7 +237,7 @@ class StagedCombatEnv(gym.Env[np.ndarray, int]):
             use_action_surge(attacker)
         else:
             attacks: list[dict[str, Any] | None] = [None] * len(self.enemies)
-            _advance_to_next_turn(turns, roster)
+            advance_to_next_turn(turns, roster)
             while not self._is_policy_controlled(turns.current):
                 ref = turns.current
                 result = self._run_automatic_turn(ref)
@@ -249,7 +249,7 @@ class StagedCombatEnv(gym.Env[np.ndarray, int]):
                 if would_wrap and self.round_number == MAX_ROUNDS:
                     self._truncated = True
                     break
-                wrapped = _advance_to_next_turn(turns, roster)
+                wrapped = advance_to_next_turn(turns, roster)
                 if wrapped:
                     self.round_number = turns.round_number
             info["enemy_attacks"] = attacks

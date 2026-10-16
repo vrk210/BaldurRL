@@ -11,7 +11,7 @@ from .actions import Action
 from .actors import ActorRef, CombatRoster, Side
 from .characters import Fighter, Goblin, refresh_turn_resources
 from .damage import DamageSpec
-from .legality import legal_mask_for, resolve_target
+from .legality import DecisionSpec, legal_mask_for, resolve_target
 from .mechanics import AttackResult, use_action_surge, use_attack, use_second_wind
 from .resources import Resource
 from .turns import TurnManager
@@ -54,7 +54,7 @@ def terminal_reward(
     return 0.0
 
 
-def _new_fighter() -> Fighter:
+def new_fighter() -> Fighter:
     return Fighter("Fighter", _FIGHTER_MAX_HP, _FIGHTER_MAX_HP, 16, 5, DamageSpec(1, 8, 3))
 
 
@@ -62,12 +62,17 @@ def _new_goblin() -> Goblin:
     return Goblin("Goblin", _GOBLIN_MAX_HP, _GOBLIN_MAX_HP, 15, 4, DamageSpec(1, 6, 2))
 
 
-def _advance_to_next_turn(turns: TurnManager, roster: CombatRoster) -> bool:
+def advance_to_next_turn(turns: TurnManager, roster: CombatRoster) -> bool:
     """Advance past dead actors and begin the next living actor's turn."""
     wrapped = turns.advance(roster.is_alive)
     if roster.is_alive(turns.current):
         refresh_turn_resources(roster.get(turns.current))
     return wrapped
+
+
+# Existing turn tests exercise this historical entry point; keep it until their
+# separately scoped API migration. Production callers use the public name.
+_advance_to_next_turn = advance_to_next_turn
 
 
 class BaldurCombatEnv(gym.Env[np.ndarray, int]):
@@ -79,9 +84,7 @@ class BaldurCombatEnv(gym.Env[np.ndarray, int]):
     observation_fields = OBSERVATION_FIELDS
 
     @property
-    def decisions(self) -> tuple[Any, ...]:
-        from .stages import DecisionSpec
-
+    def decisions(self) -> tuple[DecisionSpec, ...]:
         return tuple(DecisionSpec(action) for action in M0_ACTIONS)
 
     def __init__(self, reward_fn: RewardFunction = terminal_reward) -> None:
@@ -106,7 +109,7 @@ class BaldurCombatEnv(gym.Env[np.ndarray, int]):
         self, *, seed: int | None = None, options: dict[str, Any] | None = None
     ) -> tuple[np.ndarray, dict[str, Any]]:
         super().reset(seed=seed)
-        self.fighter = _new_fighter()
+        self.fighter = new_fighter()
         self.goblin = _new_goblin()
         self.round_number = 1
         self._terminated = False
@@ -158,7 +161,7 @@ class BaldurCombatEnv(gym.Env[np.ndarray, int]):
         elif semantic_action is Action.ACTION_SURGE:
             use_action_surge(attacker)
         else:
-            _advance_to_next_turn(turns, roster)
+            advance_to_next_turn(turns, roster)
             while not self._is_policy_controlled(turns.current):
                 result = self._run_automatic_turn(turns.current)
                 if result is not None:
@@ -170,7 +173,7 @@ class BaldurCombatEnv(gym.Env[np.ndarray, int]):
                 if would_wrap and self.round_number == MAX_ROUNDS:
                     self._truncated = True
                     break
-                wrapped = _advance_to_next_turn(turns, roster)
+                wrapped = advance_to_next_turn(turns, roster)
                 if wrapped:
                     self.round_number = turns.round_number
 

@@ -130,7 +130,12 @@ def _merge_counts(counts) -> dict[str, int]:
 
 
 def paired_difference(a: list[dict], b: list[dict]) -> dict:
-    """Win-rate difference a - b over shared seeds, in percentage points, with a 95% CI."""
+    """Win-rate difference a - b over shared seeds, in percentage points, with a 95% CI.
+
+    This historical API intersects seeds, unlike evaluation.paired's strict
+    comparison. Unifying them requires an explicit correctness change; a
+    behavior-preserving cleanup must not silently change the sample population.
+    """
     wins_b = {row["seed"]: row["won"] for row in b}
     diff = np.array([float(row["won"]) - float(wins_b[row["seed"]]) for row in a if row["seed"] in wins_b])
     se = diff.std(ddof=1) / sqrt(len(diff))
