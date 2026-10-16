@@ -1,8 +1,8 @@
-"""Seeded regression snapshots for pre-refactor stage behavior.
+"""Seeded regression snapshots of stage behavior.
 
 These lock HP, rounds, targets, attack rolls/damage, resources, enemy order,
-and termination for fixed action sequences so the turn-model refactor cannot
-silently alter RNG consumption or turn ordering.
+and termination for fixed action sequences, so a refactor cannot silently
+alter RNG consumption or turn ordering.
 """
 
 from combat.env import BaldurCombatEnv

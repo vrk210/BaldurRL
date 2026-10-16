@@ -74,7 +74,6 @@ class M0EvalCallback(BaseCallback):
         self.best_model_path = best_model_path
         self.stage = stage
         self.best_win_rate = -1.0
-        self.last_win_rate = 0.0
         self.next_eval_timestep = eval_freq if eval_freq > 0 else None
 
     def _on_step(self) -> bool:
@@ -88,7 +87,6 @@ class M0EvalCallback(BaseCallback):
         summary = evaluate(
             SB3Policy(self.model, deterministic=True), self.eval_seeds, stage=self.stage
         )
-        self.last_win_rate = summary.win_rate
         self.logger.record(f"{self.stage}_eval/win_rate", summary.win_rate)
         self.logger.record(f"{self.stage}_eval/mean_rounds", summary.mean_rounds)
         self.logger.record(f"{self.stage}_eval/mean_fighter_hp", summary.mean_fighter_hp)

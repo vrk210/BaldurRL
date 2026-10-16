@@ -37,7 +37,7 @@ Tests and the replay oracle remain independent where they catch different errors
 | --- | --- | --- |
 | `.github/workflows/repository.yml` | supported | Inventory/lint checks and PR size accounting. |
 | `.github/workflows/windows-harness.yml` | supported | Offline Windows harness verification; no game execution. |
-| `agents/__init__.py` | supported | Public baseline-policy re-exports; no CLI. |
+| `agents/__init__.py` | supported | Package marker; no entry point. |
 | `agents/expectimax_agent.py` | supported | Exact chance search with bounded turn/decision horizons. |
 | `agents/heuristic_agent.py` | supported | Supported stage heuristics and threat-aware baseline. |
 | `agents/policy.py` | supported | Model-independent policy interface. |
@@ -79,7 +79,7 @@ Tests and the replay oracle remain independent where they catch different errors
 | `combat/tactics.py` | supported | M5/M6 conditions, reach, enemy policies and turn lifecycle. |
 | `combat/transitions.py` | supported | Planner protocol, registry and M0–M4 exact dynamics. |
 | `combat/turns.py` | supported | Deterministic turn order, dead-actor skipping and rounds. |
-| `evaluation/__init__.py` | supported | Existing evaluation API re-exports; no CLI. |
+| `evaluation/__init__.py` | supported | Package marker; no entry point. |
 | `evaluation/compare.py` | supported | CLI: python -m evaluation.compare; outcome/trace comparison. |
 | `evaluation/evaluate.py` | supported | CLI: python -m evaluation.evaluate; seeded episodes, run cards and traces. |
 | `evaluation/paired.py` | supported | CLI: python -m evaluation.paired; paired run-card statistics. |
@@ -100,7 +100,7 @@ Tests and the replay oracle remain independent where they catch different errors
 | `integration/schema.py` | supported | Versioned passive GameSnapshot/GameEvent records; preserve compatibility. |
 | `integration/serialization.py` | supported | Strict passive-record JSON decoding/encoding. |
 | `integration/session_runner.py` | supported | CLI: python -m integration.session_runner; isolated capture archival and health. |
-| `integration/trace.py` | supported | Candidate decisions from passive observations; UNKNOWN stays unknown. |
+| `integration/trace.py` | supported | Snapshot intervals from ordered records and the single controlled action in each; ambiguity raises. |
 | `integration/windows_preflight.py` | supported | CLI: python -m integration.windows_preflight; read-only installation checks. |
 | `pyproject.toml` | supported | Pinned-tool lint configuration; no packaging framework. |
 | `requirements.txt` | supported | Pinned Python 3.11 simulator/development dependency graph; includes harness and quality manifests. |
