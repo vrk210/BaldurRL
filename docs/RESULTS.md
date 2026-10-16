@@ -10,7 +10,7 @@ to the decisions they inform:
 
 This file replaces the per-experiment reports that were in `reports/` until
 2026-10-15. Those reports have the full tables, reproduction commands and
-artifact paths. List them with `git ls-tree --name-only b082262 reports/` and
+artifact paths. List them with `git ls-tree --name-only b082262:reports` and
 read one with `git show b082262:reports/<name>`. Raw artifacts live in git-ignored `runs/` directories. Seed
 ranges are recorded in `evaluation/seeds.py`.
 

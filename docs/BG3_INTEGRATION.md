@@ -345,7 +345,8 @@ Decision (2026-10-09): the first execution experiment uses the normal client
 UI. Script Extender client keyboard injection is used where it reproduces the
 human interaction, and Windows keyboard/mouse input is the fallback for
 targeting and confirmation. Neither path has been demonstrated, and no
-executor exists.
+executor exists. Revisit if a live input trial or a documented,
+rule-respecting public submission API supplies new evidence.
 
 - [Osi.UseSpell][exec-use-spell] bypasses player preconditions, including spell
   ownership/resource availability. It is unsuitable as the ordinary-action
@@ -372,9 +373,6 @@ It holds:
   input bindings on the client, which `!baldurrl_inspect` doesn't cover;
 - the open questions only the game can answer;
 - the request-layout analysis and the reference index.
-
-Revisit this decision when a live input trial or
-a documented rule-respecting public submission API supplies new evidence.
 
 ## Harness milestones
 
