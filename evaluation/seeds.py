@@ -3,16 +3,17 @@
 Why this exists. Every evaluation, data collection and configuration choice draws
 encounters from explicit seeds. Reusing a range that has already informed a
 decision quietly turns a test set into a selection set. This happened once: the
-M5/M6 held-out range 3000–7999 also guided the v1 → v2 retune. This registry
-replaced a prose ledger (`docs/SEEDS.md`, 2026-10-15) so that tools can enforce the
-one rule that must never slip, and anyone can check a range before using it:
+M5/M6 held-out range 3000–7999 also guided the v1 → v2 retune. The registry is
+code so that tools can enforce the one rule that must never slip, and anyone
+can check a range before using it:
 
     python -m evaluation.seeds                    # ledger plus free gaps
     python -m evaluation.seeds --check 240000 5000
 
 Rules:
 
-- Reserve a new experiment's ranges here, in the same commit as its code.
+- Reserve a new experiment's ranges here before running it. Experiment code
+  itself may never merge.
 - A range counts as used once any result from it has been looked at, even if
   the run was abandoned.
 - Keep training, validation, selection and final-test ranges disjoint.
@@ -90,11 +91,11 @@ REGISTRY: tuple[SeedRange, ...] = (
     SeedRange(221012, 221100, _R, "Unused headroom selection allocation"),
     SeedRange(221100, 221112, _U, "M5/M6 headroom configuration selection C"),
     SeedRange(221112, 223000, _R, "Unused headroom selection allocation"),
-    SeedRange(223000, 224000, _U, "Headroom: once-only paired confirmation, 1,000 encounters/stage; tag archive/simulator-research-2026-10-15"),
+    SeedRange(223000, 224000, _U, "Headroom: once-only paired confirmation, 1,000 encounters/stage; archive/simulator-research-2026-10-15:evaluation/headroom_probe_results.json"),
     SeedRange(224000, 230000, _R, "Unused headroom confirmation allocation and spare; no encounter resets"),
     SeedRange(230000, 230008, _U, "Simulator tactics mining: exploratory smoke tests (2026-10-15)"),
     SeedRange(230008, 232000, _R, "Unused simulator tactics exploration allocation"),
-    SeedRange(232000, 236000, _U, "Simulator tactics: once-only paired confirmation, 13 fixed contrasts; tag archive/simulator-research-2026-10-15"),
+    SeedRange(232000, 236000, _U, "Simulator tactics: once-only paired confirmation, 13 fixed contrasts; archive/simulator-research-2026-10-15:evaluation/sim_mining.py"),
     SeedRange(236000, 240000, _R, "Unused tactics encounter spare; 236000–236127 used only as replay combat RNG seeds, not encounter resets"),
 )
 
