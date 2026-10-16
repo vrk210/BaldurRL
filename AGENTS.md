@@ -1,125 +1,92 @@
-# BaldurRL: instructions for coding agents
+# BaldurRL: working rules
 
-Prefer stable abstractions and implementations expected to survive future milestones when doing so adds little complexity. Do not overengineer speculative future functionality solely to avoid hypothetical rewrites.
+## Maintained system
 
-## Project goal and current stages
+Read [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the module/entry-point inventory
+and dependency boundaries before editing code. Its statuses are authoritative:
+`supported`, `verification-only`, or `remove`. Update the inventory in the same
+PR when adding, retiring, or changing the responsibility of a module. Do not
+maintain a second module table here.
 
-BaldurRL's long-term goal is an autonomous agent capable of completing Baldur's Gate 3. **M0** is the fixed 1v1 regression baseline. **M1A** randomizes one opponent, **M1B** adds a second opponent and target choice, **M2** adds the simplified Cleave decision, **M3** controls two allies against two enemies, **M4** is 2v3 with scaled enemies, **M5** adds enemy roles, varied enemy targeting, advantage/disadvantage, Trip/Prone, and Dodge, and **M6** adds a two-rank positioning abstraction to M5. Implement only these stages unless a later task explicitly expands scope.
+The simulator is frozen at M0–M6 as a regression and research test bed. Do not
+add invented stages or run open-ended policy sweeps. Changes to simulator rules
+require an explicit task; BG3 facts must come from evidence, not inferred D&D
+rules. The integration package is independent of simulator/ML representations.
+It preserves BG3 identifiers and unknown facts. Command acceptance never proves
+execution. No real BG3 action executor is implemented or authorized by cleanup.
 
-## Documentation priority
+Until the documentation migration lands, M0_SPEC.md and STAGES_SPEC.md hold the
+simulator contracts. Their inventory rows require relocation into the owning
+modules before deletion. Thereafter, module contracts and behavior tests govern.
+Report a contract/implementation disagreement before changing behavior.
 
-Before modifying combat code, read in order:
+## Where code, documentation, and results live
 
-1. [docs/M0_SPEC.md](docs/M0_SPEC.md)
-2. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-3. [docs/GAME_KNOWLEDGE.md](docs/GAME_KNOWLEDGE.md)
+- Put maintained implementation in the module owning its responsibility in the
+  inventory. Use typed, small functions/dataclasses and explicit public APIs.
+  Agents choose actions; environments coordinate; mechanics implement rules.
+  Never put combat rules in policies or mutate character state from an agent.
+- Put local rationale, assumptions, and conditions for revisiting a decision
+  beside code. Docstrings describe contracts and design choices, not experiment
+  histories, result tables, prompt changes, or machine-specific provenance.
+- Maintain only README.md, AGENTS.md, docs/ARCHITECTURE.md,
+  docs/BG3_INTEGRATION.md, docs/GAME_KNOWLEDGE.md, docs/RESULTS.md, and
+  bg3/h0/README.md. Existing documents marked `remove` in the inventory remain
+  only until their specified migration. New documents require an explicit scope
+  decision. Temporary handoffs stay outside the tracked tree and state a removal
+  condition. Put completed plans and chronology in PR/Git history.
+- Put measured experiment findings in docs/RESULTS.md: question, configuration,
+  code revision, seeds/sample size, uncertainty, limitations and open questions.
+  GAME_KNOWLEDGE.md holds the resulting game hypotheses with evidence limits.
+  Small executable fixtures and operational limits belong beside their consumers.
 
-For M1A through M6, also read the stage specification before editing their rules.
+## Experiment lifecycle
 
-`docs/M0_SPEC.md` is authoritative for M0 behavior; the stage specification governs M1A, M1B, M2, M3, M4, M5, and M6. If code and documentation disagree, report the inconsistency; do not silently choose one.
+1. Define the question and stopping/selection criteria. Reserve encounter seeds
+   in evaluation/seeds.py before running; keep training, selection and final-test
+   ranges separate. Never use frozen final-test seeds for development.
+2. Write raw logs, transcripts, research bundles and result JSON under ignored
+   runs/, once per experiment. Do not commit generated experiment output or
+   trained models. Small fixtures are allowed only with a consuming test named
+   in the inventory; configuration JSON must be identified as configuration.
+3. Inspect outputs before summarizing/removing them: missing/non-finite data,
+   configuration/provenance inconsistencies, failures and unexpected/promising
+   results. Alert the user to findings needing investigation. Preserve the
+   smallest relevant evidence while a question is unresolved.
+4. Summarize findings in RESULTS.md. Before deleting completed research code or
+   committed evidence, create and push an annotated tag and cite it in the
+   summary. Retire regenerable output when no active investigation needs it.
+   Unique live captures and active training data need a recorded location and
+   retention/removal condition; do not discard irreplaceable data routinely.
+5. Merge experiment code only for a concrete ongoing purpose recorded in the
+   inventory. Completed one-time research leaves a summary and tagged history.
 
-## Scope
+## PR scope and checks
 
-M0 has exactly one Fighter and one Goblin at fixed melee range. M1A retains one enemy with randomized stats. M1B and M2 have two enemies at fixed melee range. M3 has two controlled Fighter allies and two enemies at fixed melee range. M4 has two allies and three scaled enemies at fixed melee range. M5 has two allies against a Brute, an Archer, and a Healer with no geometry. M6 adds front/back ranks, a per-turn Movement resource, Advance/Disengage, and opportunity attacks; it is an abstract two-rank model, not movement on a map. All stages omit terrain, elevation, line of sight, distances, inventory, consumables, party members, dialogue, quests, BG3 API integration, computer vision, and LLM calls, and every stage except M6 also omits movement and opportunity attacks. Do not add these systems unless explicitly requested. M5/M6 mechanics are owner-authorized simulator choices documented in the stage specification, not verified BG3 rules.
+One PR has one purpose stated in one sentence. Do not merge another agent's
+branch without explicitly agreed dependency/scope coordination. No unrelated
+features, behavior changes or formatting sweeps in cleanup PRs.
 
-## Design and module boundaries
+The default budget is 1,000 added plus deleted non-test lines. Each PR states
+`Size budget: N` in its body. A different budget requires an explicit scope
+agreement recorded as `Budget reason: ...`. Retirement PRs may instead state
+`Size budget: 300 additions` and count deletions separately; they permit source
+and test deletions only, plus evidence-summary/inventory updates. Tests are
+counted separately and must be justified by behavior, not implementation shape.
 
-```text
-Agent
-  ↓
-Action
-  ↓
-Environment
-  ↓
-Mechanics
-  ↓
-Character state
-```
-
-The agent chooses actions. The environment coordinates episodes, turns, legality, rewards, and termination. Mechanics implement combat rules. Character classes store stats, `ResourcePool` state, and known `Action` IDs. Shared immutable `AbilitySpec` definitions describe costs and targets, not execution. Agents must never directly modify character state. RL algorithms must not contain combat mechanics.
-
-| Module | Responsibility | Exclusions |
-| --- | --- | --- |
-| `combat/characters.py` | State representations: `Character`, `Fighter`, `Goblin`, with resources, known ability IDs, and per-turn refresh | Attack resolution, rewards, environment turn loops, RL algorithms |
-| `combat/actions.py` | Semantic ability intent, including `CLEAVE`, and `END_TURN` turn control | Action execution |
-| `combat/resources.py` | Typed `Resource` counts and shared `ResourcePool` affordability/spending | Ability-specific effects |
-| `combat/damage.py` | Immutable damage dice and bonus data | Damage rolls |
-| `combat/abilities.py` | Immutable `AbilitySpec` catalogs for stage abilities and their costs/targets | Executable effects; `END_TURN` remains turn control |
-| `combat/actors.py` | Stable `Side`/`ActorRef` addresses and `CombatRoster` ally/enemy organization | Combat rules, rewards, turn advancement |
-| `combat/turns.py` | Deterministic `TurnManager`: order, current actor, round, wrap detection, dead-actor skipping | Dice, HP mutation, rewards, policies, attacks |
-| `combat/legality.py` | `DecisionSpec` decisions, side-aware targets, turn-agnostic per-actor `legal_mask_for` and M5/M6 `tactical_legal_mask` | Turn order, dice, HP mutation, rewards, policies |
-| `combat/mechanics.py` | d20 and damage rolls, critical hits, attack resolution, Second Wind, Action Surge, Cleave | RL rewards |
-| `combat/rolls.py` | Advantage/disadvantage roll modes and moded attack resolution (M5/M6) | RL rewards, environment loops |
-| `combat/tactics.py` | M5/M6 rules: roles' tuning data, catalog costs, healing, Trip/Prone, Dodge, Healer, enemy targeting, ranks and reach, Advance/opportunity attacks, Disengage, turn-start/turn-end conditions | Environment loops, rewards, policies |
-| `combat/distributions.py` | Exact outcome distributions enumerated through the mechanics rule functions | Sampling, state mutation |
-| `combat/env.py` | Gymnasium M0 environment: one Fighter decision per step, fixed Goblin turn after `END_TURN`, observations, action masks, rewards, termination, truncation | Combat formulas; call `mechanics.py` |
-| `combat/stages.py` | M1A/M1B/M2/M3/M4 environments, shallow target decisions, stage factory (M0–M6) and metadata | Combat formulas; call `mechanics.py` |
-| `combat/tactical_env.py` | M5/M6 Gymnasium environment: sampling, turns, masks, observations, rewards, termination, per-stage `STAGE_RULES` | Combat formulas; call `tactics.py`/`mechanics.py` |
-| `combat/simulation.py` | Restore independent simulators (M0–M6) from live observations | Live RNG access, policies, combat formulas |
-| `combat/transitions.py` | Exact planner transitions: `TransitionModel` protocol, stage registry, M0–M4 roster model | Policies; combat formulas (use `distributions.py`) |
-| `combat/tactical_transitions.py` | Independent M5/M6 replay oracle: exact transitions by enumerating random paths through the real environment code, one draw per attack | Policies; restated combat rules |
-| `combat/table_tactical_transitions.py` | Default M5/M6 planner transitions: table-driven, using the shared `tactics.py` rule functions; must match the replay oracle | Policies; duplicated combat formulas |
-| `agents/` | Random, stage heuristic (including named M5/M6 variants), rollout, trained, and expectimax policies; leaf value functions; action selection only | Direct environment-state mutation; combat formulas |
-| `evaluation/` | Reproducible stage evaluation: win rate, remaining HP, rounds, action and target usage, kill order by role, paired comparisons, M5/M6 behavior summaries, planner timing | Combat rules |
-
-## Coding rules
-
-- Use Python type hints; prefer simple dataclasses and functions.
-- Avoid speculative abstractions and unnecessary dependencies.
-- Keep functions small and testable. Write deterministic tests whenever possible.
-- Use caller-supplied `numpy.random.Generator` instances, not global randomness, for combat rules.
-- Check known ability IDs and shared resource costs before applying an effect; keep target and HP restrictions specific to that effect.
-- Keep the four M0 action indices and seven M0 observation fields in `docs/M0_SPEC.md` stable. Stage-specific indices and fields are specified separately. Keep masks separate from observations, and use only the environment's seeded RNG for combat transitions.
-- Before collecting data or evaluating policies, reserve encounter seed ranges in `evaluation/seeds.py` (check with `python -m evaluation.seeds --check START COUNT`); never reuse a range that has already informed a decision. Evaluation CLIs refuse frozen final-test ranges unless `--final-test` is passed.
-- Compare policies on the same encounter seeds (`evaluation.paired`), with enough fights to resolve the effect: about 5,000 per policy for 1–2 point differences. Select configurations on play, not validation loss. Report a failed pilot as "this configuration loses", together with its configuration.
-- Do not print inside reusable mechanics functions.
-- Do not silently catch programming errors or prematurely optimize.
-
-## Missing-mechanic rule
-
-> If a mechanic required for implementation is absent from the relevant stage specification, do not infer it from general D&D or BG3 knowledge.
-
-Identify the missing specification, do not guess, and propose or request clarification before implementing it. M0 deliberately simplifies real BG3.
-
-## Implementation order
-
-```text
-combat mechanics
-→ environment
-→ deterministic tests
-→ random baseline
-→ heuristic baseline
-→ evaluation harness
-→ MaskablePPO
-```
-
-Do not jump ahead unless explicitly requested.
-
-## Documentation maintenance
-
-Changes to combat mechanics, actions, observations, legal-action rules, rewards, termination, or architecture boundaries must update the appropriate documentation in the same change.
-
-Prefer self-documenting code and tests, with local rationale and the conditions
-for revisiting a decision beside the implementation. Keep cross-cutting
-architecture and contracts in a few maintained documents. Put completed task
-plans and implementation history in PRs or Git history rather than new docs.
-Add a standalone document when it serves an ongoing purpose; necessary temporary
-handoffs must state when they should be removed.
-
-Experiment artifacts are temporary by default. Write raw logs, transcripts,
-research bundles and result JSON under an ignored location such as `runs/`,
-with one canonical location per experiment; do not commit them by default.
-
-Before summarizing or retiring artifacts, inspect them for missing/non-finite
-data, inconsistent configurations or provenance, failures, and unexpected or
-promising results. Alert the user to anything worth investigating. Preserve
-the smallest relevant evidence and its provenance until the question is resolved.
-
-Keep concise findings in an existing results or knowledge document: what was
-tested and why, configuration/code revision, seeds/sample size, uncertainty,
-limitations, and unresolved questions. Raw output is not a substitute for this
-summary. Retire summarized, regenerable output once no active investigation
-needs it. Retain artifacts only for a concrete ongoing purpose, such as unique
-live captures, active training data, or small regression fixtures; record their
-location and retention/removal condition. Do not routinely discard irreplaceable
-data or evidence for an unresolved issue.
+- Run `python scripts/check_repository.py` and the relevant pytest tests.
+- Run `python -m ruff check .` with requirements-quality.txt installed. CI checks
+  inventory coverage, document links/locations, artifact rules, PR size, syntax,
+  undefined names, and one statement per line. It does not judge design quality.
+- No new private-name imports across implementation modules. Existing imports
+  explicitly marked as cleanup debt in the inventory must be removed in the
+  simplification PR. Use caller-supplied
+  seeded RNGs for mechanics; no global randomness or hidden live RNG access.
+- Behavior-preserving refactors must pass existing tests unchanged and match
+  fixed-seed semantic traces against their base commit. Exclude timings and
+  filesystem locations. Keep independent verification that detects distinct
+  errors. Do not change schemas, action/observation ordering, reward semantics,
+  simulator mechanics or trained models during cleanup.
+- Dependency/setup changes must demonstrate installation and documented checks
+  in a clean environment. BG3 loading/execution requires separate live evidence;
+  synthetic or offline checks must never be reported as live verification.

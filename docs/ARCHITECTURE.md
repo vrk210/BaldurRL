@@ -24,30 +24,148 @@ ML code should eventually work through the same conceptual environment interface
 
 The simulator therefore uses **semantic state and semantic actions**, rather than mouse coordinates or UI-specific behavior. This is a direction for later milestones, not an implemented interface. Keep the object graph shallow: characters store stats, resource counts, and known ability IDs; shared ability definitions live outside characters; mechanics remain functions.
 
-## Module responsibilities
+## Maintained system inventory
 
-| Module | Owns | Must not own |
+This is the single inventory of modules and entry points. `supported` means an
+ongoing operational or research interface. `verification-only` means a test,
+mock, or independent oracle; it is not evidence of live BG3 behavior. `remove`
+means retirement is decided, with the prerequisite stated below. CI checks
+coverage against tracked source files and rejects stale or duplicate rows.
+Tests and the replay oracle remain independent where they catch different errors.
+
+| Path | Status | Entry point / responsibility |
 | --- | --- | --- |
-| `combat/characters.py` | Entity state: `Character`, `Fighter`, `Goblin`; known `Action` IDs, per-turn `turn_refresh` mapping, not copied ability definitions | Rewards, turn loops, policies, attack-resolution orchestration |
-| `combat/actors.py` | Stable `Side`/`ActorRef` addresses and `CombatRoster` ally/enemy organization | Combat rules, rewards, turn advancement |
-| `combat/turns.py` | Deterministic `TurnManager`: order, current actor, round, wrap detection, dead-actor skipping | Dice, HP mutation, rewards, policies, attacks |
-| `combat/legality.py` | `DecisionSpec` decisions, side-aware `resolve_target`, turn-agnostic per-actor `legal_mask_for` | Turn order, dice, HP mutation, rewards, policies |
-| `combat/actions.py` | Semantic action intent: `ATTACK`, `SECOND_WIND`, `ACTION_SURGE`, `END_TURN` | Execution rules |
-| `combat/resources.py` | `Resource` enum and `ResourcePool` counts; shared affordability, atomic spending, gaining, and setting counts | Effect-specific legality or effects |
-| `combat/damage.py` | Immutable `DamageSpec(dice_count, die_size, bonus)` | Rolls or damage application |
-| `combat/abilities.py` | Immutable `AbilitySpec(action, costs, target)` definitions and shared M0 catalog; excludes `END_TURN` | Execution methods or turn control |
-| `combat/mechanics.py` | Game rules: dice rolls, attack resolution, damage, healing, critical hits, Action Surge | Rewards or policy choice |
-| `combat/rolls.py` | Advantage/disadvantage roll modes, attack rolls under a mode, moded attack resolution (M5/M6) | Rewards or policy choice |
-| `combat/tactics.py` | M5/M6 simulator rules: Trip/Prone, Dodge, Healer behavior, enemy targeting policies, ranks and reach, Advance with opportunity attacks, Disengage, per-turn condition lifecycle, `TacticalRules` tuning data | Environment loops, rewards, policies |
-| `combat/tactical_env.py` | M5/M6 Gymnasium coordinator: role/stat sampling, turn order, masks via `tactical_legal_mask`, observations, rewards, termination, truncation | Duplicated combat formulas |
-| `combat/distributions.py` | Exact attack-damage and Second Wind outcome distributions enumerated through the mechanics rule functions | Sampling, state mutation, policies |
-| `combat/env.py` | Gymnasium coordinator: reset, flat observation encoding, action-index mapping and masks, one Fighter decision per step, fixed Goblin turn, reward call, termination, truncation | Duplicated combat formulas; call mechanics |
-| `combat/simulation.py` | Independent M0–M6 simulator reconstruction from live observations and caller-supplied seeds | Live RNG access, policies, duplicated combat formulas |
-| `combat/tactical_transitions.py` | Independent M5/M6 replay oracle: enumerating random source over the real environment step, attack draws collapsed to exact cached distributions, enemy phase stepped one actor at a time | Policies, value estimates, restated combat rules |
-| `combat/table_tactical_transitions.py` | Default exact M5/M6 planner dynamics: cached HP tables, shared costs/targeting/reach/lifecycle rule functions, turn coordination; verified against the replay oracle | Policies, value estimates, duplicated combat formulas |
-| `combat/transitions.py` | Exact planner-facing transitions: `TransitionModel` protocol, stage registry, M0–M4 `RosterTransitionModel` (merged successor distributions including the automatic phase after `END_TURN`) | Policies, value estimates, duplicated combat formulas |
-| `agents/` | Action-selection policies (random, heuristics, rollout and expectimax planners) and leaf value functions | Direct state mutation or combat formulas |
-| `evaluation/` | Reproducible seeded episodes and external metrics: win rate, final HP, rounds, action usage | Combat rules |
+| `.github/workflows/repository.yml` | supported | Inventory/lint checks and PR size accounting. |
+| `.github/workflows/windows-harness.yml` | supported | Offline Windows harness verification; no game execution. |
+| `agents/__init__.py` | supported | Public baseline-policy re-exports; no CLI. |
+| `agents/expectimax_agent.py` | supported | Exact chance search with bounded turn/decision horizons. |
+| `agents/heuristic_agent.py` | supported | Supported stage heuristics and threat-aware baseline. Cleanup debt until simplification: private:_new_fighter. |
+| `agents/improved_heuristic_agent.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
+| `agents/policy.py` | supported | Model-independent policy interface. |
+| `agents/random_agent.py` | supported | Seeded random legal-action baseline. |
+| `agents/rollout_agent.py` | verification-only | Sampling planner reference and reconstruction/isolation baseline; exposed by evaluation.evaluate. |
+| `agents/tactical_heuristics.py` | supported | M5/M6 named heuristic variants. |
+| `agents/value_functions.py` | supported | Heuristic/learned frontier values; no combat mechanics. |
+| `bg3/h0/Mods/BaldurRL_H0/ScriptExtender/Config.json` | supported | config: Script Extender module settings. |
+| `bg3/h0/Mods/BaldurRL_H0/ScriptExtender/Lua/BootstrapClient.lua` | supported | Client diagnostic bootstrap; no action execution. |
+| `bg3/h0/Mods/BaldurRL_H0/ScriptExtender/Lua/BootstrapServer.lua` | supported | Server lifecycle and console entry points: !baldurrl_snapshot, !baldurrl_inspect; passive only. |
+| `bg3/h0/Mods/BaldurRL_H0/ScriptExtender/Lua/Emitter.lua` | supported | Session sequence allocation and immutable record staging. |
+| `bg3/h0/Mods/BaldurRL_H0/ScriptExtender/Lua/Inspect.lua` | supported | Read-only entity/component probe; diagnostic output stays outside records. |
+| `bg3/h0/Mods/BaldurRL_H0/ScriptExtender/Lua/Observation.lua` | supported | Best-effort passive BG3 facts; absent fields remain unknown. |
+| `bg3/h0/Mods/BaldurRL_H0/ScriptExtender/Lua/Wire.lua` | supported | Versioned JSON wire representation and ready-marker publication. |
+| `bg3/h0/Mods/BaldurRL_H0/meta.lsx` | supported | config: BG3 module identity. |
+| `bg3/trials/synthetic_human_attack/records/1.json` | verification-only | fixture: tests/test_encounter_trial.py; synthetic evidence only. |
+| `bg3/trials/synthetic_human_attack/records/2.json` | verification-only | fixture: tests/test_encounter_trial.py; synthetic evidence only. |
+| `bg3/trials/synthetic_human_attack/records/3.json` | verification-only | fixture: tests/test_encounter_trial.py; synthetic evidence only. |
+| `bg3/trials/synthetic_human_attack/records/4.json` | verification-only | fixture: tests/test_encounter_trial.py; synthetic evidence only. |
+| `bg3/trials/synthetic_human_attack/records/5.json` | verification-only | fixture: tests/test_encounter_trial.py; synthetic evidence only. |
+| `bg3/trials/synthetic_human_attack/trial.json` | verification-only | fixture: tests/test_encounter_trial.py; synthetic evidence only. |
+| `combat/__init__.py` | supported | Package marker; no entry point. |
+| `combat/abilities.py` | supported | Immutable ability costs and target kinds. |
+| `combat/actions.py` | supported | Semantic action identities; no execution. |
+| `combat/actors.py` | supported | Stable actor addresses and roster sides. |
+| `combat/characters.py` | supported | Character state and presets; no turn orchestration. |
+| `combat/damage.py` | supported | Immutable damage specifications. |
+| `combat/distributions.py` | supported | Exact outcome distributions using mechanics primitives. |
+| `combat/env.py` | supported | M0 Gymnasium coordinator and stable observation/action contract. |
+| `combat/legality.py` | supported | Candidate decisions and per-actor target/resource legality. |
+| `combat/mechanics.py` | supported | Shared attack, damage, healing and resource effects. |
+| `combat/resources.py` | supported | Nonnegative resource pools and atomic affordability/spending. |
+| `combat/rolls.py` | supported | Advantage/disadvantage roll mechanics. |
+| `combat/simulation.py` | supported | Validated reconstruction without access to live RNG. Cleanup debt until simplification: private:_enemy_profile. |
+| `combat/stages.py` | supported | M1A–M4 coordinators and M0–M6 factory/metadata. Cleanup debt until simplification: private:_advance_to_next_turn, private:_new_fighter. |
+| `combat/table_tactical_transitions.py` | supported | Default M5/M6 exact planner dynamics; checked against replay. Cleanup debt until simplification: private:_dice_sum_distribution. |
+| `combat/tactical_env.py` | supported | M5/M6 sampling, turns, observations and episode outcomes. Cleanup debt until simplification: private:_new_fighter. |
+| `combat/tactical_transitions.py` | supported | Validated observation decoding used by the production table model; independent replay dynamics retained for verification. |
+| `combat/tactics.py` | supported | M5/M6 conditions, reach, enemy policies and turn lifecycle. |
+| `combat/transitions.py` | supported | Planner protocol, registry and M0–M4 exact dynamics. |
+| `combat/turns.py` | supported | Deterministic turn order, dead-actor skipping and rounds. |
+| `docs/BG3_ACTION_EXECUTION.md` | remove | Relocate durable contracts/references to maintained code/docs, then delete in docs PR. |
+| `docs/COMBAT_TURN_MODEL.md` | remove | Relocate durable contracts/references to maintained code/docs, then delete in docs PR. |
+| `docs/EXPECTIMAX_PLANNING.md` | remove | Relocate durable contracts/references to maintained code/docs, then delete in docs PR. |
+| `docs/M0_SPEC.md` | remove | Relocate durable contracts/references to maintained code/docs, then delete in docs PR. |
+| `docs/ROLLOUT_PLANNING.md` | remove | Relocate durable contracts/references to maintained code/docs, then delete in docs PR. |
+| `docs/STAGES_SPEC.md` | remove | Relocate durable contracts/references to maintained code/docs, then delete in docs PR. |
+| `evaluation/__init__.py` | supported | Existing evaluation API re-exports; no CLI. |
+| `evaluation/compare.py` | supported | CLI: python -m evaluation.compare; outcome/trace comparison. |
+| `evaluation/evaluate.py` | supported | CLI: python -m evaluation.evaluate; seeded episodes, run cards and traces. |
+| `evaluation/headroom_probe.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
+| `evaluation/headroom_probe_results.json` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
+| `evaluation/paired.py` | supported | CLI: python -m evaluation.paired; paired run-card statistics. |
+| `evaluation/planning_eval.py` | supported | CLI: python -m evaluation.planning_eval; parallel planner evaluation. |
+| `evaluation/ppo_diagnostics.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
+| `evaluation/seeds.py` | supported | CLI: python -m evaluation.seeds; seed reservations and frozen-set enforcement. |
+| `evaluation/sim_mining.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
+| `evaluation/sim_mining_render.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
+| `evaluation/sim_mining_summary.json` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
+| `evaluation/tactical_behavior.py` | supported | CLI: python -m evaluation.tactical_behavior; trace behavior summaries. |
+| `evaluation/tactical_transition_audit.py` | verification-only | CLI: python -m evaluation.tactical_transition_audit; adversarial oracle comparison. |
+| `evaluation/tactical_transition_benchmark.py` | verification-only | CLI: python -m evaluation.tactical_transition_benchmark; exactness and timing. |
+| `integration/__init__.py` | supported | Package marker; no entry point. |
+| `integration/command_transport.py` | supported | Atomic session command publication, freshness and feedback validation. |
+| `integration/commands.py` | supported | Model-independent commands, targets, legality evidence and result states. |
+| `integration/encounter_trial.py` | supported | CLI: python -m integration.encounter_trial; evidence analysis; missing live facts remain inconclusive. |
+| `integration/inspect.py` | supported | CLI: python -m integration.inspect; passive record inspection. |
+| `integration/mock_executor.py` | verification-only | CLI: python -m integration.mock_executor; synthetic command acknowledgements. Cleanup debt until simplification: private:_publish, private:_read. |
+| `integration/mock_h0.py` | verification-only | CLI: python -m integration.mock_h0; synthetic passive collector. |
+| `integration/publish.py` | supported | CLI: python -m integration.publish; ready-marker record publication. |
+| `integration/reader.py` | supported | Ordered passive-record reader; preserve compatibility. |
+| `integration/schema.py` | supported | Versioned passive GameSnapshot/GameEvent records; preserve compatibility. |
+| `integration/serialization.py` | supported | Strict passive-record JSON decoding/encoding. |
+| `integration/session_runner.py` | supported | CLI: python -m integration.session_runner; isolated capture archival and health. |
+| `integration/trace.py` | supported | Candidate decisions from passive observations; UNKNOWN stays unknown. |
+| `integration/windows_preflight.py` | supported | CLI: python -m integration.windows_preflight; read-only installation checks. |
+| `pyproject.toml` | supported | Pinned-tool lint configuration; no packaging framework. |
+| `requirements-quality.txt` | supported | Pinned lint tool used by repository CI. |
+| `scripts/check_repository.py` | supported | CLI: python scripts/check_repository.py; inventory, docs, artifacts and PR budget checks. |
+| `scripts/windows/bootstrap-harness.ps1` | supported | CLI: scripts/windows/bootstrap-harness.ps1; isolated harness environment. |
+| `scripts/windows/package-h0.ps1` | supported | CLI: scripts/windows/package-h0.ps1; Divine packaging and source manifest. |
+| `tests/m2_oracle.py` | verification-only | pytest verification: m2 oracle. |
+| `tests/test_bg3_h0_lua.py` | verification-only | pytest verification: bg3 h0 lua. |
+| `tests/test_combat_regression.py` | verification-only | pytest verification: combat regression. |
+| `tests/test_encounter_trial.py` | verification-only | pytest verification: encounter trial. |
+| `tests/test_env.py` | verification-only | pytest verification: env. |
+| `tests/test_evaluation.py` | verification-only | pytest verification: evaluation. |
+| `tests/test_expectimax_agent.py` | verification-only | pytest verification: expectimax agent. |
+| `tests/test_headroom_probe.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
+| `tests/test_heuristic.py` | verification-only | pytest verification: heuristic. |
+| `tests/test_improved_heuristic_agent.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
+| `tests/test_integration_command_review_regressions.py` | verification-only | pytest verification: integration command review regressions. |
+| `tests/test_integration_command_transport.py` | verification-only | pytest verification: integration command transport. |
+| `tests/test_integration_commands.py` | verification-only | pytest verification: integration commands. |
+| `tests/test_integration_publish.py` | verification-only | pytest verification: integration publish. |
+| `tests/test_integration_reader.py` | verification-only | pytest verification: integration reader. |
+| `tests/test_integration_schema.py` | verification-only | pytest verification: integration schema. |
+| `tests/test_integration_serialization.py` | verification-only | pytest verification: integration serialization. |
+| `tests/test_integration_trace.py` | verification-only | pytest verification: integration trace. |
+| `tests/test_legality.py` | verification-only | pytest verification: legality. |
+| `tests/test_m3.py` | verification-only | pytest verification: m3. |
+| `tests/test_m4.py` | verification-only | pytest verification: m4. |
+| `tests/test_m5_m6.py` | verification-only | pytest verification: m5 m6. |
+| `tests/test_mechanics.py` | verification-only | pytest verification: mechanics. |
+| `tests/test_paired.py` | verification-only | pytest verification: paired. |
+| `tests/test_ppo_diagnostics.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
+| `tests/test_repository_policy.py` | verification-only | pytest verification: repository policy. |
+| `tests/test_rollout_agent.py` | verification-only | pytest verification: sampling planner and independent continuation isolation. |
+| `tests/test_seeds.py` | verification-only | pytest verification: seeds. |
+| `tests/test_session_runner.py` | verification-only | pytest verification: session runner. |
+| `tests/test_sim_mining.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
+| `tests/test_simulation.py` | verification-only | pytest verification: simulation. |
+| `tests/test_stage_evaluation.py` | verification-only | pytest verification: stage evaluation. |
+| `tests/test_stages.py` | verification-only | pytest verification: stages. |
+| `tests/test_table_tactical_transitions.py` | verification-only | pytest verification: table tactical transitions. |
+| `tests/test_tactical_heuristics.py` | verification-only | pytest verification: tactical heuristics. |
+| `tests/test_tactical_simulation.py` | verification-only | pytest verification: tactical simulation. |
+| `tests/test_tactical_transitions.py` | verification-only | pytest verification: tactical transitions. |
+| `tests/test_tactics.py` | verification-only | pytest verification: tactics. |
+| `tests/test_training.py` | verification-only | pytest verification: training. |
+| `tests/test_transitions.py` | verification-only | pytest verification: transitions. |
+| `tests/test_turns.py` | verification-only | pytest verification: turns. |
+| `tests/test_value_functions.py` | verification-only | pytest verification: value functions. |
+| `tests/test_windows_preflight.py` | verification-only | pytest verification: windows preflight. |
+| `tests/transition_harness.py` | verification-only | pytest verification: transition harness. |
+| `train.py` | supported | CLI: python train.py; masked PPO training; no combat rules. |
+| `value_training.py` | supported | CLI: python value_training.py; collect/fit model-independent planner values. |
 
 ## Stage progression
 
@@ -97,4 +215,4 @@ The platform-neutral [integration contract](BG3_INTEGRATION.md) separates rich B
 BG3 collection → integration snapshots/events → observation adapter → policy vector
 ```
 
-The collection harness preserves BG3 entity, ability, and resource IDs. The adapter later chooses fields and maps IDs for M0, M1, M2, or richer policies. The harness must not emit the current PPO vector directly. The `integration/` package is independent of `combat/`, Gymnasium, and training code; `combat/` does not import it. The current simulator evaluation JSONL traces remain a separate format containing already encoded observations and masks. The Python semantic command protocol and a synthetic mock executor are implemented separately from passive observations. Commands preserve original BG3 ability IDs and require current legality evidence; acceptance does not confirm execution. BG3 collection, observation adaptation, and real action execution are not implemented yet. See the integration contract for session transport and recovery limits.
+The collection harness preserves BG3 entity, ability, and resource IDs. The adapter later chooses fields and maps IDs for M0, M1, M2, or richer policies. The harness must not emit the current PPO vector directly. The `integration/` package is independent of `combat/`, Gymnasium, and training code; `combat/` does not import it. The current simulator evaluation JSONL traces remain a separate format containing already encoded observations and masks. The Python semantic command protocol and a synthetic mock executor are implemented separately from passive observations. Commands preserve original BG3 ability IDs and require current legality evidence; acceptance does not confirm execution. The passive H0 collector and Windows capture tools exist but are not live-verified. Observation adaptation to a game-playing policy and real action execution remain unimplemented. See the integration contract for session transport and recovery limits.
