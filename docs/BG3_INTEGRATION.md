@@ -331,6 +331,8 @@ reports a synthetic `resolved`, `failed`, or `uncertain` outcome. It never mutat
 HP/resources/turns, rolls dice, invokes BG3, or derives rewards. Fixture
 confirmation is clearly labeled and is not evidence of actual game execution.
 
+The [Windows first-session runbook](../bg3/h0/README.md#first-windows-session) connects static preflight, session capture/archival, read-only actor probes, and bounded encounter-trial analysis. These tools preserve this v1 contract and do not establish live legality or execute actions. Real traces should become conformance fixtures for supported simulator mechanics; new invented mechanics and open-ended PPO sweeps are not prerequisites for validating the live interface.
+
 ## Windows live-verification checklist
 
 ### Entity/state

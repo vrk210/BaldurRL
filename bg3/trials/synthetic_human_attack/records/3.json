@@ -1,0 +1,11 @@
+{
+  "record_type": "event",
+  "schema_version": 1,
+  "sequence": 3,
+  "kind": "ability_used_on_target",
+  "combat_id": "synthetic-combat",
+  "actor_id": "synthetic-actor",
+  "target_id": "synthetic-target",
+  "ability_id": "synthetic-attack",
+  "story_action_id": 0
+}

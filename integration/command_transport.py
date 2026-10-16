@@ -130,9 +130,36 @@ class CommandSession:
         return {path: _read(path, parse) for path in sorted(self.acknowledgements.glob("*.json"))}
 
     def read_acknowledgements(self) -> tuple[CommandAcknowledgement, ...]:
-        commands = {command.command_id: command for command in self.read_commands()}
+        return self._validated_acknowledgements(self.read_commands(), self._read_feedback())
+
+    def read_feedback(self) -> tuple[CommandAcknowledgement | PostExecutionObservation, ...]:
+        """Read one validated collection of results and capture attestations.
+
+        Immutable files are read once per call. This is not an atomic snapshot
+        of concurrent publications; poll again to see later files.
+        """
+        feedback = self._read_feedback()
+        acknowledgements = self._validated_acknowledgements(self.read_commands(), feedback)
+        confirmations = tuple(item for item in feedback.values() if isinstance(item, PostExecutionObservation))
+        if confirmations:
+            results = {item.command_id: item for item in acknowledgements}
+            records = self._observation_records()
+            seen: set[str] = set()
+            for confirmation in confirmations:
+                if confirmation.command_id in seen:
+                    raise ValueError(f"Duplicate post-execution observation for {confirmation.command_id!r}")
+                self._validate_post_execution_observation(confirmation, results, records)
+                seen.add(confirmation.command_id)
+        return (*acknowledgements, *confirmations)
+
+    @staticmethod
+    def _validated_acknowledgements(
+        command_records: tuple[ActionCommand, ...],
+        feedback: dict[Path, CommandAcknowledgement | PostExecutionObservation],
+    ) -> tuple[CommandAcknowledgement, ...]:
+        commands = {command.command_id: command for command in command_records}
         by_id: dict[str, dict[int, CommandAcknowledgement]] = {}
-        for path, acknowledgement in self._read_feedback().items():
+        for path, acknowledgement in feedback.items():
             if isinstance(acknowledgement, PostExecutionObservation):
                 continue
             if acknowledgement.command_id not in commands:

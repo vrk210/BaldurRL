@@ -1,0 +1,16 @@
+{
+  "record_type": "snapshot",
+  "schema_version": 1,
+  "sequence": 5,
+  "controlled_entity_id": "synthetic-actor",
+  "combat": {
+    "combat_id": "synthetic-combat",
+    "round_number": 1,
+    "active_entity_id": "synthetic-actor",
+    "participant_ids": ["synthetic-actor", "synthetic-target"]
+  },
+  "entities": [
+    {"entity_id": "synthetic-actor", "resources": [{"resource_id": "synthetic-action-resource", "amount": 0, "level": 0}]},
+    {"entity_id": "synthetic-target", "hp": 10}
+  ]
+}

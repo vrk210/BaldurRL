@@ -1,0 +1,153 @@
+name: Windows harness
+
+on:
+  push:
+    paths:
+      - ".github/workflows/windows-harness.yml"
+      - "bg3/h0/**"
+      - "bg3/trials/**"
+      - "integration/**"
+      - "scripts/windows/**"
+      - "tests/test_bg3_h0_lua.py"
+      - "tests/test_windows_preflight.py"
+      - "tests/test_session_runner.py"
+      - "tests/test_encounter_trial.py"
+      - "tests/test_integration_*.py"
+      - "requirements-harness-test.txt"
+  pull_request:
+    paths:
+      - ".github/workflows/windows-harness.yml"
+      - "bg3/h0/**"
+      - "bg3/trials/**"
+      - "integration/**"
+      - "scripts/windows/**"
+      - "tests/test_bg3_h0_lua.py"
+      - "tests/test_windows_preflight.py"
+      - "tests/test_session_runner.py"
+      - "tests/test_encounter_trial.py"
+      - "tests/test_integration_*.py"
+      - "requirements-harness-test.txt"
+
+permissions:
+  contents: read
+
+jobs:
+  offline-windows:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements-harness-test.txt
+      - name: Install pinned harness test dependencies
+        run: python -m pip install -r requirements-harness-test.txt
+      - name: Run H0 and integration tests
+        shell: powershell
+        run: |
+          $testFiles = @(
+            "tests/test_bg3_h0_lua.py",
+            "tests/test_windows_preflight.py",
+            "tests/test_session_runner.py",
+            "tests/test_encounter_trial.py"
+          )
+          $testFiles += @(Get-ChildItem -LiteralPath tests -Filter "test_integration_*.py" | ForEach-Object { $_.FullName })
+          python -m pytest @testFiles
+      - name: Parse Windows scripts
+        shell: powershell
+        run: |
+          $errors = @()
+          foreach ($script in @("scripts/windows/bootstrap-harness.ps1", "scripts/windows/package-h0.ps1")) {
+            $tokens = $null
+            $parseErrors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $script), [ref]$tokens, [ref]$parseErrors)
+            $errors += $parseErrors
+          }
+          if ($errors.Count -ne 0) { $errors | Format-List | Out-String | Write-Error }
+      - name: Exercise packaging dry run with spaced paths
+        shell: powershell
+        run: |
+          $fake = Join-Path $env:RUNNER_TEMP "fake tools\Divine.exe"
+          $output = Join-Path $env:RUNNER_TEMP "package output\BaldurRL H0.pak"
+          New-Item -ItemType Directory -Path (Split-Path $fake) -Force | Out-Null
+          New-Item -ItemType File -Path $fake -Force | Out-Null
+          $report = & scripts/windows/package-h0.ps1 -DivinePath $fake -OutputPath $output -DryRun | ConvertFrom-Json
+          if (-not $report.dry_run) { throw "Expected dry_run=true" }
+          if ($report.argv[2] -ne "bg3" -or $report.argv[4] -ne "create-package") { throw "Unexpected Divine argv" }
+          if (Test-Path -LiteralPath $output) { throw "Dry run created a package" }
+      - name: Exercise packaging success and failure preservation
+        shell: powershell
+        run: |
+          $tools = Join-Path $env:RUNNER_TEMP "fake tools"
+          $success = Join-Path $tools "Divine success.cmd"
+          $failure = Join-Path $tools "Divine failure.cmd"
+          $output = Join-Path $env:RUNNER_TEMP "package output\BaldurRL H0.pak"
+          New-Item -ItemType Directory -Path $tools -Force | Out-Null
+          @(
+            "@echo off",
+            ":loop",
+            'if "%~1"=="" exit /b 2',
+            'if /I "%~1"=="--destination" (',
+            '  >"%~2" echo fake package',
+            "  exit /b 0",
+            ")",
+            "shift",
+            "goto loop"
+          ) | Set-Content -LiteralPath $success -Encoding ascii
+          "@echo off`r`nexit /b 7" | Set-Content -LiteralPath $failure -Encoding ascii
+
+          & scripts/windows/package-h0.ps1 -DivinePath $success -OutputPath $output
+          if ((Get-Content -LiteralPath $output -Raw).Trim() -ne "fake package") { throw "Fake packaging output mismatch" }
+          $manifest = $output + ".manifest.json"
+          if (-not (Test-Path -LiteralPath $manifest -PathType Leaf)) { throw "Missing package manifest" }
+          $verifyScript = Join-Path $env:RUNNER_TEMP "verify package manifest.py"
+          $verifySource = @'
+          import hashlib
+          import json
+          import pathlib
+          import sys
+
+          manifest_path = pathlib.Path(sys.argv[1])
+          raw = manifest_path.read_bytes()
+          assert not raw.startswith(b"\xef\xbb\xbf"), "manifest has a UTF-8 BOM"
+          manifest = json.loads(raw.decode("utf-8"))
+          source = pathlib.Path(manifest["source"])
+          for item in manifest["source_files"]:
+              path = source / pathlib.PurePosixPath(item["path"])
+              payload = path.read_bytes()
+              assert len(payload) == item["bytes"]
+              assert hashlib.sha256(payload).hexdigest() == item["sha256"]
+          output = pathlib.Path(manifest["output"]["path"])
+          payload = output.read_bytes()
+          assert len(payload) == manifest["output"]["bytes"]
+          assert hashlib.sha256(payload).hexdigest() == manifest["output"]["sha256"]
+          '@
+          [System.IO.File]::WriteAllText($verifyScript, $verifySource, (New-Object System.Text.UTF8Encoding($false)))
+          python $verifyScript $manifest
+          if ($LASTEXITCODE -ne 0) { throw "Python manifest verification failed" }
+
+          "preserve force gate" | Set-Content -LiteralPath $output -NoNewline
+          try {
+            & scripts/windows/package-h0.ps1 -DivinePath $success -OutputPath $output
+            throw "Existing output was accepted without -Force"
+          } catch {
+            if ($_ -like "*accepted without*") { throw }
+          }
+          if ((Get-Content -LiteralPath $output -Raw) -ne "preserve force gate") { throw "Force gate changed existing output" }
+
+          "preserve converter failure" | Set-Content -LiteralPath $output -NoNewline
+          try {
+            & scripts/windows/package-h0.ps1 -DivinePath $failure -OutputPath $output -Force
+            throw "Converter failure was not propagated"
+          } catch {
+            if ($_ -like "*not propagated*") { throw }
+          }
+          if ((Get-Content -LiteralPath $output -Raw) -ne "preserve converter failure") { throw "Converter failure changed existing output" }
+
+          & scripts/windows/package-h0.ps1 -DivinePath $success -OutputPath $output -Force
+          if ((Get-Content -LiteralPath $output -Raw).Trim() -ne "fake package") { throw "Forced packaging output mismatch" }

@@ -1,18 +1,22 @@
 local Wire = Ext.Require('Wire.lua')
 local Emitter = Ext.Require('Emitter.lua')
 local Observation = Ext.Require('Observation.lua')
+local Inspect = Ext.Require('Inspect.lua')
 local emitter, observation
+local session_directory, inspection_sequence
 local function report(message) Ext.Utils.Print('[BaldurRL H0] ' .. message) end
 local function snapshot()
     if emitter and not emitter.halted then emitter:emit('snapshot', observation:snapshot()) end
 end
 local function start()
     emitter = nil
+    session_directory = nil
     -- GenerateGuid is exported by BG3SE Utils.inl; runtime/version must be checked live.
     local session = tostring(Ext.Utils.GenerateGuid())
     assert(session:match('^[%x%-]+$'), 'Invalid collector session GUID')
     local directory = 'BaldurRL/H0/' .. session .. '/staging'
     emitter = Emitter.new(Ext.IO, Wire, directory)
+    session_directory, inspection_sequence = 'BaldurRL/H0/' .. session, 0
     observation = Observation.new(Osi, report)
     report('New session: ' .. directory)
     snapshot()
@@ -88,10 +92,21 @@ listen('Died', 1, function(entity)
     emit('died', {actor_id = entity}, true)
 end)
 
-Ext.Events.SessionLoading:Subscribe(function() emitter, observation = nil, nil end)
+Ext.Events.SessionLoading:Subscribe(function() emitter, observation, session_directory = nil, nil, nil end)
 Ext.Events.SessionLoaded:Subscribe(start)
 -- reset creates a fresh namespace too; never restore sequence from a savegame.
 Ext.Events.ResetCompleted:Subscribe(start)
 Ext.RegisterConsoleCommand('baldurrl_snapshot', snapshot)
 Ext.RegisterConsoleCommand('baldurrl_stop', function() emitter = nil; report('Stopped') end)
 Ext.RegisterConsoleCommand('baldurrl_start', start)
+Ext.RegisterConsoleCommand('baldurrl_inspect', function(_, actor)
+    if type(actor) ~= 'string' or actor == '' then
+        report('Usage: !baldurrl_inspect <selected-actor-uuid>; read-only, saves diagnostics in the current session')
+        return
+    end
+    if not session_directory then report('Load a save or !baldurrl_start before inspecting'); return end
+    inspection_sequence = inspection_sequence + 1
+    local path = session_directory .. '/diagnostics/inspect-' .. string.format('%08d', inspection_sequence) .. '.json'
+    local ok, err = pcall(Inspect, actor, path)
+    if not ok then report('Inspection failed: ' .. tostring(err)) end
+end)

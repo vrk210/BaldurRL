@@ -26,6 +26,7 @@ bg3/h0/
         Observation.lua         # read-only Osiris probes / event state
         Wire.lua                # pure Lua JSON / v1 field mapping
         Emitter.lua             # sequence and completion protocol
+        Inspect.lua             # explicit actor diagnostic; !baldurrl_inspect
 ```
 
 1. On Windows, install the [Script Extender updater](https://github.com/Norbyte/bg3se/releases)
@@ -43,6 +44,65 @@ bg3/h0/
 4. Load a local save. Confirm the server bootstrap and `[BaldurRL H0] New session:`
    message. `UNAVAILABLE` or `HALTED` output requires investigation before treating
    a capture as complete. With no Windows installation we cannot validate these steps.
+
+## First Windows session
+
+1. Install and activate H0 as above, using a disposable local save. Record game
+   and Script Extender versions and confirm bootstrap/listener output. Static
+   file presence, valid JSON, and synthetic trial results do not verify loading.
+2. From the repository root, prepare an isolated Python environment and run the
+   read-only checks. Supply the actual paths; these tools never install the
+   game/extender, change a load order, or launch BG3:
+
+   ```powershell
+   .\scripts\windows\bootstrap-harness.ps1 -GameDir "D:\SteamLibrary\steamapps\common\Baldurs Gate 3" -InstallTestDependencies
+   .\scripts\windows\package-h0.ps1 -DivinePath "C:\Tools\LSLib\Divine.exe" -OutputPath "D:\BaldurRL\BaldurRL_H0.pak" -DryRun
+   ```
+
+   Remove `-DryRun` to build with the separately installed Divine. The package
+   and its source/output SHA-256 manifest are produced after successful
+   conversion; `-Force` explicitly permits replacing an existing package.
+   `Get-Help` on each script describes options. Preflight accepts modern
+   `Mods/ModuleShortDesc` activation and legacy `ModOrder`, and reports the
+   layout found. Inspecting a UUID never proves live activation.
+3. Load the save and verify the exact staging root printed by H0. Use the
+   multi-session runner with an archive outside the capture tree:
+
+   ```powershell
+   $captures = Join-Path $env:LOCALAPPDATA "Larian Studios\Baldur's Gate 3\Script Extender\BaldurRL\H0"
+   python -m integration.session_runner --capture-root "$captures" --archive-root "D:\BaldurRL-captures"
+   ```
+
+   Use the bootstrap environment's Python (normally `.venv-harness\Scripts\python.exe`).
+   Keep one runner/publisher per session. The runner discovers new namespaces
+   after reload/reset, preserves raw bytes and hashes, and quarantines a failed
+   session while continuing healthy captures. Its manifest/health report records
+   the failure and source hashes. Review the cause before restarting. Locks from
+   another or crashed runner require manual investigation; never delete them
+   automatically. `--once` processes all sessions and exits nonzero on failure.
+4. Play a simple in-range encounter by hand. Compare selected actor, HP, IDs and
+   event order with the UI. In the SE **server** console, use
+   `!baldurrl_inspect <selected-actor-uuid>` to save component diagnostics in the
+   current session; omit the UUID for usage. The packaged probe inspects component
+   names before dumping SpellBook, SpellBookPrepares, ActionResources and
+   TurnBased when present. Each `dump_json` field is the raw JSON string returned
+   by `Ext.DumpExport`. Failures remain explicit and missing facts remain unknown.
+5. Create a bounded human trial and fill it with observed IDs, before/after
+   snapshot sequences, measured resource deltas and explicit completion evidence:
+
+   ```powershell
+   python -m integration.encounter_trial init trial.json --kind human_attack
+   python -m integration.encounter_trial analyze trial.json --records "D:\BaldurRL-captures\<session-guid>\records"
+   ```
+
+   H0 currently omits resources and owned abilities, so its live trials remain
+   INCONCLUSIVE on resource checks until verified observation enrichment exists.
+   Keep the human trace and probe output as evidence for that work. A miss can
+   still be execution; command acceptance alone cannot prove execution.
+
+Use each Python module's `--help` for its contract and options. Offline Windows
+CI covers Python 3.11/3.13, Lua with stubbed game APIs and fake-converter packaging;
+real Divine packaging, game loading and live execution remain unverified.
 
 ## Running and inspecting one session
 
