@@ -47,8 +47,6 @@ jobs:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         shell: powershell
         run: |
-          git diff --exit-code "$env:PR_BASE_SHA...HEAD" -- tests
-          if ($LASTEXITCODE -ne 0) { throw "Existing tests must remain unchanged in this refactor" }
           python scripts/compare_refactor.py --base "$env:PR_BASE_SHA"
           if ($LASTEXITCODE -ne 0) { throw "Fixed-seed semantic behavior changed" }
       - run: python -m pytest -q

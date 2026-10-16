@@ -129,20 +129,6 @@ def _merge_counts(counts) -> dict[str, int]:
     return dict(sorted(merged.items()))
 
 
-def paired_difference(a: list[dict], b: list[dict]) -> dict:
-    """Win-rate difference a - b over shared seeds, in percentage points, with a 95% CI.
-
-    This historical API intersects seeds, unlike evaluation.paired's strict
-    comparison. Unifying them requires an explicit correctness change; a
-    behavior-preserving cleanup must not silently change the sample population.
-    """
-    wins_b = {row["seed"]: row["won"] for row in b}
-    diff = np.array([float(row["won"]) - float(wins_b[row["seed"]]) for row in a if row["seed"] in wins_b])
-    se = diff.std(ddof=1) / sqrt(len(diff))
-    return dict(seeds=len(diff), delta_pp=100 * diff.mean(), paired_se_pp=100 * se,
-                ci95_pp=[100 * (diff.mean() - 1.96 * se), 100 * (diff.mean() + 1.96 * se)])
-
-
 def evaluate_parallel(stage: str, spec: dict, seeds: list[int], workers: int, chunks: int | None = None) -> list[dict]:
     chunks = chunks or max(1, workers * 4)
     parts = [list(part) for part in np.array_split(np.array(seeds), chunks) if len(part)]

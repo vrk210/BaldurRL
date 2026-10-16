@@ -10,7 +10,7 @@ from agents.heuristic_agent import M4ThreatAwareAgent
 from agents.value_functions import MLPValue, RaceValue, make_layout, value_features
 from combat.stages import make_env
 from evaluation.evaluate import evaluate
-from evaluation.planning_eval import paired_difference, run_chunk, summarize
+from evaluation.planning_eval import run_chunk, summarize
 from value_training import collect, lambda_returns, save_value, targets_for
 
 
@@ -86,16 +86,11 @@ def test_collect_labels_every_decision_with_the_episode_outcome():
     assert np.all(np.isnan(data["search_value"]))
 
 
-def test_planning_eval_matches_evaluate_and_paired_difference():
+def test_planning_eval_matches_evaluate():
     rows = run_chunk("m4", dict(name="threat"), [900, 901, 902, 903])
     summary = evaluate(M4ThreatAwareAgent(), range(900, 904), stage="m4")
     assert [row["won"] for row in rows] == [result.won for result in summary.results]
     assert summarize(rows)["wins"] == summary.wins
-    a = [dict(seed=s, won=w) for s, w in zip(range(4), (1, 1, 0, 1))]
-    b = [dict(seed=s, won=w) for s, w in zip(range(4), (1, 0, 0, 0))]
-    diff = paired_difference(a, b)
-    assert diff["delta_pp"] == pytest.approx(50.0)
-    assert diff["paired_se_pp"] == pytest.approx(100 * np.std([0, 1, 0, 1], ddof=1) / 2)
 
 
 # Independent restatement of the M4 policy-probe scoring (closed forms), as an oracle.

@@ -90,11 +90,11 @@ REGISTRY: tuple[SeedRange, ...] = (
     SeedRange(221012, 221100, _R, "Unused headroom selection allocation"),
     SeedRange(221100, 221112, _U, "M5/M6 headroom configuration selection C"),
     SeedRange(221112, 223000, _R, "Unused headroom selection allocation"),
-    SeedRange(223000, 224000, _U, "Headroom: once-only paired confirmation, 1,000 encounters/stage; evaluation/headroom_probe_results.json"),
+    SeedRange(223000, 224000, _U, "Headroom: once-only paired confirmation, 1,000 encounters/stage; tag archive/simulator-research-2026-10-15"),
     SeedRange(224000, 230000, _R, "Unused headroom confirmation allocation and spare; no encounter resets"),
     SeedRange(230000, 230008, _U, "Simulator tactics mining: exploratory smoke tests (2026-10-15)"),
     SeedRange(230008, 232000, _R, "Unused simulator tactics exploration allocation"),
-    SeedRange(232000, 236000, _U, "Simulator tactics: once-only paired confirmation, 13 fixed contrasts; evaluation/sim_mining.py"),
+    SeedRange(232000, 236000, _U, "Simulator tactics: once-only paired confirmation, 13 fixed contrasts; tag archive/simulator-research-2026-10-15"),
     SeedRange(236000, 240000, _R, "Unused tactics encounter spare; 236000–236127 used only as replay combat RNG seeds, not encounter resets"),
 )
 

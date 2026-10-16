@@ -101,11 +101,6 @@ def advance_to_next_turn(turns: TurnManager, roster: CombatRoster) -> bool:
     return wrapped
 
 
-# Existing turn tests exercise this historical entry point; keep it until their
-# separately scoped API migration. Production callers use the public name.
-_advance_to_next_turn = advance_to_next_turn
-
-
 class BaldurCombatEnv(gym.Env[np.ndarray, int]):
     """One step applies exactly one Fighter decision."""
 
