@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from uuid import uuid4
 
-from .command_transport import CommandSession, _publish, _read
+from .command_transport import CommandSession, publish_protocol_record, read_protocol_record
 from .commands import (
     COMMAND_SCHEMA_VERSION, ActionCommand, ActionType, AcknowledgementStatus,
     CommandAcknowledgement, PostExecutionObservation, parse_acknowledgement,
@@ -42,7 +42,7 @@ class MockExecutor:
                     AcknowledgementStatus.ACCEPTED if reason is None else AcknowledgementStatus.REJECTED,
                     reason=reason,
                 )
-                self.session._publish_acknowledgement(ack)
+                self.session.publish_acknowledgement_locked(ack)
                 results.append(ack)
             return tuple(results)
 
@@ -59,7 +59,7 @@ class MockExecutor:
             reason=f"Synthetic fixture reports {status.value}; no BG3 execution or mechanics were simulated",
         )
         path = self.session.publish_acknowledgement(ack)
-        return _read(path, parse_acknowledgement)
+        return read_protocol_record(path, parse_acknowledgement)
 
 
 def synthetic_observation() -> GameSnapshot:
@@ -81,7 +81,7 @@ def run_demo(directory: str | Path) -> tuple[ActionCommand, tuple[CommandAcknowl
            for path in directory.iterdir()):
         raise ValueError("Demo requires a fresh, empty session tree")
     snapshot = synthetic_observation()
-    _publish(session.records / "0001.json", snapshot.to_dict())
+    publish_protocol_record(session.records / "0001.json", snapshot.to_dict())
     observed = session.latest_snapshot()
     candidate = next(candidate for candidate in observed.candidate_decisions if candidate.legality is Legality.LEGAL)
     command = ActionCommand(
@@ -102,7 +102,7 @@ def run_demo(directory: str | Path) -> tuple[ActionCommand, tuple[CommandAcknowl
     # Initiate a separate synthetic capture only after observing the result.
     # State stays unchanged because this mock does not implement mechanics.
     post_observation = replace(synthetic_observation(), sequence=2)
-    _publish(session.records / "0002.json", post_observation.to_dict())
+    publish_protocol_record(session.records / "0002.json", post_observation.to_dict())
     confirmation = PostExecutionObservation(
         COMMAND_SCHEMA_VERSION, command.command_id, post_observation.sequence,
         "Synthetic fixture capture initiated after observing the mock terminal result",

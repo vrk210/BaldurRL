@@ -29,6 +29,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.11"
@@ -39,4 +41,12 @@ jobs:
             requirements-quality.txt
       - run: python -m pip install -r requirements.txt
       - run: python -m pip check
+      - name: Verify behavior-preserving refactor
+        if: "github.event_name == 'pull_request' && contains(github.event.pull_request.body, 'Behavior: preserve')"
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: powershell
+        run: |
+          python scripts/compare_refactor.py --base "$env:PR_BASE_SHA"
+          if ($LASTEXITCODE -ne 0) { throw "Fixed-seed semantic behavior changed" }
       - run: python -m pytest -q

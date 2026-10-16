@@ -21,7 +21,8 @@ from .mechanics import (
 
 
 @lru_cache(maxsize=None)
-def _dice_sum_distribution(dice_count: int, die_size: int) -> Mapping[int, Fraction]:
+def dice_sum_distribution(dice_count: int, die_size: int) -> Mapping[int, Fraction]:
+    """Return immutable exact sum probabilities without sampling or state mutation."""
     sums = {0: Fraction(1)}
     for _ in range(dice_count):
         rolled: dict[int, Fraction] = {}
@@ -47,7 +48,7 @@ def attack_damage_distribution(
         if not hit:
             outcomes[0] = outcomes.get(0, Fraction(0)) + Fraction(1, D20_SIZE)
             continue
-        dice = _dice_sum_distribution(damage_dice_count(damage, critical), damage.die_size)
+        dice = dice_sum_distribution(damage_dice_count(damage, critical), damage.die_size)
         for dice_total, probability in dice.items():
             dealt = scale_damage(damage_from_dice(dice_total, damage), damage_divisor)
             outcomes[dealt] = outcomes.get(dealt, Fraction(0)) + probability / D20_SIZE
@@ -57,7 +58,7 @@ def attack_damage_distribution(
 @lru_cache(maxsize=None)
 def second_wind_healing_distribution() -> Mapping[int, float]:
     """Exact distribution of rolled Second Wind healing before the max-HP cap."""
-    dice = _dice_sum_distribution(SECOND_WIND_HEALING.dice_count, SECOND_WIND_HEALING.die_size)
+    dice = dice_sum_distribution(SECOND_WIND_HEALING.dice_count, SECOND_WIND_HEALING.die_size)
     return MappingProxyType({
         damage_from_dice(total, SECOND_WIND_HEALING): float(p) for total, p in sorted(dice.items())
     })

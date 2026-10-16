@@ -27,7 +27,7 @@ from . import tactics
 from .actions import Action
 from .actors import ActorRef, Side
 from .damage import DamageSpec
-from .distributions import _dice_sum_distribution, second_wind_healing_distribution
+from .distributions import dice_sum_distribution, second_wind_healing_distribution
 from .env import MAX_ROUNDS
 from .mechanics import damage_dice_count, damage_from_dice, scale_damage, use_action_surge
 from .resources import Resource, ResourcePool
@@ -59,7 +59,7 @@ def _damage(attack: int, ac: int, spec: DamageSpec, mode: RollMode, divisor: int
         if not hit:
             merged[0] += probability
             continue
-        for total, p in _dice_sum_distribution(damage_dice_count(spec, critical), spec.die_size).items():
+        for total, p in dice_sum_distribution(damage_dice_count(spec, critical), spec.die_size).items():
             merged[scale_damage(damage_from_dice(total, spec), divisor)] += probability * float(p)
     return tuple(sorted(merged.items()))
 
@@ -283,7 +283,7 @@ class TableTacticalTransitionModel(TacticalTransitionModel):
             tactics.spend_tactical(enemy, Action.HEAL)
             values = list(self.state_from_env(env))
             spec = env.rules.heal
-            distribution = tuple((total + spec.bonus, float(p)) for total, p in _dice_sum_distribution(spec.dice_count, spec.die_size).items())
+            distribution = tuple((total + spec.bonus, float(p)) for total, p in dice_sum_distribution(spec.dice_count, spec.die_size).items())
             frontier = self._hp_branch({tuple(values): 1.0}, self._enemy_bases[target], env.enemies[target].max_hp, distribution, healing=True)
         else:
             tactics.spend_tactical(enemy, Action.ATTACK)

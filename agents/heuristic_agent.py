@@ -6,7 +6,7 @@ import numpy as np
 
 from .policy import Policy
 from combat.damage import DamageSpec
-from combat.env import _new_fighter
+from combat.env import new_fighter
 from combat.distributions import attack_damage_distribution
 
 _ATTACK = 0
@@ -200,7 +200,7 @@ class M4ThreatAwareAgent:
 
     def __init__(self, second_wind_threshold: int = 10) -> None:
         self.second_wind_threshold = second_wind_threshold
-        self._fighter = _new_fighter()
+        self._fighter = new_fighter()
 
     def _score(self, observation: np.ndarray, index: int) -> tuple[float, int]:
         start = 13 + 6 * index

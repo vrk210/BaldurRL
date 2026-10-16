@@ -12,7 +12,7 @@ from combat.actors import ActorRef, CombatRoster, Side
 from combat.actions import Action
 from combat.characters import Fighter, Goblin, refresh_turn_resources
 from combat.damage import DamageSpec
-from combat.env import MAX_ROUNDS, BaldurCombatEnv, _advance_to_next_turn
+from combat.env import MAX_ROUNDS, BaldurCombatEnv, advance_to_next_turn
 from combat.legality import legal_mask_for
 from combat.resources import Resource
 from combat.stages import StagedCombatEnv
@@ -214,7 +214,7 @@ def test_next_controlled_ally_refreshes_before_decision_without_round_wrap() -> 
     assert allies[0].resources.get(Resource.ACTION) == 1
     assert allies[1].resources.get(Resource.ACTION) == 0
     assert allies[1].resources.get(Resource.BONUS_ACTION) == 0
-    assert _advance_to_next_turn(turns, roster) is False  # ALLY 0 ends turn
+    assert advance_to_next_turn(turns, roster) is False  # ALLY 0 ends turn
 
     assert turns.current == order[1]
     assert turns.current in controlled_refs

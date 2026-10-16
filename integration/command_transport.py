@@ -34,7 +34,8 @@ def _invalid_constant(value: str) -> None:
     raise ValueError(f"Nonstandard JSON constant {value}")
 
 
-def _read(path: Path, parser: Callable[[Any], T]) -> T:
+def read_protocol_record(path: Path, parser: Callable[[Any], T]) -> T:
+    """Read strict JSON and retain the source path in validation errors."""
     try:
         return parser(json.loads(path.read_text(encoding="utf-8"),
                                  object_pairs_hook=_unique_object, parse_constant=_invalid_constant))
@@ -42,7 +43,7 @@ def _read(path: Path, parser: Callable[[Any], T]) -> T:
         raise ValueError(f"Invalid protocol record in {path}: {exc}") from exc
 
 
-def _publish(path: Path, payload: dict[str, Any]) -> None:
+def publish_protocol_record(path: Path, payload: dict[str, Any]) -> None:
     """Publish complete JSON atomically without replacing an existing record.
 
     The temp file is on the destination filesystem. Hard linking exposes only
@@ -114,7 +115,7 @@ class CommandSession:
         commands: dict[str, ActionCommand] = {}
         paths: dict[str, Path] = {}
         for path in sorted(self.commands.glob("*.json")):
-            command = _read(path, parse_command)
+            command = read_protocol_record(path, parse_command)
             if command.command_id in commands:
                 raise ValueError(f"Duplicate command_id {command.command_id!r} in {paths[command.command_id]} and {path}")
             commands[command.command_id] = command
@@ -127,7 +128,7 @@ class CommandSession:
                 return parse_post_execution_observation(value)
             return parse_acknowledgement(value)
 
-        return {path: _read(path, parse) for path in sorted(self.acknowledgements.glob("*.json"))}
+        return {path: read_protocol_record(path, parse) for path in sorted(self.acknowledgements.glob("*.json"))}
 
     def read_acknowledgements(self) -> tuple[CommandAcknowledgement, ...]:
         return self._validated_acknowledgements(self.read_commands(), self._read_feedback())
@@ -195,7 +196,7 @@ class CommandSession:
                 raise ValueError("At most one in-flight command is allowed")
             self.validate_command_for_execution(command)
             path = self.commands / f"{command.command_id}.json"
-            _publish(path, command.to_dict())
+            publish_protocol_record(path, command.to_dict())
             return path
 
     def publish_acknowledgement(self, acknowledgement: CommandAcknowledgement) -> Path:
@@ -206,10 +207,14 @@ class CommandSession:
         """
         acknowledgement = parse_acknowledgement(acknowledgement.to_dict())
         with self.writer_lock():
-            return self._publish_acknowledgement(acknowledgement)
+            return self.publish_acknowledgement_locked(acknowledgement)
 
-    def _publish_acknowledgement(self, acknowledgement: CommandAcknowledgement) -> Path:
-        """Caller holds writer_lock; also used for atomic mock receive checks."""
+    def publish_acknowledgement_locked(self, acknowledgement: CommandAcknowledgement) -> Path:
+        """Publish already-validated feedback while the caller holds writer_lock.
+
+        Prefer publish_acknowledgement outside a locked receive transaction.
+        This entry point keeps receive validation and publication under one lock.
+        """
         commands = {command.command_id: command for command in self.read_commands()}
         if acknowledgement.command_id not in commands:
             raise ValueError("Acknowledgement command_id does not match a published command")
@@ -230,7 +235,7 @@ class CommandSession:
             elif acknowledgement.observation_boundary_sequence < boundary:
                 raise ValueError("observation_boundary_sequence precedes observations already published at completion")
         path = self.acknowledgements / f"{acknowledgement.command_id}.{acknowledgement.acknowledgement_sequence}.json"
-        _publish(path, acknowledgement.to_dict())
+        publish_protocol_record(path, acknowledgement.to_dict())
         return path
 
     @staticmethod
@@ -263,7 +268,7 @@ class CommandSession:
                    for record in self._read_feedback().values()):
                 raise ValueError("Duplicate post-execution observation confirmation")
             path = self.acknowledgements / f"{confirmation.command_id}.observation.json"
-            _publish(path, confirmation.to_dict())
+            publish_protocol_record(path, confirmation.to_dict())
             return path
 
     def validate_command_for_execution(self, command: ActionCommand) -> None:
