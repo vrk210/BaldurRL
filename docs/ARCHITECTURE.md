@@ -40,7 +40,6 @@ Tests and the replay oracle remain independent where they catch different errors
 | `agents/__init__.py` | supported | Public baseline-policy re-exports; no CLI. |
 | `agents/expectimax_agent.py` | supported | Exact chance search with bounded turn/decision horizons. |
 | `agents/heuristic_agent.py` | supported | Supported stage heuristics and threat-aware baseline. Cleanup debt until simplification: private:_new_fighter. |
-| `agents/improved_heuristic_agent.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
 | `agents/policy.py` | supported | Model-independent policy interface. |
 | `agents/random_agent.py` | supported | Seeded random legal-action baseline. |
 | `agents/rollout_agent.py` | verification-only | Sampling planner reference and reconstruction/isolation baseline; exposed by evaluation.evaluate. |
@@ -89,15 +88,9 @@ Tests and the replay oracle remain independent where they catch different errors
 | `evaluation/__init__.py` | supported | Existing evaluation API re-exports; no CLI. |
 | `evaluation/compare.py` | supported | CLI: python -m evaluation.compare; outcome/trace comparison. |
 | `evaluation/evaluate.py` | supported | CLI: python -m evaluation.evaluate; seeded episodes, run cards and traces. |
-| `evaluation/headroom_probe.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
-| `evaluation/headroom_probe_results.json` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
 | `evaluation/paired.py` | supported | CLI: python -m evaluation.paired; paired run-card statistics. |
 | `evaluation/planning_eval.py` | supported | CLI: python -m evaluation.planning_eval; parallel planner evaluation. |
-| `evaluation/ppo_diagnostics.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
 | `evaluation/seeds.py` | supported | CLI: python -m evaluation.seeds; seed reservations and frozen-set enforcement. |
-| `evaluation/sim_mining.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
-| `evaluation/sim_mining_render.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
-| `evaluation/sim_mining_summary.json` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
 | `evaluation/tactical_behavior.py` | supported | CLI: python -m evaluation.tactical_behavior; trace behavior summaries. |
 | `evaluation/tactical_transition_audit.py` | verification-only | CLI: python -m evaluation.tactical_transition_audit; adversarial oracle comparison. |
 | `evaluation/tactical_transition_benchmark.py` | verification-only | CLI: python -m evaluation.tactical_transition_benchmark; exactness and timing. |
@@ -127,9 +120,7 @@ Tests and the replay oracle remain independent where they catch different errors
 | `tests/test_env.py` | verification-only | pytest verification: env. |
 | `tests/test_evaluation.py` | verification-only | pytest verification: evaluation. |
 | `tests/test_expectimax_agent.py` | verification-only | pytest verification: expectimax agent. |
-| `tests/test_headroom_probe.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
 | `tests/test_heuristic.py` | verification-only | pytest verification: heuristic. |
-| `tests/test_improved_heuristic_agent.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
 | `tests/test_integration_command_review_regressions.py` | verification-only | pytest verification: integration command review regressions. |
 | `tests/test_integration_command_transport.py` | verification-only | pytest verification: integration command transport. |
 | `tests/test_integration_commands.py` | verification-only | pytest verification: integration commands. |
@@ -144,12 +135,10 @@ Tests and the replay oracle remain independent where they catch different errors
 | `tests/test_m5_m6.py` | verification-only | pytest verification: m5 m6. |
 | `tests/test_mechanics.py` | verification-only | pytest verification: mechanics. |
 | `tests/test_paired.py` | verification-only | pytest verification: paired. |
-| `tests/test_ppo_diagnostics.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
 | `tests/test_repository_policy.py` | verification-only | pytest verification: repository policy. |
 | `tests/test_rollout_agent.py` | verification-only | pytest verification: sampling planner and independent continuation isolation. |
 | `tests/test_seeds.py` | verification-only | pytest verification: seeds. |
 | `tests/test_session_runner.py` | verification-only | pytest verification: session runner. |
-| `tests/test_sim_mining.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
 | `tests/test_simulation.py` | verification-only | pytest verification: simulation. |
 | `tests/test_stage_evaluation.py` | verification-only | pytest verification: stage evaluation. |
 | `tests/test_stages.py` | verification-only | pytest verification: stages. |
