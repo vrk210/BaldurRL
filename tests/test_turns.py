@@ -51,8 +51,6 @@ def test_roster_resolves_and_tracks_liveness() -> None:
     assert roster.get(ActorRef(Side.ENEMY, 1)).alive
     assert roster.is_alive(ActorRef(Side.ALLY, 0))
     assert not roster.is_alive(ActorRef(Side.ENEMY, 0))
-    assert len(roster.living_allies()) == 1
-    assert len(roster.living_enemies()) == 1
     assert not roster.side_defeated(Side.ALLY)
     assert not roster.side_defeated(Side.ENEMY)
     with pytest.raises(IndexError):

@@ -35,6 +35,8 @@ The harness captures rich semantic facts from the real game. It does **not** emi
 
 `CombatSnapshot.participant_ids` may be empty until participant enumeration works. `EntitySnapshot.armor_class`, `alive`, and `position` may remain unknown if unavailable at capture time. `AbilitySnapshot.visible` does not assert usability. A candidate decision describes ability and target intent; `LEGAL` means a source establishes current legality, `ILLEGAL` means a source establishes rejection, and `UNKNOWN` means available evidence is insufficient. `legality_source` and `legality_reason` preserve that evidence. Ability ownership plus apparent resources do not reconstruct BG3 UI legality in general: target validity, range, line of sight, status, and other conditions can matter. Do not label such a candidate legal solely from ownership and resources.
 
+The schema is designed so a future demonstration record can be assembled as `snapshot_before + candidate/legal decisions + human chosen action + outcome events + snapshot_after`. This can support behavior cloning, DAgger-style human correction, and simulator/BG3 validation later. The Python tools for the [passive H0 collector](../bg3/h0/README.md) do not assemble demonstrations or verify live event semantics.
+
 ## Simulator concept to integration field
 
 `VERIFIED_API` means the linked API is documented, not that the proposed collector mapping has been observed live. `LIVE_VERIFY_*` and `TODO_VERIFY` retain the unresolved work.
@@ -76,7 +78,7 @@ GameSnapshot / GameEvent stream
 SnapshotInterval reconstruction
         │
         ▼
-Later H1 demonstration assembly (NOT IMPLEMENTED)
+Demonstration assembly (NOT IMPLEMENTED)
 ```
 
 [Script Extender documents `Ext.IO.SaveFile` and `Ext.IO.LoadFile`](https://github.com/Norbyte/bg3se/blob/main/Docs/API.md), but no atomic rename API. The Lua collector stages immutable payloads and completion markers; the Python publisher validates them and uses `os.replace` to expose complete `.json` files. This protocol is tested offline. Output-root resolution, readback behavior, and atomic replacement on Windows remain `TODO_VERIFY`. The optional publisher watch loop polls files every 0.5 seconds. The Python reader uses simple polling through repeated `read_new()` calls; it does not watch the filesystem asynchronously. Lua collection is event-driven, without per-frame polling.
@@ -101,7 +103,7 @@ The passive Lua producer in [bg3/h0](../bg3/h0/README.md) chooses increasing seq
 
 ```text
 python -m integration.mock_h0 /tmp/baldurrl-h0
-python -m integration.inspect /tmp/baldurrl-h0
+python -m integration.inspect_records /tmp/baldurrl-h0
 ```
 
 One record directory represents one collector session / sequence namespace. For H0, a restarted collector should start a new output directory rather than reuse sequence IDs in an existing directory. `RecordDirectoryReader(directory, start_sequence=1).read_new()` emits each record once and stops at a missing sequence, retaining later records until another poll. Use `start_sequence` when attaching to a stream that starts after 1. `read_all()` returns all available records sorted by embedded sequence; `validate_all()` reports gaps for offline inspection. Duplicate IDs and invalid JSON or schema records raise errors naming the offending file. Record files are treated as immutable after a successful read.
@@ -112,7 +114,7 @@ One record directory represents one collector session / sequence namespace. For 
 
 ## Python semantic command protocol
 
-The Python portion of a future H3 bridge is implemented in `integration/commands.py`,
+The Python side of a future command executor is implemented in `integration/commands.py`,
 `integration/command_transport.py`, and `integration/mock_executor.py`. It has no
 imports from `combat/`, Gymnasium, trained agents, or ML libraries. It does not
 execute actions in BG3 or simulate BG3 mechanics. Passive `GameSnapshot`,
@@ -317,7 +319,7 @@ intake; this Python lock does not freeze BG3 or cover an independent Lua writer.
 
 ```text
 python -m integration.mock_executor /tmp/baldurrl-command-session-001
-python -m integration.inspect /tmp/baldurrl-command-session-001/records
+python -m integration.inspect_records /tmp/baldurrl-command-session-001/records
 ```
 
 Use a fresh empty session tree for each demo. The CLI writes a synthetic
@@ -373,32 +375,6 @@ It holds:
   input bindings on the client, which `!baldurrl_inspect` doesn't cover;
 - the open questions only the game can answer;
 - the request-layout analysis and the reference index.
-
-## Harness milestones
-
-### H0 — Passive combat logger
-
-H0 only records; it does not control the game. Success means:
-
-1. Load a local BG3 save.
-2. Enter a controlled 1v1 combat.
-3. Detect combat start.
-4. Emit a `GameSnapshot` at the Fighter turn start.
-5. Record an ability-use event when the human attacks.
-6. Record hit/miss/critical/damage outcome events as applicable.
-7. Emit another snapshot after resolution.
-8. Record Goblin turn/events.
-9. Record death/combat end.
-10. Read emitted JSON in Python and reconstruct an ordered event/snapshot trace (Python side implemented with synthetic records; live verification pending).
-
-Later stages, described here only:
-
-- **H1 — Reliable human-decision recorder:** snapshot before, candidate/legal decisions, human action, outcome events, snapshot after.
-- **H2 — Validated legal-action extraction.**
-- **H3 — Python → BG3 command execution:** Python semantic protocol and mock handshake implemented; real BG3 execution remains future work.
-- **H4 — BG3-backed Gymnasium adapter.**
-
-The schema is designed so a future demonstration record can be assembled as `snapshot_before + candidate/legal decisions + human chosen action + outcome events + snapshot_after`. This can support behavior cloning, DAgger-style human correction, and simulator/BG3 validation later. The Python H0 tools do not assemble demonstrations or verify live event semantics.
 
 [exec-use-spell]: https://docs.baldursgate3.game/index.php?title=UseSpell&oldid=2261
 

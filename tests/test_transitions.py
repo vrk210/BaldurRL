@@ -10,7 +10,6 @@ from combat.damage import DamageSpec
 from combat.resources import Resource
 from combat.stages import make_env
 from combat.transitions import (
-    RosterTransitionModel,
     Status,
     register_transition_model,
     transition_model,
@@ -80,7 +79,7 @@ def test_observation_round_trip_and_legality(stage):
         assert np.array_equal(model.observation(state), obs)
         if model.status(state) is Status.ONGOING:
             assert model.state_from_observation(obs) == state
-            assert np.array_equal(model.legal_mask(state), env.action_masks())
+            assert model.legal_actions(state) == tuple(np.flatnonzero(env.action_masks()))
             action = int(rng.choice(np.flatnonzero(env.action_masks())))
             env.step(action)
         else:
@@ -133,7 +132,7 @@ def test_enumeration_equals_exhaustive_rng_paths(case):
     state = edit(model, model.state_from_env(env), **edits)
     load_state(env, state)
     legal = model.legal_actions(state)
-    assert np.array_equal(model.legal_mask(state), env.action_masks())
+    assert model.legal_actions(state) == tuple(np.flatnonzero(env.action_masks()))
     for action in legal:
         expected = exhaustive_distribution(env, model, state, action)
         enumerated = dict((s, p) for p, s in model.outcomes(state, action))

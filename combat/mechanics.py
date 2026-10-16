@@ -11,7 +11,7 @@ from numpy.random import Generator
 
 from .abilities import M2_ABILITIES
 from .actions import Action
-from .characters import Character, Fighter, Goblin
+from .characters import Character
 from .damage import DamageSpec
 from .resources import Resource
 
@@ -95,11 +95,6 @@ def use_attack(attacker: Character, defender: Character, rng: Generator) -> Atta
         raise ValueError("ATTACK is not legal")
     _spend_ability(attacker, Action.ATTACK)
     return resolve_attack(attacker, defender, rng)
-
-
-def use_fighter_attack(fighter: Fighter, goblin: Goblin, rng: Generator) -> AttackResult:
-    """Retain the M0 Fighter attack entry point."""
-    return use_attack(fighter, goblin, rng)
 
 
 def use_second_wind(character: Character, rng: Generator) -> int:

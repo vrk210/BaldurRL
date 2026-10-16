@@ -114,7 +114,7 @@ The complete developer environment is documented in the root README.
 
    ```powershell
    & $python -m integration.session_runner --capture-root "$captures" --archive-root "$archive" --once
-   & $python -m integration.inspect "$archive\<session-guid>\records"
+   & $python -m integration.inspect_records "$archive\<session-guid>\records"
    ```
 
    Inspect one session's records directory, never staging or a multi-session
@@ -215,7 +215,7 @@ Lua. No tests emulate engine timing or prove an installed SE version works.
   bootstrap, all 12 listener registrations, and session GUID generation.
 - [ ] Confirm exact IO root and UTF-8 bytes; test `.pending` readback, `.ready`
   completion, publisher atomic replacement, immutable `.json` records, and
-  `python -m integration.inspect <directory>`. Interrupt a write: no partial
+  `python -m integration.inspect_records <directory>`. Interrupt a write: no partial
   completed JSON; an interrupted capture may require a fresh session. Measure
   the delay between a record's `.ready` marker and the publisher picking it up.
 - [ ] Confirm every arity and argument position above using an actual 1v1 fight:

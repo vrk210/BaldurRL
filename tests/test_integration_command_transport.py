@@ -175,6 +175,25 @@ def test_gaps_and_trailing_events_require_fresh_snapshot(session) -> None:
         session.publish_command(selected("c2", 3))
 
 
+def test_latest_snapshot_validates_the_same_collection_it_selects(session, monkeypatch) -> None:
+    original_read = RecordDirectoryReader.read_all
+    calls = []
+
+    def publish_after_collection(reader):
+        records = original_read(reader)
+        calls.append(records)
+        if len(calls) == 1:
+            # Deterministic publication between old validation and selection.
+            write(session.records / "3.json", replace(synthetic_observation(), sequence=3))
+        return records
+
+    monkeypatch.setattr(RecordDirectoryReader, "read_all", publish_after_collection)
+    assert session.latest_snapshot().sequence == 1
+    assert len(calls) == 1
+    with pytest.raises(ValueError, match="gaps.*2"):
+        session.latest_snapshot()
+
+
 def test_duplicate_commands_fail_closed_without_execution(session) -> None:
     session.publish_command(selected())
     write(session.commands / "duplicate.json", selected())

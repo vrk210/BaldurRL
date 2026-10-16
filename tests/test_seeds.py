@@ -43,11 +43,8 @@ def test_check_cli_flags_frozen_and_unallocated(capsys):
 
 
 def test_evaluate_and_train_clis_refuse_frozen_seeds(monkeypatch):
-    import importlib
-
+    import evaluation.evaluate as evaluate
     import train
-
-    evaluate = importlib.import_module("evaluation.evaluate")  # the package re-exports a function of this name
 
     monkeypatch.setattr(sys, "argv", ["evaluate", "--stage", "m5", "--agent", "heuristic",
                                       "--seed-start", str(FROZEN.start), "--episodes", "5"])

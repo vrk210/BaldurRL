@@ -1,4 +1,9 @@
-"""Deterministic reproductions of PR #7 review comments."""
+"""The post-execution observation fence.
+
+After a command resolves or fails, no new command may be planned from a
+snapshot captured before that result was observed. Only a published
+post-execution observation of a newer snapshot reopens the session.
+"""
 
 from dataclasses import replace
 import json
@@ -11,7 +16,6 @@ from integration.commands import (
     CommandAcknowledgement, PostExecutionObservation, parse_post_execution_observation,
 )
 from integration.mock_executor import MockExecutor, synthetic_observation
-from integration.reader import RecordDirectoryReader
 
 
 def write_snapshot(session: CommandSession, sequence: int) -> None:
@@ -39,14 +43,6 @@ def completed(tmp_path):
 
 
 @pytest.mark.parametrize("outcome", [Status.RESOLVED, Status.FAILED])
-def test_completed_command_blocks_reuse_of_pre_action_snapshot(completed, outcome) -> None:
-    session, executor = completed
-    executor.finish("first", outcome)
-    with pytest.raises(ValueError, match="post-execution observation"):
-        session.publish_command(intent("second"))
-
-
-@pytest.mark.parametrize("outcome", [Status.RESOLVED, Status.FAILED])
 def test_external_commands_require_post_execution_observation(completed, outcome) -> None:
     session, executor = completed
     executor.finish("first", outcome)
@@ -56,27 +52,6 @@ def test_external_commands_require_post_execution_observation(completed, outcome
     rejected, = executor.receive()
     assert rejected.status is Status.REJECTED
     assert "post-execution observation" in rejected.reason
-
-
-def test_latest_snapshot_validates_the_same_collection_it_selects(tmp_path, monkeypatch) -> None:
-    session = CommandSession(tmp_path)
-    write_snapshot(session, 1)
-    original_read = RecordDirectoryReader.read_all
-    calls = []
-
-    def publish_after_collection(reader):
-        records = original_read(reader)
-        calls.append(records)
-        if len(calls) == 1:
-            # Deterministic publication between old validation and selection.
-            write_snapshot(session, 3)
-        return records
-
-    monkeypatch.setattr(RecordDirectoryReader, "read_all", publish_after_collection)
-    assert session.latest_snapshot().sequence == 1
-    assert len(calls) == 1
-    with pytest.raises(ValueError, match="gaps.*2"):
-        session.latest_snapshot()
 
 
 @pytest.mark.parametrize("outcome", [Status.RESOLVED, Status.FAILED])

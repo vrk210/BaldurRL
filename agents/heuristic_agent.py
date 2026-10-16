@@ -187,15 +187,13 @@ def make_heuristic_agent(stage: str, variant: str | None = None) -> Policy:
 
 
 class M4ThreatAwareAgent:
-    """M4 heuristic with threat-aware targeting (promoted from the M4 policy probe).
+    """M4 heuristic with threat-aware targeting.
 
     Same priorities as `M4HeuristicAgent` (Second Wind at <= threshold HP, Cleave
     while two or more enemies live, Action Surge when out of Actions), but attacks
     the living enemy minimizing expected attacks-to-kill divided by its expected
     damage per attack against a Fighter. Both expectations come from the exact
-    attack-damage distribution in `combat.mechanics`; this reproduces
-    `runs/m4_policy_diagnostic_5000_9999/m4_policy_probe.py` (threshold 10,
-    targeting "threat", cleave_min 2).
+    attack-damage distribution in `combat.mechanics`.
     """
 
     def __init__(self, second_wind_threshold: int = 10) -> None:

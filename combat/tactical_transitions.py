@@ -299,11 +299,6 @@ class TacticalTransitionModel:
             self._legal_cache[state] = legal
         return legal
 
-    def legal_mask(self, state: State) -> np.ndarray:
-        mask = np.zeros(self.action_count, dtype=np.bool_)
-        mask[list(self.legal_actions(state))] = True
-        return mask
-
     # ------------------------------------------------------------------ transitions
     def outcomes(self, state: State, action: int) -> tuple[Outcome, ...]:
         key = (state, action)

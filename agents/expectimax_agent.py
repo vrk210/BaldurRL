@@ -239,18 +239,6 @@ class ExpectimaxAgent:
         )
         return q_values, stats
 
-    def state_value(self, state: State) -> float:
-        """Value of a state at the configured depth (uses the shared cache)."""
-        model = self._model
-        if model is None:
-            raise RuntimeError("Call model_for(observation) first")
-        stats = _SearchStats()
-        if model.status(state) is Status.ONGOING:
-            self._search(model, state, self.depth, stats)
-        else:
-            self._values[(state, self.depth)] = 1.0 if model.status(state) is Status.WIN else 0.0
-        return self._values[(state, self.depth)]
-
     def _search(
         self, model: TransitionModel, root: State, depth: int | None, stats: _SearchStats, budget: int | None = None
     ) -> list:
