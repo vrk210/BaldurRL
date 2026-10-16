@@ -62,3 +62,13 @@ def test_hunks_map_to_working_tree_lines_of_python_files_only():
 """
     # A pure deletion is attributed to the line before it (10).
     assert compare_refactor.changed_lines(diff) == {"combat/a.py": {3, 10, 19, 20, 21}}
+
+
+@pytest.mark.parametrize("body, declared", [
+    ("Outcome: tidy\n\nBehavior: preserve\n", True),
+    ("Outcome: tidy\r\nBehavior: preserve\r\n", True),
+    ("There is no `Behavior: preserve` line here.", False),
+    (None, False),
+])
+def test_only_a_marker_line_declares_preserved_behavior(body, declared):
+    assert compare_refactor.declares_behavior_preserved(body) is declared
