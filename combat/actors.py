@@ -48,12 +48,6 @@ class CombatRoster:
     def is_alive(self, ref: ActorRef) -> bool:
         return self.get(ref).alive
 
-    def living_allies(self) -> tuple[Character, ...]:
-        return tuple(ally for ally in self.allies if ally.alive)
-
-    def living_enemies(self) -> tuple[Character, ...]:
-        return tuple(enemy for enemy in self.enemies if enemy.alive)
-
     def side_defeated(self, side: Side) -> bool:
         members = self.allies if side is Side.ALLY else self.enemies
         return not any(member.alive for member in members)

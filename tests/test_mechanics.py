@@ -18,7 +18,6 @@ from combat.mechanics import (
     roll_damage,
     use_action_surge,
     use_attack,
-    use_fighter_attack,
     use_second_wind,
 )
 from combat.resources import Resource, ResourcePool
@@ -142,7 +141,7 @@ def test_missing_resources_reject_ability_without_mutation(action: Action, missi
 
     with pytest.raises(ValueError, match=f"{action.name} is not legal"):
         if action is Action.ATTACK:
-            use_fighter_attack(actor, goblin(), fixed_rng())
+            use_attack(actor, goblin(), fixed_rng())
         elif action is Action.SECOND_WIND:
             use_second_wind(actor, fixed_rng())
         else:
@@ -156,15 +155,15 @@ def test_attack_target_rule_and_action_consumption() -> None:
     actor = fighter()
     dead_target = goblin(hp=0)
     with pytest.raises(ValueError, match="ATTACK is not legal"):
-        use_fighter_attack(actor, dead_target, fixed_rng())
+        use_attack(actor, dead_target, fixed_rng())
     assert actor.resources.get(Resource.ACTION) == 1
 
     live_target = goblin()
-    use_fighter_attack(actor, live_target, fixed_rng(10, 3))
+    use_attack(actor, live_target, fixed_rng(10, 3))
     assert actor.resources.get(Resource.ACTION) == 0
     assert live_target.hp == 9
     with pytest.raises(ValueError, match="ATTACK is not legal"):
-        use_fighter_attack(actor, live_target, fixed_rng())
+        use_attack(actor, live_target, fixed_rng())
 
     enemy = goblin()
     result = use_attack(enemy, fighter(), fixed_rng(12, 2))

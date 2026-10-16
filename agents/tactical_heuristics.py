@@ -16,8 +16,6 @@ from combat.tactical_env import (
     N_ALLIES,
     N_ENEMIES,
     STAGE_RULES,
-    ally_fields,
-    enemy_fields,
     tactical_decisions,
     tactical_observation_fields,
 )
@@ -116,8 +114,6 @@ class TacticalHeuristicAgent:
         self._heal_value = heal.dice_count * (heal.die_size + 1) / 2 + heal.bonus  # Mean heal.
         fields = tactical_observation_fields(stage)
         self._index = {name: position for position, name in enumerate(fields)}
-        self._ally_fields = ally_fields(stage)
-        self._enemy_fields = enemy_fields(stage)
         self._decision_index = {
             (decision.action, decision.target_index): position
             for position, decision in enumerate(tactical_decisions(stage))

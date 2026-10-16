@@ -1,4 +1,9 @@
-"""Deterministic reproductions of PR #7 review comments."""
+"""The post-execution observation fence.
+
+After a command resolves or fails, no new command may be planned from a
+snapshot captured before that result was observed. Only a published
+post-execution observation of a newer snapshot reopens the session.
+"""
 
 from dataclasses import replace
 import json
@@ -36,14 +41,6 @@ def completed(tmp_path):
     executor = MockExecutor(session)
     executor.receive()
     return session, executor
-
-
-@pytest.mark.parametrize("outcome", [Status.RESOLVED, Status.FAILED])
-def test_completed_command_blocks_reuse_of_pre_action_snapshot(completed, outcome) -> None:
-    session, executor = completed
-    executor.finish("first", outcome)
-    with pytest.raises(ValueError, match="post-execution observation"):
-        session.publish_command(intent("second"))
 
 
 @pytest.mark.parametrize("outcome", [Status.RESOLVED, Status.FAILED])

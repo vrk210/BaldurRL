@@ -124,7 +124,6 @@ class RosterTransitionModel:
         self.action_count = len(self.decisions)
         self.max_rounds = MAX_ROUNDS
         # A private roster used only as scratch input to the shared legality rules.
-        self._env = env
         self._roster = env._roster()
         self._allies = self._roster.allies
         self._enemies = self._roster.enemies
@@ -227,11 +226,6 @@ class RosterTransitionModel:
             legal = tuple(index for index, allowed in enumerate(mask) if allowed)
             self._legal_cache[key] = legal
         return legal
-
-    def legal_mask(self, state: State) -> np.ndarray:
-        mask = np.zeros(self.action_count, dtype=np.bool_)
-        mask[list(self.legal_actions(state))] = True
-        return mask
 
     # ------------------------------------------------------------------ transitions
     def outcomes(self, state: State, action: int) -> tuple[Outcome, ...]:

@@ -118,9 +118,9 @@ Tests and the replay oracle remain independent where they catch different errors
 | `tests/test_evaluation.py` | verification-only | pytest verification: evaluation. |
 | `tests/test_expectimax_agent.py` | verification-only | pytest verification: expectimax agent. |
 | `tests/test_heuristic.py` | verification-only | pytest verification: heuristic. |
-| `tests/test_integration_command_review_regressions.py` | verification-only | pytest verification: integration command review regressions. |
 | `tests/test_integration_command_transport.py` | verification-only | pytest verification: integration command transport. |
 | `tests/test_integration_commands.py` | verification-only | pytest verification: integration commands. |
+| `tests/test_integration_post_execution_fence.py` | verification-only | pytest verification: integration post execution fence. |
 | `tests/test_integration_publish.py` | verification-only | pytest verification: integration publish. |
 | `tests/test_integration_reader.py` | verification-only | pytest verification: integration reader. |
 | `tests/test_integration_schema.py` | verification-only | pytest verification: integration schema. |
