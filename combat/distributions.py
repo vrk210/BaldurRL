@@ -22,6 +22,7 @@ from .mechanics import (
 
 @lru_cache(maxsize=None)
 def dice_sum_distribution(dice_count: int, die_size: int) -> Mapping[int, Fraction]:
+    """Return immutable exact sum probabilities without sampling or state mutation."""
     sums = {0: Fraction(1)}
     for _ in range(dice_count):
         rolled: dict[int, Fraction] = {}

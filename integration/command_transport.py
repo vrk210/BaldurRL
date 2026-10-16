@@ -210,7 +210,11 @@ class CommandSession:
             return self.publish_acknowledgement_locked(acknowledgement)
 
     def publish_acknowledgement_locked(self, acknowledgement: CommandAcknowledgement) -> Path:
-        """Caller holds writer_lock; also used for atomic mock receive checks."""
+        """Publish already-validated feedback while the caller holds writer_lock.
+
+        Prefer publish_acknowledgement outside a locked receive transaction.
+        This entry point keeps receive validation and publication under one lock.
+        """
         commands = {command.command_id: command for command in self.read_commands()}
         if acknowledgement.command_id not in commands:
             raise ValueError("Acknowledgement command_id does not match a published command")

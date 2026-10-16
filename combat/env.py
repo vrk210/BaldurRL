@@ -85,6 +85,7 @@ def terminal_reward(
 
 
 def new_fighter() -> Fighter:
+    """Build a fresh M0 preset; each environment owns its returned state."""
     return Fighter("Fighter", _FIGHTER_MAX_HP, _FIGHTER_MAX_HP, 16, 5, DamageSpec(1, 8, 3))
 
 

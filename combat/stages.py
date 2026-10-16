@@ -81,6 +81,7 @@ _CLEAVE_STAGES = ("m2", "m3", "m4")
 
 
 def enemy_profile(stage: str) -> dict[str, tuple[int, ...]]:
+    """Return shared sampling ranges; callers must not mutate the profile."""
     return _ENEMY_PROFILES.get(stage, _DEFAULT_ENEMY_PROFILE)
 
 
