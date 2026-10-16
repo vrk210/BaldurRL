@@ -102,7 +102,7 @@ def check_budget(numstat: str, body: str) -> tuple[list[str], str]:
         else:
             added += a
             deleted += d
-        if retirement and a and name not in {"docs/RESULTS.md", "docs/ARCHITECTURE.md"}:
+        if retirement and a and name not in {"docs/RESULTS.md", "docs/GAME_KNOWLEDGE.md", "docs/ARCHITECTURE.md"}:
             errors.append(f"Retirement permits only deletions outside summaries/inventory: {name}")
     counted = added if retirement else added + deleted
     if counted > limit:
