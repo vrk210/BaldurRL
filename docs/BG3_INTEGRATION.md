@@ -341,11 +341,11 @@ resource, ability, ordering, legality and file-bridge checks. Unknown facts stay
 unknown until those checks establish their meaning; static/offline success does
 not establish game behavior.
 
-Source research dated 2026-10-09 chose normal client UI/input as the first future
-execution experiment: public Script Extender client keyboard injection where it
-can reproduce the human interaction, with Windows keyboard/mouse input as a
-fallback for targeting/confirmation. Neither path has been demonstrated here.
-No executor is added by the cleanup.
+Decision (2026-10-09): the first execution experiment uses the normal client
+UI. Script Extender client keyboard injection is used where it reproduces the
+human interaction, and Windows keyboard/mouse input is the fallback for
+targeting and confirmation. Neither path has been demonstrated, and no
+executor exists.
 
 - [Osi.UseSpell][exec-use-spell] bypasses player preconditions, including spell
   ownership/resource availability. It is unsuitable as the ordinary-action
@@ -361,9 +361,19 @@ No executor is added by the cleanup.
 
 The inspected SE revision was `91abbf230d02faa2b093d0a458d9caf6d1494901`.
 Record the installed game/SE versions; pinned source is not evidence about a
-particular binary. Full request-layout/conversion analysis and reference index
-are preserved in tag `archive/simulator-research-2026-10-15`, path
-`docs/BG3_ACTION_EXECUTION.md`. Revisit this decision when a live input trial or
+particular binary. Before starting execution work, read
+`docs/BG3_ACTION_EXECUTION.md` in tag `archive/simulator-research-2026-10-15`.
+It holds:
+
+- the seven-step live trial plan and its pass/fail criteria: one valid
+  autonomous attack, the same resource cost as a human attack, rejection of an
+  invalid attack, and no blind retries;
+- read-only Lua console snippets for tracing cast requests on the server and
+  input bindings on the client, which `!baldurrl_inspect` doesn't cover;
+- the open questions only the game can answer;
+- the request-layout analysis and the reference index.
+
+Revisit this decision when a live input trial or
 a documented rule-respecting public submission API supplies new evidence.
 
 ## Harness milestones
