@@ -341,13 +341,21 @@ def with_called_functions(root: Path, run: Callable[[], Any]) -> tuple[Any, set[
         sys.setprofile(None)
 
 
-def function_spans(source: str) -> list[tuple[int, int, str]]:
-    """(first line including decorators, last line, qualified name) of every def and class."""
+DEFINITIONS = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+
+
+def changed_definitions(source: str, lines: set[int]) -> set[str]:
+    """Qualified names of the innermost def or class around each line; "<module>" for module statements.
+
+    Blank lines, comments and string-only statements outside definitions run
+    nothing, so they are skipped rather than reported as module-level changes.
+    """
+    tree = ast.parse(source)
     spans = []
 
     def visit(node: ast.AST, prefix: str) -> None:
         for child in ast.iter_child_nodes(node):
-            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            if isinstance(child, DEFINITIONS):
                 name = prefix + child.name
                 start = min([child.lineno, *(item.lineno for item in child.decorator_list)])
                 spans.append((start, child.end_lineno, name))
@@ -355,14 +363,19 @@ def function_spans(source: str) -> list[tuple[int, int, str]]:
             else:
                 visit(child, prefix)
 
-    visit(ast.parse(source), "")
-    return spans
-
-
-def enclosing_definition(spans: list[tuple[int, int, str]], line: int) -> str:
-    """Qualified name of the innermost def or class containing line, or "<module>"."""
-    enclosing = [span for span in spans if span[0] <= line <= span[1]]
-    return max(enclosing)[2] if enclosing else "<module>"
+    visit(tree, "")
+    statements = [(node.lineno, node.end_lineno) for node in tree.body
+                  if not isinstance(node, DEFINITIONS)
+                  and not (isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant)
+                           and isinstance(node.value.value, str))]
+    names = set()
+    for line in lines:
+        enclosing = [span for span in spans if span[0] <= line <= span[1]]
+        if enclosing:
+            names.add(max(enclosing)[2])
+        elif any(first <= line <= last for first, last in statements):
+            names.add("<module>")
+    return names
 
 
 def changed_lines(diff: str) -> dict[str, set[int]]:
@@ -390,11 +403,8 @@ def changed_functions(root: Path, base: str) -> set[tuple[str, str]]:
     diff = subprocess.check_output(["git", "diff", "--unified=0", "--no-color", "--no-ext-diff",
                                     "--src-prefix=a/", "--dst-prefix=b/", base, "--", *MAINTAINED_CODE],
                                    cwd=root, text=True, encoding="utf-8", errors="replace")
-    changed = set()
-    for path, numbers in changed_lines(diff).items():
-        spans = function_spans((root / path).read_text(encoding="utf-8"))
-        changed.update((path, enclosing_definition(spans, number)) for number in numbers)
-    return changed
+    return {(path, name) for path, numbers in changed_lines(diff).items()
+            for name in changed_definitions((root / path).read_text(encoding="utf-8"), numbers)}
 
 
 def run_worker(script: str, tree: Path, *, record_calls: bool) -> dict[str, Any]:

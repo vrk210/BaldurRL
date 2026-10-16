@@ -11,8 +11,9 @@ compare_refactor = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(compare_refactor)
 
 SOURCE = """\
+\"\"\"Module docstring.\"\"\"
 import os
-
+# A comment.
 
 @decorator
 def top():
@@ -29,17 +30,19 @@ class Thing:
 """
 
 
-@pytest.mark.parametrize("line, name", [
-    (1, "<module>"),
-    (4, "top"),  # a decorator belongs to the function it decorates
-    (6, "top"),
-    (10, "Thing"),  # class body
-    (12, "Thing.method"),
-    (14, "Thing.method.<locals>.inner"),  # matches the code object's co_qualname
-    (15, "Thing.method"),
+@pytest.mark.parametrize("line, names", [
+    (1, set()),  # module docstring runs nothing
+    (2, {"<module>"}),
+    (3, set()),  # comment
+    (5, {"top"}),  # a decorator belongs to the function it decorates
+    (7, {"top"}),
+    (11, {"Thing"}),  # class body
+    (13, {"Thing.method"}),
+    (15, {"Thing.method.<locals>.inner"}),  # matches the code object's co_qualname
+    (16, {"Thing.method"}),
 ])
-def test_changed_line_maps_to_innermost_definition(line, name):
-    assert compare_refactor.enclosing_definition(compare_refactor.function_spans(SOURCE), line) == name
+def test_changed_line_maps_to_innermost_definition(line, names):
+    assert compare_refactor.changed_definitions(SOURCE, {line}) == names
 
 
 def test_hunks_map_to_working_tree_lines_of_python_files_only():
