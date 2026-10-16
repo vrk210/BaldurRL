@@ -43,7 +43,7 @@ Tests and the replay oracle remain independent where they catch different errors
 | `agents/improved_heuristic_agent.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
 | `agents/policy.py` | supported | Model-independent policy interface. |
 | `agents/random_agent.py` | supported | Seeded random legal-action baseline. |
-| `agents/rollout_agent.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
+| `agents/rollout_agent.py` | verification-only | Sampling planner reference and reconstruction/isolation baseline; exposed by evaluation.evaluate. |
 | `agents/tactical_heuristics.py` | supported | M5/M6 named heuristic variants. |
 | `agents/value_functions.py` | supported | Heuristic/learned frontier values; no combat mechanics. |
 | `bg3/h0/Mods/BaldurRL_H0/ScriptExtender/Config.json` | supported | config: Script Extender module settings. |
@@ -146,7 +146,7 @@ Tests and the replay oracle remain independent where they catch different errors
 | `tests/test_paired.py` | verification-only | pytest verification: paired. |
 | `tests/test_ppo_diagnostics.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
 | `tests/test_repository_policy.py` | verification-only | pytest verification: repository policy. |
-| `tests/test_rollout_agent.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
+| `tests/test_rollout_agent.py` | verification-only | pytest verification: sampling planner and independent continuation isolation. |
 | `tests/test_seeds.py` | verification-only | pytest verification: seeds. |
 | `tests/test_session_runner.py` | verification-only | pytest verification: session runner. |
 | `tests/test_sim_mining.py` | remove | Completed simulator experiment; archive evidence and remove in retirement PR. |
