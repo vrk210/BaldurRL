@@ -105,7 +105,7 @@ Tests and the replay oracle remain independent where they catch different errors
 | `pyproject.toml` | supported | Pinned-tool lint configuration; no packaging framework. |
 | `requirements.txt` | supported | Pinned Python 3.11 simulator/development dependency graph; includes harness and quality manifests. |
 | `requirements-quality.txt` | supported | Pinned lint tool used by repository CI. |
-| `scripts/compare_refactor.py` | verification-only | CLI: python scripts/compare_refactor.py --base COMMIT; fixed-seed semantic equivalence across revisions. |
+| `scripts/compare_refactor.py` | verification-only | CLI: python scripts/compare_refactor.py --base COMMIT; simulator, planner, evaluation and integration scenario fingerprints across revisions, plus which changed functions the scenarios ran. |
 | `scripts/check_repository.py` | supported | CLI: python scripts/check_repository.py; inventory, docs, artifacts and PR budget checks. |
 | `scripts/windows/bootstrap-harness.ps1` | supported | CLI: scripts/windows/bootstrap-harness.ps1; isolated harness environment. |
 | `scripts/windows/package-h0.ps1` | supported | CLI: scripts/windows/package-h0.ps1; Divine packaging and source manifest. |

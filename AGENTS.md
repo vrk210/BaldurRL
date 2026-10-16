@@ -82,10 +82,11 @@ counted separately and must be justified by behavior, not implementation shape.
   simplification PR. Use caller-supplied
   seeded RNGs for mechanics; no global randomness or hidden live RNG access.
 - Behavior-preserving refactors state `Behavior: preserve` in the PR body so CI
-  compares fixed-seed semantic fingerprints against the base commit. They may
+  runs `scripts/compare_refactor.py` against the base commit. It fails on a
+  changed fingerprint or on a changed module whose changed functions never ran.
+  Say in the PR how any listed unexecuted function was verified. Refactors may
   rewrite or delete tests that checked implementation, with the reason in the
-  PR. Exclude timings and filesystem locations. Keep independent verification that detects distinct
-  errors. Do not change schemas, action/observation ordering, reward semantics,
+  PR. Keep independent verification that detects distinct errors. Do not change schemas, action/observation ordering, reward semantics,
   simulator mechanics or trained models during cleanup.
 - Dependency/setup changes must demonstrate installation and documented checks
   in a clean environment. BG3 loading/execution requires separate live evidence;
