@@ -42,7 +42,7 @@ M2_ABILITIES: Mapping[Action, AbilitySpec] = MappingProxyType({
     ),
 })
 
-# M5/M6 simulator choices (docs/STAGES_SPEC.md): Trip spends the Bonus Action
+# M5/M6 simulator choices (combat/tactical_env.py and combat/tactics.py): Trip spends the Bonus Action
 # (shared with Second Wind) and one per-encounter Trip charge; Dodge and
 # Disengage spend the Action; Advance spends the per-turn Movement; an enemy
 # Healer's heal spends its Action and one heal charge.

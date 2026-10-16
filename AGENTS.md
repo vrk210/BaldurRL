@@ -15,10 +15,9 @@ rules. The integration package is independent of simulator/ML representations.
 It preserves BG3 identifiers and unknown facts. Command acceptance never proves
 execution. No real BG3 action executor is implemented or authorized by cleanup.
 
-Until the documentation migration lands, M0_SPEC.md and STAGES_SPEC.md hold the
-simulator contracts. Their inventory rows require relocation into the owning
-modules before deletion. Thereafter, module contracts and behavior tests govern.
-Report a contract/implementation disagreement before changing behavior.
+Simulator contracts live in the owning modules' docstrings and executable
+metadata; behavior tests verify them. Report a contract/implementation
+disagreement before changing behavior.
 
 ## Where code, documentation, and results live
 

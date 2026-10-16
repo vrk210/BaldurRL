@@ -1,9 +1,51 @@
-"""Gymnasium environments for M5 (roles and conditions) and M6 (two ranks).
+"""M5/M6 contracts: two controlled Fighters versus Brute, Archer and Healer.
 
-The environment coordinates sampling, turns, legality, observations, rewards,
-and termination. Combat rules live in ``combat.tactics``, ``combat.rolls``, and
-``combat.mechanics``. Every M5/M6 rule is a SIMULATOR CHOICE specified in
-docs/STAGES_SPEC.md.
+These are owner-authorized SIMULATOR CHOICES, not verified BG3 mechanics. M5
+adds roles, targeting, Trip/Prone and Dodge; M6 adds two ranks, Advance,
+Disengage and opportunity attacks. No map, distances, terrain or LOS exists.
+STAGE_RULES holds inclusive sampling ranges and immutable per-stage tuning.
+Each ally has the M0 preset and separate Cleave, Second Wind and Action Surge
+charges, plus two encounter Trip charges. M5 Healer has three heals; M6 has
+two and a weaker Brute to offset the front-rank wall. The two-rank abstraction
+exists to exercise tactical decisions; revisit only against real combat traces.
+
+Reset RNG order is permutation(3) assigning BRUTE, ARCHER, HEALER, then for each
+slot HP, AC, attack bonus, damage bonus, targeting (one draw each). Role fixes
+damage die and rank. Targeting is uniform among WEAKEST, RETALIATE, RANDOM.
+Every field affecting future live decisions is observed; enemy ACTION is
+omitted because it refreshes before use. All sampling uses self.np_random.
+
+Decision indices 0–2 ATTACK_ENEMY_i, 3–5 TRIP_ENEMY_i, 6 CLEAVE, 7 DODGE,
+8 SECOND_WIND, 9 ACTION_SURGE. M5 ends with 10 END_TURN; M6 has 10 ADVANCE,
+11 DISENGAGE, 12 END_TURN. Costs come from the catalog. Trip and healing share
+the Bonus Action. Masks require a living controlled actor, living/reachable
+eligible targets, known abilities and affordable costs; invalid/masked indices
+raise ValueError. Trip cannot target Prone; Dodge cannot repeat while Dodging.
+
+Turn order is ALLY 0, ALLY 1, then ENEMY 0..2, skipping dead actors. Ally 0
+hands directly to ally 1; the final living ally hands through the enemy phase.
+Enemy policies and condition lifecycle are in tactics. Death during one's own
+ADVANCE ends that turn exactly like END_TURN, or immediately defeats the side
+if no ally survives. Any such successor consumes a planner turn boundary.
+Victory requires all enemies dead and an ally surviving; defeat requires all
+allies dead (including an injected both-sides-dead state). Rewards are terminal
++1/-1, otherwise zero; finishing round 50 without an outcome truncates at 50.
+No shaping is supported. Terminal active index is first living ally or 0.
+
+Observation builders fix unnormalized float32 ordering: active index, ally
+blocks in slot order, enemy blocks in slot order, round last. M5 has 63 fields:
+8 per ally, 15 per enemy. M6 has 75: 11 per ally, 17 per enemy. Ally blocks
+contain HP, Action/Bonus Action/Second Wind/Surge/Cleave/Trip counts, Dodging;
+M6 appends Movement, Deep, Disengaged. Enemy blocks contain HP/max HP, AC,
+attack bonus, damage die/bonus, role and targeting one-hots, Prone, heal charges,
+last attacker; M6 appends back rank and Reaction. last_attacker is 0 for none,
+otherwise ally slot+1. Bounds derive from stage profiles and charge limits.
+Changing layout or bounds requires explicit compatibility work.
+
+Info reports action/decision, actor/target, roster HP, roles, targeting,
+conditions and per-step attack/Trip/heal/enemy events with all drawn d20s. M6
+adds positions and Advance/opportunity-attack details. Info is diagnostic;
+observation plus mask is the policy interface, without hidden RNG state.
 """
 
 from dataclasses import asdict
@@ -46,7 +88,7 @@ N_ENEMIES = 3
 ROLE_ORDER = (Role.BRUTE, Role.ARCHER, Role.HEALER)
 TARGETING_ORDER = (Targeting.WEAKEST, Targeting.RETALIATE, Targeting.RANDOM)
 
-# Per-stage tuning data; see the STAGES_SPEC M5/M6 tuning history. V1 is kept
+# Per-stage tuning data; see the RESULTS.md M5/M6 tuning history. V1 is kept
 # only to document and reproduce the first measurement; stages use V2.
 V1_RULES = TacticalRules(
     profiles={

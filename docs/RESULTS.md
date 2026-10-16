@@ -4,7 +4,7 @@ Measured results of the simulator stages. Conclusions drawn from them live next
 to the decisions they inform:
 
 - The simulator's role: [ARCHITECTURE.md](ARCHITECTURE.md#stage-progression).
-- Planning conclusions: [EXPECTIMAX_PLANNING.md](EXPECTIMAX_PLANNING.md#conclusions-and-when-to-revisit).
+- Planning conclusions: [the planner contract](../agents/expectimax_agent.py).
 - Evaluation rules: `AGENTS.md` and `evaluation/seeds.py`.
 - BG3 tactical hypotheses: [GAME_KNOWLEDGE.md](GAME_KNOWLEDGE.md#simulator-tactical-evidence-hypotheses-for-bg3).
 
@@ -85,7 +85,7 @@ deterministic masked prediction. Results are on held-out seeds 3000–3999
 
 ### M4: expectimax with exact chance nodes
 
-Method details are in [EXPECTIMAX_PLANNING.md](EXPECTIMAX_PLANNING.md). Test
+Method details are in [the planner contract](../agents/expectimax_agent.py). Test
 seeds 10000–14999 were used only for these final runs (n=5,000 each). Paired
 differences are against the threat-aware heuristic.
 
@@ -113,7 +113,7 @@ differences are against the threat-aware heuristic.
 
 ## M5/M6: decision-rich stages
 
-The rules are specified in [STAGES_SPEC.md](STAGES_SPEC.md). They are simulator
+The rules are specified in [the stage contracts](../combat/tactical_env.py). They are simulator
 choices, not BG3 rules.
 
 **Tuning.** The first design (v1) made M5 too easy: naive 75.9%, and Trip every

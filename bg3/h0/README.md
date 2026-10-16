@@ -29,145 +29,95 @@ bg3/h0/
         Inspect.lua             # explicit actor diagnostic; !baldurrl_inspect
 ```
 
-1. On Windows, install the [Script Extender updater](https://github.com/Norbyte/bg3se/releases)
-   by placing `DWrite.dll` in the game's `bin` directory. Launch once to download
-   the extender. Check the reported extender/game versions.
-2. Merge `{"CreateConsole": true, "LogRuntime": true}` into
-   `bin/ScriptExtenderSettings.json` (valid JSON, preserving existing settings).
-3. Package **the contents of `bg3/h0`**, with `Mods` at the package root, as
-   `BaldurRL_H0.pak` using [LSLib/ConverterApp](https://github.com/Norbyte/lslib).
-   Import into [BG3 Mod Manager](https://github.com/LaughingLeader/BG3ModManager),
-   activate, and export the load order. Check the mod UUID in that order.
-   For development, the community example also supports loose files under
-   `<BG3>/Data/Mods/BaldurRL_H0`; the module must still be activated in the load
-   order. Do not install both copies. Packaging and activation are untested here.
-4. Load a local save. Confirm the server bootstrap and `[BaldurRL H0] New session:`
-   message. `UNAVAILABLE` or `HALTED` output requires investigation before treating
-   a capture as complete. With no Windows installation we cannot validate these steps.
-
 ## First Windows session
 
-1. Install and activate H0 as above, using a disposable local save. Record game
-   and Script Extender versions and confirm bootstrap/listener output. Static
-   file presence, valid JSON, and synthetic trial results do not verify loading.
-2. From the repository root, prepare an isolated Python environment and run the
-   read-only checks. Supply the actual paths; these tools never install the
-   game/extender, change a load order, or launch BG3:
+This is the sole Windows setup/capture/live-verification runbook. Start from a
+clean checkout and a disposable local save. Runtime capture tools use only the
+Python standard library; do not install simulator/ML dependencies for capture.
+The complete developer environment is documented in the root README.
+
+1. Install Python 3.11 and the [Script Extender updater](https://github.com/Norbyte/bg3se/releases)
+   (`DWrite.dll` in the game's `bin` directory); launch once to download SE.
+   Merge `{"CreateConsole": true, "LogRuntime": true}` into
+   `bin/ScriptExtenderSettings.json`, preserving existing settings. Record the
+   game/SE versions. File presence does not establish that the extender loaded.
+2. From the repository root in PowerShell, create the minimal environment and
+   run the static preflight. Replace the example game path with the actual one:
 
    ```powershell
+   py -3.11 -m venv .venv-harness
+   $python = (Resolve-Path .\.venv-harness\Scripts\python.exe).Path
    .\scripts\windows\bootstrap-harness.ps1 -GameDir "D:\SteamLibrary\steamapps\common\Baldurs Gate 3" -InstallTestDependencies
+   & $python -m pytest -q tests/test_bg3_h0_lua.py tests/test_integration_publish.py
+   ```
+
+   Preflight never installs the game/extender, changes load order or launches
+   BG3. It may report missing setup before the remaining steps. Modern
+   `Mods/ModuleShortDesc` and legacy `ModOrder` activation layouts are recognized;
+   a listed UUID is static evidence only. The Python path above is used explicitly
+   below, so activation/PATH changes are unnecessary.
+3. Install [LSLib/Divine](https://github.com/Norbyte/lslib) separately. Package the
+   contents of bg3/h0, with Mods at the package root:
+
+   ```powershell
    .\scripts\windows\package-h0.ps1 -DivinePath "C:\Tools\LSLib\Divine.exe" -OutputPath "D:\BaldurRL\BaldurRL_H0.pak" -DryRun
    ```
 
-   Remove `-DryRun` to build with the separately installed Divine. The package
-   and its source/output SHA-256 manifest are produced after successful
-   conversion; `-Force` explicitly permits replacing an existing package.
-   `Get-Help` on each script describes options. Preflight accepts modern
-   `Mods/ModuleShortDesc` activation and legacy `ModOrder`, and reports the
-   layout found. Inspecting a UUID never proves live activation.
-3. Load the save and verify the exact staging root printed by H0. Use the
-   multi-session runner with an archive outside the capture tree:
+   Remove `-DryRun` to build. A successful build writes a source/output SHA-256
+   manifest; `-Force` explicitly permits replacing an existing package. Import
+   it into [BG3 Mod Manager](https://github.com/LaughingLeader/BG3ModManager),
+   activate and export load order. UUID: `d860477b-c599-4f12-9e95-5b8ec7235860`.
+   Do not install both a package and loose copy. Get-Help describes script options.
+4. Load the save and confirm the server bootstrap, listener output and
+   `[BaldurRL H0] New session:` GUID/path. Investigate UNAVAILABLE or HALTED.
+   H0 starts on SessionLoaded/ResetCompleted; stop/start and reload create new
+   namespaces beginning at sequence 1. Existing session directories are refused.
+   Verify the printed IO root on this installation, then archive outside it:
 
    ```powershell
    $captures = Join-Path $env:LOCALAPPDATA "Larian Studios\Baldur's Gate 3\Script Extender\BaldurRL\H0"
-   python -m integration.session_runner --capture-root "$captures" --archive-root "D:\BaldurRL-captures"
+   $archive = "D:\BaldurRL-captures"
+   & $python -m integration.session_runner --capture-root "$captures" --archive-root "$archive"
    ```
 
-   Use the bootstrap environment's Python (normally `.venv-harness\Scripts\python.exe`).
-   Keep one runner/publisher per session. The runner discovers new namespaces
-   after reload/reset, preserves raw bytes and hashes, and quarantines a failed
-   session while continuing healthy captures. Its manifest/health report records
-   the failure and source hashes. Review the cause before restarting. Locks from
-   another or crashed runner require manual investigation; never delete them
-   automatically. `--once` processes all sessions and exits nonzero on failure.
-4. Play a simple in-range encounter by hand. Compare selected actor, HP, IDs and
-   event order with the UI. In the SE **server** console, use
-   `!baldurrl_inspect <selected-actor-uuid>` to save component diagnostics in the
-   current session; omit the UUID for usage. The packaged probe inspects component
-   names before dumping SpellBook, SpellBookPrepares, ActionResources and
-   TurnBased when present. Each `dump_json` field is the raw JSON string returned
-   by `Ext.DumpExport`. Failures remain explicit and missing facts remain unknown.
-5. Create a bounded human trial and fill it with observed IDs, before/after
-   snapshot sequences, measured resource deltas and explicit completion evidence:
+   The usual SE root is under LOCALAPPDATA, not the updater cache or Script
+   Extender Logs directory. Keep one runner/publisher per session. Failed
+   sessions are quarantined with health/manifest/source hashes; healthy sessions
+   continue. Investigate stale locks manually. --once processes all sessions and
+   exits nonzero on failure. Raw staging is retained; recovery is not exactly-once.
+5. Play a simple in-range encounter by hand. Compare selected actor, HP, IDs,
+   rounds, turn owner and event order to the UI. In the SE server console use
+   `!baldurrl_snapshot` for an extra snapshot and
+   `!baldurrl_inspect <selected-actor-uuid>` for component diagnostics. Omit the
+   UUID for help. The packaged probe lists component names and dumps SpellBook,
+   SpellBookPrepares, ActionResources and TurnBased when present; dump_json is
+   the raw JSON string from Ext.DumpExport. Missing facts remain unknown.
+6. Record a bounded human trial using observed IDs, snapshot boundaries,
+   measured resource deltas and explicit completion evidence:
 
    ```powershell
-   python -m integration.encounter_trial init trial.json --kind human_attack
-   python -m integration.encounter_trial analyze trial.json --records "D:\BaldurRL-captures\<session-guid>\records"
+   & $python -m integration.encounter_trial init runs/trial.json --kind human_attack
+   & $python -m integration.encounter_trial analyze runs/trial.json --records "$archive\<session-guid>\records"
    ```
 
-   H0 currently omits resources and owned abilities, so its live trials remain
-   INCONCLUSIVE on resource checks until verified observation enrichment exists.
-   Keep the human trace and probe output as evidence for that work. A miss can
-   still be execution; command acceptance alone cannot prove execution.
+   H0 omits resources/owned abilities; live resource checks remain INCONCLUSIVE
+   until verified enrichment exists. Preserve the human trace and probe output.
+   A miss can still be execution; command acceptance alone proves no execution.
+7. Use `!baldurrl_stop`, stop the runner with Ctrl-C, then make a final sweep:
 
-Use each Python module's `--help` for its contract and options. Offline Windows
-CI covers Python 3.11/3.13, Lua with stubbed game APIs and fake-converter packaging;
-real Divine packaging, game loading and live execution remain unverified.
+   ```powershell
+   & $python -m integration.session_runner --capture-root "$captures" --archive-root "$archive" --once
+   & $python -m integration.inspect "$archive\<session-guid>\records"
+   ```
 
-## Running and inspecting one session
+   Inspect one session's records directory, never staging or a multi-session
+   parent. Reload/reset or `!baldurrl_start` creates a fresh namespace, never a
+   continuation of an old sequence. Module --help contains detailed options.
 
-The collector starts on `SessionLoaded` and on Lua `ResetCompleted`. Each start
-uses `Ext.Utils.GenerateGuid()` and creates a separate sequence namespace, starting
-at 1. This API export is verified in [upstream Utils.inl](https://github.com/Norbyte/bg3se/blob/main/BG3Extender/Lua/Libs/Utils.inl);
-its availability and GUID representation on the installed extender must be checked live.
-No counters are saved in a BG3 savegame. Existing session directories are refused.
-
-The logged relative staging path is `BaldurRL/H0/<session-guid>/staging`. Per
-[the IO documentation](https://github.com/Norbyte/bg3se/blob/main/Docs/API.md#io),
-the usual absolute root is:
-
-```text
-%LOCALAPPDATA%\Larian Studios\Baldur's Gate 3\Script Extender\
-```
-
-**Verify this root on the actual installation.** It is not the updater cache or
-the `Script Extender Logs` directory. A sequence produces one JSON document in
-`record-00000001.pending`, then `record-00000001.ready` containing its UTF-8 byte
-count and newline. Lua constructs JSON in memory, checks the SaveFile result and
-exact LoadFile readback, and only then writes the marker. It stops on a write or
-serialization failure; there are no retries that reuse sequence numbers.
-
-SE has no documented atomic rename operation ([exported IO functions](https://github.com/Norbyte/bg3se/blob/main/BG3Extender/Lua/Libs/IO.inl)).
-Therefore a small Python publisher is required: it validates marked bytes with
-`integration.serialization.parse_record`, writes a temporary file, and uses
-`os.replace` in the destination directory. A partial/unmarked payload never
-appears as a completed `.json` record to the unchanged Python reader. Staging is
-retained for audit. This is a completion protocol, not a promise of disk durability
-through power loss; verify atomic replacement and IO on a Windows local filesystem.
-
-From the repository root in PowerShell, replace `<session-guid>` with the value
-printed by the collector:
-
-```powershell
-$capture = Join-Path $env:LOCALAPPDATA "Larian Studios\Baldur's Gate 3\Script Extender\BaldurRL\H0\<session-guid>"
-python -m integration.publish "$capture\staging" "$capture\records" --watch
-```
-
-Enter a small combat and perform actions manually. In the SE console, select
-`server`; `!baldurrl_snapshot` takes an extra snapshot, `!baldurrl_stop` stops
-collection, and `!baldurrl_start` starts a **new** namespace. These commands only
-control observation. Save reloads and `reset` also start new directories; switch
-the publisher to the new logged session. Commands must run after a save loads.
-
-Stop collection, then stop the publisher with Ctrl-C and perform a final sweep:
-
-```powershell
-python -m integration.publish "$capture\staging" "$capture\records"
-python -m integration.inspect "$capture\records"
-```
-
-The general inspection command is exactly:
-
-```text
-python -m integration.inspect <directory>
-```
-
-Pass the **records directory of one session**, never the staging directory or
-parent containing several sessions. Keep one publisher per session and a fresh
-destination on a local filesystem. Repeating publication is idempotent; differing
-existing records cause an error. Do not reuse an output directory for another
-session. Inspection reports sequences, gaps, event counts and snapshot intervals.
-Use the raw `.json` files to examine IDs, HP, StoryActionID, and order.
+Offline CI checks Lua with stubbed game APIs, Python on Windows 3.11/3.13 and
+fake-converter packaging. Real Divine packaging, game loading, API availability,
+callback timing and filesystem IO still need the live checks below. The ready
+marker/publication contract is in [BG3_INTEGRATION.md](../../docs/BG3_INTEGRATION.md).
 
 ## Observed facts and limitations
 
@@ -233,10 +183,15 @@ UsingSpellAtPosition is outside this minimal H0 subscription set.
 
 ## Offline validation
 
+Install the pinned minimal manifest and use this environment's Python:
+
 ```text
-python -m pip install pytest lupa
-python -m pytest tests/test_bg3_h0_lua.py tests/test_integration_publish.py tests/test_integration_*.py
+python -m pip install -r requirements-harness-test.txt
+python -m pytest tests/test_bg3_h0_lua.py tests/test_integration_publish.py
 ```
+
+The Windows workflow also runs every integration test and the preflight,
+session-runner and trial tests. The root README gives the pinned full-suite setup.
 
 `test_bg3_h0_lua.py` uses the **real Lua 5.4 runtime** in `lupa.lua54`, loading the
 actual mod scripts with stubbed Ext/Osiris calls and a real temporary filesystem.
@@ -247,7 +202,7 @@ Lupa is unavailable; a skip is not Lua validation. Its metadata/layout test and
 `test_integration_publish.py` are **Python/static-only** tests; they do not execute
 Lua. No tests emulate engine timing or prove an installed SE version works.
 
-## Windows live-verification checklist (all pending)
+## Live-verification acceptance checks (all pending)
 
 - [ ] Record BG3/SE versions; confirm updater, console, package activation, server
   bootstrap, all 12 listener registrations, and session GUID generation.
@@ -268,7 +223,19 @@ Lua. No tests emulate engine timing or prove an installed SE version works.
 - [ ] Reload save, `reset`, stop/start; confirm new directories begin at sequence 1,
   no overwrites, contiguous sequences within each session, and no mixed sessions.
 
-Unresolved blockers: no Windows game installation, untested mod packaging/loading,
-actual extender API/signature availability, output-root/IO behavior, and real event
-ordering/snapshot completeness. Richer resource/ability/participant/legality facts
-remain deferred to later verified observation work.
+- [ ] Compare selected host and enemy component dumps: HP/max HP, armor class,
+  position, alive/dead/downed state. HP=0 alone does not establish death.
+- [ ] Identify Action/Bonus Action/Movement/slot resource IDs and Second Wind /
+  Action Surge availability; compare SpellBook, HasSpell and visible UI abilities.
+- [ ] Compare candidate legality to enabled UI actions, including range, LOS and
+  status restrictions; an absent/unknown result never becomes LEGAL.
+- [ ] For future command trials, establish capture-after-terminal-result timing,
+  excluding queued old snapshots. Acceptance and callback start are insufficient.
+
+Unresolved blockers: untested packaging/loading, installed API/signature support,
+output-root/IO behavior, event ordering and snapshot completeness. Resource,
+ability, participant and legality enrichment remains separate verified work.
+Keep unique live captures under one ignored/external session archive; record its
+location, game/SE/code versions and retention condition in the results summary.
+Inspect anomalies before summarizing or retiring evidence; preserve unresolved
+examples rather than retaining duplicate raw bundles indefinitely.
