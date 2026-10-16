@@ -13,7 +13,8 @@ from evaluation.evaluate import evaluate, write_run_card
 
 @pytest.mark.parametrize(
     ("stage", "action_count", "observation_count"),
-    [("m0", 4, 7), ("m1a", 4, 12), ("m1b", 5, 18), ("m2", 6, 19)],
+    [("m0", 4, 7), ("m1a", 4, 12), ("m1b", 5, 18), ("m2", 6, 19), ("m3", 6, 26), ("m4", 7, 32),
+     ("m5", 11, 63), ("m6", 13, 75)],
 )
 def test_stage_metadata_and_policies_match_spaces(stage: str, action_count: int, observation_count: int) -> None:
     env = make_env(stage)
@@ -46,7 +47,7 @@ def test_stage_heuristics_choose_documented_priorities() -> None:
     assert M2HeuristicAgent().choose_action(m2_obs, np.array([True, True, False, False, True, True])) == 1
 
 
-@pytest.mark.parametrize("stage", ["m1a", "m1b", "m2"])
+@pytest.mark.parametrize("stage", ["m1a", "m1b", "m2", "m3", "m4", "m5", "m6"])
 def test_evaluation_reproducible_and_stage_traces(stage: str, tmp_path) -> None:
     seeds = [31, 32, 33]
     first = evaluate(make_heuristic_agent(stage), seeds, trace_path=tmp_path / "episodes.jsonl", stage=stage)
@@ -63,9 +64,17 @@ def test_evaluation_reproducible_and_stage_traces(stage: str, tmp_path) -> None:
             assert step["action_mask"][step["action_index"]]
             assert step["action"] == card["action_names"][step["action_index"]]
             assert "semantic_action" in step and "target_index" in step
-    if stage in ("m1b", "m2"):
+    if stage in ("m1b", "m2", "m3", "m4", "m5", "m6"):
         assert "target_attack_counts" in first.as_dict()
         assert "first_kill_rates" in first.as_dict()
-    if stage == "m2":
+    if stage in ("m2", "m3", "m4", "m5", "m6"):
         assert "cleave_use_rate" in first.as_dict()
         assert "mean_living_enemies_at_cleave" in first.as_dict()
+    # Role-aware kill order is reported only for stages whose env reports roles.
+    assert ("first_kill_role_rates" in first.as_dict()) == (stage in ("m5", "m6"))
+    for result in first.results:
+        if stage in ("m5", "m6"):
+            assert set(result.kill_order_roles) <= {"BRUTE", "ARCHER", "HEALER"}
+            assert len(result.kill_order_roles) == 3 if result.won else len(result.kill_order_roles) < 3
+        else:
+            assert result.kill_order_roles is None and "kill_order_roles" not in result.as_dict()

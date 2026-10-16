@@ -1,0 +1,5392 @@
+{
+  "confirmation": {
+    "m5": {
+      "split_focus": {
+        "n": 4000,
+        "first_rate": 0.7845,
+        "second_rate": 0.56075,
+        "difference": 0.22375,
+        "paired_se": 0.008975891378103229,
+        "ci95": [
+          0.20615725289891768,
+          0.24134274710108233
+        ],
+        "simultaneous_ci": [
+          0.19780508220407933,
+          0.24969491779592068
+        ],
+        "first_only": 1192,
+        "second_only": 297,
+        "mcnemar_p": 5.181499941000493e-127,
+        "bonferroni_p": 6.735949923300641e-126
+      },
+      "healer_first": {
+        "n": 4000,
+        "first_rate": 0.7845,
+        "second_rate": 0.744,
+        "difference": 0.0405,
+        "paired_se": 0.007347001572616342,
+        "ci95": [
+          0.02609987691767197,
+          0.05490012308232803
+        ],
+        "simultaneous_ci": [
+          0.01926340701793208,
+          0.06173659298206792
+        ],
+        "first_only": 516,
+        "second_only": 354,
+        "mcnemar_p": 4.408460584625008e-08,
+        "bonferroni_p": 5.73099876001251e-07
+      },
+      "surge_round2": {
+        "n": 4000,
+        "first_rate": 0.7845,
+        "second_rate": 0.6675,
+        "difference": 0.117,
+        "paired_se": 0.009635920440761494,
+        "ci95": [
+          0.09811359593610748,
+          0.13588640406389255
+        ],
+        "simultaneous_ci": [
+          0.08914726056807307,
+          0.14485273943192695
+        ],
+        "first_only": 1004,
+        "second_only": 536,
+        "mcnemar_p": 3.822200880438815e-33,
+        "bonferroni_p": 4.968861144570459e-32
+      },
+      "sw10": {
+        "n": 4000,
+        "first_rate": 0.7845,
+        "second_rate": 0.768,
+        "difference": 0.0165,
+        "paired_se": 0.003928841616699798,
+        "ci95": [
+          0.008799470431268396,
+          0.024200529568731605
+        ],
+        "simultaneous_ci": [
+          0.005143637886802414,
+          0.027856362113197586
+        ],
+        "first_only": 157,
+        "second_only": 91,
+        "mcnemar_p": 3.320153525801407e-05,
+        "bonferroni_p": 0.0004316199583541829
+      },
+      "cleave2": {
+        "n": 4000,
+        "first_rate": 0.7845,
+        "second_rate": 0.77475,
+        "difference": 0.00975,
+        "paired_se": 0.003696911029872195,
+        "ci95": [
+          0.0025040543814504974,
+          0.0169959456185495
+        ],
+        "simultaneous_ci": [
+          -0.0009359640706943818,
+          0.020435964070694382
+        ],
+        "first_only": 129,
+        "second_only": 90,
+        "mcnemar_p": 0.010072669086907828,
+        "bonferroni_p": 0.13094469812980175
+      },
+      "trip_threat": {
+        "n": 4000,
+        "first_rate": 0.7845,
+        "second_rate": 0.76325,
+        "difference": 0.02125,
+        "paired_se": 0.007311838012345439,
+        "ci95": [
+          0.006918797495802941,
+          0.035581202504197065
+        ],
+        "simultaneous_ci": [
+          0.00011504769541020518,
+          0.0423849523045898
+        ],
+        "first_only": 471,
+        "second_only": 386,
+        "mcnemar_p": 0.004086446018141772,
+        "bonferroni_p": 0.05312379823584303
+      },
+      "dodge": {
+        "n": 4000,
+        "first_rate": 0.7845,
+        "second_rate": 0.7675,
+        "difference": 0.017,
+        "paired_se": 0.00423464674539265,
+        "ci95": [
+          0.008700092379030407,
+          0.025299907620969595
+        ],
+        "simultaneous_ci": [
+          0.004759704626996899,
+          0.029240295373003104
+        ],
+        "first_only": 178,
+        "second_only": 110,
+        "mcnemar_p": 7.339263334098936e-05,
+        "bonferroni_p": 0.0009541042334328617
+      },
+      "no_surge": {
+        "n": 4000,
+        "first_rate": 0.7845,
+        "second_rate": 0.47275,
+        "difference": 0.31175,
+        "paired_se": 0.009914134197660546,
+        "ci95": [
+          0.2923182969725854,
+          0.3311817030274147
+        ],
+        "simultaneous_ci": [
+          0.2830930804874129,
+          0.34040691951258717
+        ],
+        "first_only": 1604,
+        "second_only": 357,
+        "mcnemar_p": 3.602989936534645e-188,
+        "bonferroni_p": 4.683886917495039e-187
+      }
+    },
+    "m6": {
+      "one_diver": {
+        "n": 4000,
+        "first_rate": 0.7975,
+        "second_rate": 0.72975,
+        "difference": 0.06775,
+        "paired_se": 0.006561306810519186,
+        "ci95": [
+          0.0548898386513824,
+          0.0806101613486176
+        ],
+        "simultaneous_ci": [
+          0.04878446681094886,
+          0.08671553318905115
+        ],
+        "first_only": 489,
+        "second_only": 218,
+        "mcnemar_p": 8.35938508245099e-25,
+        "bonferroni_p": 1.0867200607186289e-23
+      },
+      "disengage": {
+        "n": 4000,
+        "first_rate": 0.7975,
+        "second_rate": 0.70575,
+        "difference": 0.09175,
+        "paired_se": 0.007148129707453457,
+        "ci95": [
+          0.07773966577339123,
+          0.10576033422660877
+        ],
+        "simultaneous_ci": [
+          0.07108824844328172,
+          0.11241175155671827
+        ],
+        "first_only": 609,
+        "second_only": 242,
+        "mcnemar_p": 3.0145202776597573e-37,
+        "bonferroni_p": 3.9188763609576845e-36
+      },
+      "dodge": {
+        "n": 4000,
+        "first_rate": 0.7975,
+        "second_rate": 0.76175,
+        "difference": 0.03575,
+        "paired_se": 0.005220133793707404,
+        "ci95": [
+          0.025518537764333486,
+          0.04598146223566651
+        ],
+        "simultaneous_ci": [
+          0.020661142920931123,
+          0.05083885707906887
+        ],
+        "first_only": 292,
+        "second_only": 149,
+        "mcnemar_p": 9.02155369326675e-12,
+        "bonferroni_p": 1.1728019801246774e-10
+      },
+      "hold": {
+        "n": 4000,
+        "first_rate": 0.7975,
+        "second_rate": 0.7775,
+        "difference": 0.02,
+        "paired_se": 0.006821776466474083,
+        "ci95": [
+          0.006629318125710798,
+          0.0333706818742892
+        ],
+        "simultaneous_ci": [
+          0.00028157625920182186,
+          0.039718423740798176
+        ],
+        "first_only": 413,
+        "second_only": 333,
+        "mcnemar_p": 0.003794184335858853,
+        "bonferroni_p": 0.049324396366165084
+      },
+      "dive": {
+        "n": 4000,
+        "first_rate": 0.7975,
+        "second_rate": 0.7795,
+        "difference": 0.018,
+        "paired_se": 0.006035570149269801,
+        "ci95": [
+          0.006170282507431188,
+          0.02982971749256881
+        ],
+        "simultaneous_ci": [
+          0.0005541147081696736,
+          0.03544588529183032
+        ],
+        "first_only": 328,
+        "second_only": 256,
+        "mcnemar_p": 0.003269251426676189,
+        "bonferroni_p": 0.04250026854679046
+      }
+    }
+  },
+  "confirmation_metadata": {
+    "seed_start": 232000,
+    "seed_end": 235999,
+    "family": 13,
+    "cpu_seconds": 155.449906,
+    "wall_seconds": 157.88282150000032,
+    "plan_commit": "e2e25d3",
+    "source_commit": "b082262"
+  },
+  "inventory": [
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m5/healer_first/episodes.jsonl",
+      "bytes": 204073679,
+      "sha256": "342a66d49d159133474431317260272788c0ac120affadcb8659188e0710dcf6",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m5/naive/episodes.jsonl",
+      "bytes": 199394972,
+      "sha256": "f9af051e6dfa3b2aed7a8cd526bdf6d53ea52578504ce54ce9e21947ce0e0e24",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m5/ppo_best_s0/episodes.jsonl",
+      "bytes": 229968418,
+      "sha256": "d16a31c858f18a02151a3c31f2d7e2e4e668651fca0fec8b6676040f6c2889da",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m5/ppo_best_s1/episodes.jsonl",
+      "bytes": 234528074,
+      "sha256": "6d38c5954ca856abb65ed49034ef8b62d452f071326ee052d6763be56308f0ba",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m5/ppo_best_s2/episodes.jsonl",
+      "bytes": 237137322,
+      "sha256": "fb8d7a593f60759c3438cf3795a40b6556afb1615be2aa4c0e1f43ccbe6a5e2c",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m5/ppo_s0/episodes.jsonl",
+      "bytes": 230228384,
+      "sha256": "4fb7eeb9e89b4b3dddf0f8004901334948fe43e84413358674e6e96aa3d32e93",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m5/ppo_s1/episodes.jsonl",
+      "bytes": 235625479,
+      "sha256": "f155553fd74a25543204f29ea1f44474c5438dd427832756f055fd17eaf94412",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m5/ppo_s2/episodes.jsonl",
+      "bytes": 234818561,
+      "sha256": "4470f567eaddc213544adcae12eb0d56ad298b94b01c00a011b1d75d2496aadb",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m5/random/episodes.jsonl",
+      "bytes": 217267136,
+      "sha256": "44fa144c55dc7a1c200fe640f7f6f3a879fad87eb9a930d0f6173266cb828a66",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m5/trip_focus/episodes.jsonl",
+      "bytes": 220014022,
+      "sha256": "a2c38055448a0714929e1be0c0555380ca1c83054efb17c8195562775c30c73e",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m5/tuned/episodes.jsonl",
+      "bytes": 218820087,
+      "sha256": "df2b73a1d763210623f8b6f91557a4106c06169ea578ed61315181c514559535",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m6/adaptive/episodes.jsonl",
+      "bytes": 240127764,
+      "sha256": "e90226f6be681a4cf9a909d76a746feacc41fd4180ab60e58e4bcb31408f5041",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m6/dive_all/episodes.jsonl",
+      "bytes": 239265154,
+      "sha256": "ad3cbe2dd80843dcdb4f4a3a217b098e1b1160818ae15bba653582d3a8306ae3",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m6/hold/episodes.jsonl",
+      "bytes": 238436278,
+      "sha256": "ba79cab9886932624abd8b9c1ac2892a02b8b8971cd340313180b56b0b527379",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m6/naive/episodes.jsonl",
+      "bytes": 210721855,
+      "sha256": "4d7aa236f9ffc280fdd0b809d14c8c39a7e0db966ccb2842011a847a50b44f0e",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m6/ppo_best_s0/episodes.jsonl",
+      "bytes": 264263310,
+      "sha256": "c41b8c36d7c84ba308fdc7b0c1f28e1d207cf974dfca62eb001eb2e4a7ab99c2",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m6/ppo_best_s1/episodes.jsonl",
+      "bytes": 254555820,
+      "sha256": "c6be04d951bc47a12d353c9219d5d1bda2022f1705ed26c79e85805b63c5d089",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m6/ppo_best_s2/episodes.jsonl",
+      "bytes": 258529976,
+      "sha256": "8be5c92706130284a119a16841de17dcc043debd26f502f1f51deee54ba1bc25",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m6/ppo_s0/episodes.jsonl",
+      "bytes": 256647700,
+      "sha256": "0f54dea8d2e4d427171c3756f402a00c473808c7e1f329beb50ff3cc2a13f7fe",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m6/ppo_s1/episodes.jsonl",
+      "bytes": 260525192,
+      "sha256": "fbbd99f486436e04632492a52083245738fd6a9558680bbf48aab4673c0164d0",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m6/ppo_s2/episodes.jsonl",
+      "bytes": 254549754,
+      "sha256": "a525068613bb5d1302d5ba5c0c3890f18459321ce6fdb202963d094fba9f87d7",
+      "episodes": 5000
+    },
+    {
+      "path": "/Users/vrk93/PycharmProjects/BaldurRL-worktrees/decision-stages/runs/v2/m6/random/episodes.jsonl",
+      "bytes": 235628236,
+      "sha256": "190318ba69836fcf5ad4fb367d12bdfc80591319c0e096540b86100b2521bb58",
+      "episodes": 5000
+    }
+  ],
+  "historical_local": {
+    "m5": [
+      {
+        "kind": [
+          "TRIP",
+          "ATTACK"
+        ],
+        "count": 11310,
+        "weighted_mean_difference": 0.015259933134394341,
+        "approximate_95pct_ci": [
+          0.008240141163136887,
+          0.022279725105651793
+        ],
+        "sample_count": 36
+      },
+      {
+        "kind": [
+          "CLEAVE",
+          "ATTACK"
+        ],
+        "count": 10028,
+        "weighted_mean_difference": 0.0012442699503889113,
+        "approximate_95pct_ci": [
+          -0.014936660661850376,
+          0.0174252005626282
+        ],
+        "sample_count": 36
+      },
+      {
+        "kind": [
+          "ACTION_SURGE",
+          "TRIP"
+        ],
+        "count": 8400,
+        "weighted_mean_difference": 0.0015967571924603175,
+        "approximate_95pct_ci": [
+          -0.0014314645680950024,
+          0.004624978953015637
+        ],
+        "sample_count": 36
+      },
+      {
+        "kind": [
+          "TRIP",
+          "CLEAVE"
+        ],
+        "count": 6652,
+        "weighted_mean_difference": 0.026951407353991277,
+        "approximate_95pct_ci": [
+          0.0181527282837219,
+          0.035750086424260655
+        ],
+        "sample_count": 36
+      },
+      {
+        "kind": [
+          "CLEAVE",
+          "ACTION_SURGE"
+        ],
+        "count": 6476,
+        "weighted_mean_difference": 0.0,
+        "approximate_95pct_ci": [
+          0.0,
+          0.0
+        ],
+        "sample_count": 24
+      },
+      {
+        "kind": [
+          "TRIP_ENEMY_0",
+          "other TRIP"
+        ],
+        "count": 5375,
+        "weighted_mean_difference": -0.005100881177325581,
+        "approximate_95pct_ci": [
+          -0.015359390680209334,
+          0.005157628325558172
+        ],
+        "sample_count": 36
+      }
+    ],
+    "m6": [
+      {
+        "kind": [
+          "CLEAVE",
+          "ATTACK"
+        ],
+        "count": 34360,
+        "weighted_mean_difference": -0.010176436365413998,
+        "approximate_95pct_ci": [
+          -0.031628833072068124,
+          0.011275960341240125
+        ],
+        "sample_count": 36
+      },
+      {
+        "kind": [
+          "TRIP",
+          "ATTACK"
+        ],
+        "count": 12336,
+        "weighted_mean_difference": 0.009370275250874811,
+        "approximate_95pct_ci": [
+          0.003663844533938381,
+          0.015076705967811242
+        ],
+        "sample_count": 36
+      },
+      {
+        "kind": [
+          "ADVANCE",
+          "ATTACK"
+        ],
+        "count": 12298,
+        "weighted_mean_difference": -0.007326402476520574,
+        "approximate_95pct_ci": [
+          -0.029967686127005344,
+          0.015314881173964198
+        ],
+        "sample_count": 36
+      },
+      {
+        "kind": [
+          "TRIP_ENEMY_1",
+          "other TRIP"
+        ],
+        "count": 7792,
+        "weighted_mean_difference": -0.002846584019801292,
+        "approximate_95pct_ci": [
+          -0.01843124270813375,
+          0.012738074668531166
+        ],
+        "sample_count": 36
+      },
+      {
+        "kind": [
+          "ATTACK_ENEMY_1",
+          "other ATTACK"
+        ],
+        "count": 7773,
+        "weighted_mean_difference": -0.005104035168478494,
+        "approximate_95pct_ci": [
+          -0.0169310743993531,
+          0.006723004062396111
+        ],
+        "sample_count": 36
+      },
+      {
+        "kind": [
+          "ADVANCE",
+          "TRIP"
+        ],
+        "count": 6802,
+        "weighted_mean_difference": 0.001493820942676174,
+        "approximate_95pct_ci": [
+          -0.004436471500341435,
+          0.007424113385693783
+        ],
+        "sample_count": 36
+      }
+    ]
+  },
+  "m2_exact_expected": {
+    "optimal": 0.7178768290982612,
+    "heuristic": 0.6602696136873379
+  },
+  "stages": {
+    "m5": {
+      "runs": {
+        "healer_first": {
+          "win_rate": 0.7386,
+          "first_kills": {
+            "HEALER": 4637,
+            "ARCHER": 160,
+            "null": 203
+          },
+          "full_and_partial_kill_order_counts": {
+            "HEALER>ARCHER>BRUTE": 3629,
+            "ARCHER>HEALER>BRUTE": 64,
+            "HEALER>ARCHER": 808,
+            "NONE": 203,
+            "HEALER": 200,
+            "ARCHER": 51,
+            "ARCHER>HEALER": 45
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "surge": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "wind": {
+              "ratio": 0.09879175550817342,
+              "ci95": [
+                0.09475444826284188,
+                0.10282906275350495
+              ]
+            },
+            "trip": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.14974652483190032,
+            "ci95": [
+              0.14804483582215336,
+              0.15144821384164728
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.7386,
+            "second_rate": 0.7852,
+            "difference": -0.0466,
+            "paired_se": 0.007083482416483358,
+            "ci95": [
+              -0.06048362553630739,
+              -0.03271637446369262
+            ],
+            "simultaneous_ci": [
+              -0.060483370421430135,
+              -0.03271662957856987
+            ],
+            "first_only": 516,
+            "second_only": 749,
+            "mcnemar_p": 6.110717156618035e-11,
+            "bonferroni_p": 6.110717156618035e-11
+          }
+        },
+        "naive": {
+          "win_rate": 0.6144,
+          "first_kills": {
+            "ARCHER": 3156,
+            "HEALER": 1564,
+            "null": 280
+          },
+          "full_and_partial_kill_order_counts": {
+            "ARCHER>HEALER": 617,
+            "ARCHER>HEALER>BRUTE": 2096,
+            "HEALER>ARCHER": 411,
+            "HEALER": 195,
+            "HEALER>ARCHER>BRUTE": 954,
+            "ARCHER": 421,
+            "NONE": 280,
+            "ARCHER>BRUTE>HEALER": 20,
+            "ARCHER>BRUTE": 2,
+            "HEALER>BRUTE>ARCHER": 2,
+            "HEALER>BRUTE": 2
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "surge": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "wind": {
+              "ratio": 0.1483953163865801,
+              "ci95": [
+                0.14363464761283037,
+                0.15315598516032983
+              ]
+            },
+            "trip": {
+              "ratio": 0.8826872130882323,
+              "ci95": [
+                0.880922087051159,
+                0.8844523391253055
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.12268796265464005,
+            "ci95": [
+              0.12100334050537076,
+              0.12437258480390934
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.6144,
+            "second_rate": 0.7852,
+            "difference": -0.1708,
+            "paired_se": 0.008626723368186453,
+            "ci95": [
+              -0.18770837780164545,
+              -0.15389162219835456
+            ],
+            "simultaneous_ci": [
+              -0.18770806710623553,
+              -0.1538919328937645
+            ],
+            "first_only": 576,
+            "second_only": 1430,
+            "mcnemar_p": 1.968525307793793e-83,
+            "bonferroni_p": 1.968525307793793e-83
+          }
+        },
+        "ppo_best_s0": {
+          "win_rate": 0.7478,
+          "first_kills": {
+            "ARCHER": 3630,
+            "HEALER": 1235,
+            "null": 132,
+            "BRUTE": 3
+          },
+          "full_and_partial_kill_order_counts": {
+            "ARCHER>HEALER>BRUTE": 2672,
+            "HEALER>ARCHER>BRUTE": 940,
+            "ARCHER": 289,
+            "ARCHER>BRUTE>HEALER": 119,
+            "ARCHER>HEALER": 542,
+            "NONE": 132,
+            "HEALER>ARCHER": 218,
+            "HEALER": 67,
+            "ARCHER>BRUTE": 8,
+            "HEALER>BRUTE>ARCHER": 5,
+            "BRUTE>HEALER>ARCHER": 2,
+            "BRUTE>ARCHER>HEALER": 1,
+            "HEALER>BRUTE": 5
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.00022045413551916948,
+              "ci95": [
+                0.0,
+                0.0004718942936259529
+              ]
+            },
+            "surge": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "wind": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "trip": {
+              "ratio": 0.00014028899533038058,
+              "ci95": [
+                1.0042343725444357e-05,
+                0.0002705356469353168
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.13345479995939158,
+            "ci95": [
+              0.13184662217409562,
+              0.13506297774468753
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.7478,
+            "second_rate": 0.7852,
+            "difference": -0.0374,
+            "paired_se": 0.007228464438567014,
+            "ci95": [
+              -0.05156779029959135,
+              -0.02323220970040866
+            ],
+            "simultaneous_ci": [
+              -0.05156752996311989,
+              -0.023232470036880115
+            ],
+            "first_only": 563,
+            "second_only": 750,
+            "mcnemar_p": 2.7265679986504663e-07,
+            "bonferroni_p": 2.7265679986504663e-07
+          }
+        },
+        "ppo_best_s1": {
+          "win_rate": 0.7664,
+          "first_kills": {
+            "ARCHER": 3879,
+            "HEALER": 1024,
+            "null": 94,
+            "BRUTE": 3
+          },
+          "full_and_partial_kill_order_counts": {
+            "ARCHER>HEALER>BRUTE": 2980,
+            "HEALER>ARCHER>BRUTE": 792,
+            "ARCHER>HEALER": 591,
+            "HEALER>ARCHER": 163,
+            "ARCHER>BRUTE": 6,
+            "ARCHER": 253,
+            "HEALER": 58,
+            "NONE": 94,
+            "HEALER>BRUTE>ARCHER": 8,
+            "ARCHER>BRUTE>HEALER": 49,
+            "HEALER>BRUTE": 3,
+            "BRUTE>ARCHER>HEALER": 3
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 3.877321546275833e-05,
+              "ci95": [
+                0.0,
+                0.00011475980912533318
+              ]
+            },
+            "surge": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "wind": {
+              "ratio": 0.0006397580551355124,
+              "ci95": [
+                0.0003244674683733409,
+                0.0009550486418976839
+              ]
+            },
+            "trip": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.14265492049880873,
+            "ci95": [
+              0.14098364854770726,
+              0.1443261924499102
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.7664,
+            "second_rate": 0.7852,
+            "difference": -0.0188,
+            "paired_se": 0.007596107698712156,
+            "ci95": [
+              -0.033688371089475824,
+              -0.0039116289105241755
+            ],
+            "simultaneous_ci": [
+              -0.033688097512163256,
+              -0.003911902487836747
+            ],
+            "first_only": 675,
+            "second_only": 769,
+            "mcnemar_p": 0.014362210460666098,
+            "bonferroni_p": 0.014362210460666098
+          }
+        },
+        "ppo_best_s2": {
+          "win_rate": 0.7328,
+          "first_kills": {
+            "ARCHER": 4309,
+            "HEALER": 596,
+            "null": 94,
+            "BRUTE": 1
+          },
+          "full_and_partial_kill_order_counts": {
+            "ARCHER>HEALER>BRUTE": 3079,
+            "HEALER>ARCHER>BRUTE": 418,
+            "ARCHER>HEALER": 646,
+            "ARCHER>BRUTE>HEALER": 163,
+            "ARCHER": 412,
+            "HEALER>ARCHER": 109,
+            "NONE": 94,
+            "HEALER": 64,
+            "ARCHER>BRUTE": 9,
+            "HEALER>BRUTE>ARCHER": 4,
+            "HEALER>BRUTE": 1,
+            "BRUTE": 1
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.0017837620116232234,
+              "ci95": [
+                0.0012617244288704705,
+                0.0023057995943759763
+              ]
+            },
+            "surge": {
+              "ratio": 0.0002109826035253275,
+              "ci95": [
+                7.557132332897785e-05,
+                0.0003463938837216772
+              ]
+            },
+            "wind": {
+              "ratio": 0.00019180236684120683,
+              "ci95": [
+                5.121105087743498e-05,
+                0.0003323936828049787
+              ]
+            },
+            "trip": {
+              "ratio": 1.9180236684120683e-05,
+              "ci95": [
+                0.0,
+                5.677787325694578e-05
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.13188380223000698,
+            "ci95": [
+              0.13027473429681968,
+              0.13349287016319428
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.7328,
+            "second_rate": 0.7852,
+            "difference": -0.0524,
+            "paired_se": 0.007809164142782617,
+            "ci95": [
+              -0.06770596171985394,
+              -0.037094038280146076
+            ],
+            "simultaneous_ci": [
+              -0.06770568046921553,
+              -0.03709431953078447
+            ],
+            "first_only": 638,
+            "second_only": 900,
+            "mcnemar_p": 2.5407597914613224e-11,
+            "bonferroni_p": 2.5407597914613224e-11
+          }
+        },
+        "ppo_s0": {
+          "win_rate": 0.749,
+          "first_kills": {
+            "ARCHER": 3852,
+            "HEALER": 1024,
+            "null": 121,
+            "BRUTE": 3
+          },
+          "full_and_partial_kill_order_counts": {
+            "ARCHER>HEALER>BRUTE": 2849,
+            "ARCHER>HEALER": 589,
+            "ARCHER": 311,
+            "HEALER>ARCHER>BRUTE": 812,
+            "HEALER>ARCHER": 142,
+            "NONE": 121,
+            "ARCHER>BRUTE>HEALER": 76,
+            "HEALER": 58,
+            "ARCHER>BRUTE": 27,
+            "HEALER>BRUTE": 4,
+            "HEALER>BRUTE>ARCHER": 8,
+            "BRUTE": 3
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.018613326983371037,
+              "ci95": [
+                0.015380531479734186,
+                0.021846122487007888
+              ]
+            },
+            "surge": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "wind": {
+              "ratio": 0.0008135889193157915,
+              "ci95": [
+                0.00046460284650555526,
+                0.0011625749921260278
+              ]
+            },
+            "trip": {
+              "ratio": 5.953089653530182e-05,
+              "ci95": [
+                0.0,
+                0.00012687539683904525
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.13045649493682726,
+            "ci95": [
+              0.12883042017312113,
+              0.1320825697005334
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.749,
+            "second_rate": 0.7852,
+            "difference": -0.0362,
+            "paired_se": 0.007084345388948649,
+            "ci95": [
+              -0.05008531696233935,
+              -0.02231468303766065
+            ],
+            "simultaneous_ci": [
+              -0.050085061816381754,
+              -0.022314938183618252
+            ],
+            "first_only": 540,
+            "second_only": 721,
+            "mcnemar_p": 3.829410538397323e-07,
+            "bonferroni_p": 3.829410538397323e-07
+          }
+        },
+        "ppo_s1": {
+          "win_rate": 0.7468,
+          "first_kills": {
+            "ARCHER": 3562,
+            "HEALER": 1354,
+            "null": 80,
+            "BRUTE": 4
+          },
+          "full_and_partial_kill_order_counts": {
+            "ARCHER>HEALER>BRUTE": 2636,
+            "ARCHER>HEALER": 587,
+            "ARCHER": 256,
+            "HEALER>ARCHER>BRUTE": 1006,
+            "ARCHER>BRUTE>HEALER": 78,
+            "HEALER": 90,
+            "HEALER>ARCHER": 237,
+            "HEALER>BRUTE>ARCHER": 12,
+            "NONE": 80,
+            "ARCHER>BRUTE": 5,
+            "HEALER>BRUTE": 9,
+            "BRUTE>HEALER>ARCHER": 1,
+            "BRUTE>ARCHER>HEALER": 1,
+            "BRUTE": 2
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.0010331764435770865,
+              "ci95": [
+                0.00016819450654303677,
+                0.0018981583806111364
+              ]
+            },
+            "surge": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "wind": {
+              "ratio": 0.00648605211801171,
+              "ci95": [
+                0.004969752973191999,
+                0.008002351262831421
+              ]
+            },
+            "trip": {
+              "ratio": 0.004802357172923124,
+              "ci95": [
+                0.003581142483152013,
+                0.006023571862694235
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.14365258325937671,
+            "ci95": [
+              0.14199498710225547,
+              0.14531017941649796
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.7468,
+            "second_rate": 0.7852,
+            "difference": -0.0384,
+            "paired_se": 0.00794214728777477,
+            "ci95": [
+              -0.05396660868403855,
+              -0.02283339131596145
+            ],
+            "simultaneous_ci": [
+              -0.053966322643951015,
+              -0.02283367735604898
+            ],
+            "first_only": 696,
+            "second_only": 888,
+            "mcnemar_p": 1.5502455877909184e-06,
+            "bonferroni_p": 1.5502455877909184e-06
+          }
+        },
+        "ppo_s2": {
+          "win_rate": 0.7356,
+          "first_kills": {
+            "ARCHER": 4186,
+            "HEALER": 679,
+            "null": 134,
+            "BRUTE": 1
+          },
+          "full_and_partial_kill_order_counts": {
+            "ARCHER>HEALER>BRUTE": 3011,
+            "ARCHER": 377,
+            "HEALER>ARCHER": 130,
+            "ARCHER>BRUTE>HEALER": 171,
+            "ARCHER>HEALER": 613,
+            "HEALER>ARCHER>BRUTE": 491,
+            "NONE": 134,
+            "HEALER": 50,
+            "ARCHER>BRUTE": 14,
+            "HEALER>BRUTE": 4,
+            "HEALER>BRUTE>ARCHER": 4,
+            "BRUTE>HEALER>ARCHER": 1
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.001787657391574693,
+              "ci95": [
+                0.0011487973244177665,
+                0.0024265174587316195
+              ]
+            },
+            "surge": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "wind": {
+              "ratio": 0.00643168039794808,
+              "ci95": [
+                0.005114999877049924,
+                0.007748360918846236
+              ]
+            },
+            "trip": {
+              "ratio": 0.0005246385823099643,
+              "ci95": [
+                0.00021300221647199897,
+                0.0008362749481479296
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.12626255598747405,
+            "ci95": [
+              0.12466199884701101,
+              0.12786311312793708
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.7356,
+            "second_rate": 0.7852,
+            "difference": -0.0496,
+            "paired_se": 0.00774596462641024,
+            "ci95": [
+              -0.06478209066776407,
+              -0.03441790933223593
+            ],
+            "simultaneous_ci": [
+              -0.06478181169328531,
+              -0.03441818830671468
+            ],
+            "first_only": 632,
+            "second_only": 880,
+            "mcnemar_p": 1.9393894672479194e-10,
+            "bonferroni_p": 1.9393894672479194e-10
+          }
+        },
+        "random": {
+          "win_rate": 0.067,
+          "first_kills": {
+            "null": 2568,
+            "ARCHER": 1430,
+            "HEALER": 955,
+            "BRUTE": 47
+          },
+          "full_and_partial_kill_order_counts": {
+            "NONE": 2568,
+            "ARCHER": 912,
+            "ARCHER>HEALER": 300,
+            "HEALER": 575,
+            "HEALER>ARCHER": 244,
+            "ARCHER>HEALER>BRUTE": 144,
+            "ARCHER>BRUTE>HEALER": 58,
+            "HEALER>BRUTE>ARCHER": 21,
+            "HEALER>BRUTE": 19,
+            "HEALER>ARCHER>BRUTE": 96,
+            "BRUTE>ARCHER": 4,
+            "BRUTE": 24,
+            "BRUTE>ARCHER>HEALER": 11,
+            "ARCHER>BRUTE": 16,
+            "BRUTE>HEALER": 3,
+            "BRUTE>HEALER>ARCHER": 5
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.23809437649272636,
+              "ci95": [
+                0.23452308135949623,
+                0.24166567162595648
+              ]
+            },
+            "surge": {
+              "ratio": 0.164181805022798,
+              "ci95": [
+                0.15944654717593662,
+                0.16891706286965938
+              ]
+            },
+            "wind": {
+              "ratio": 0.10212057610190345,
+              "ci95": [
+                0.09904819737564506,
+                0.10519295482816184
+              ]
+            },
+            "trip": {
+              "ratio": 0.12926105522182818,
+              "ci95": [
+                0.12564447804141407,
+                0.1328776324022423
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.04864752126086094,
+            "ci95": [
+              0.04690877860855126,
+              0.05038626391317062
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.067,
+            "second_rate": 0.7852,
+            "difference": -0.7182,
+            "paired_se": 0.006711688412930866,
+            "ci95": [
+              -0.7313549092893444,
+              -0.7050450907106555
+            ],
+            "simultaneous_ci": [
+              -0.7313546675647993,
+              -0.7050453324352006
+            ],
+            "first_only": 57,
+            "second_only": 3648,
+            "mcnemar_p": 0.0,
+            "bonferroni_p": 0.0
+          }
+        },
+        "trip_focus": {
+          "win_rate": 0.7662,
+          "first_kills": {
+            "ARCHER": 3444,
+            "HEALER": 1471,
+            "null": 85
+          },
+          "full_and_partial_kill_order_counts": {
+            "ARCHER>HEALER>BRUTE": 2680,
+            "HEALER>ARCHER>BRUTE": 1126,
+            "ARCHER": 209,
+            "ARCHER>BRUTE>HEALER": 22,
+            "ARCHER>HEALER": 533,
+            "HEALER>ARCHER": 261,
+            "NONE": 85,
+            "HEALER": 80,
+            "HEALER>BRUTE>ARCHER": 3,
+            "HEALER>BRUTE": 1
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "surge": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "wind": {
+              "ratio": 0.10203649604132266,
+              "ci95": [
+                0.09808724156351403,
+                0.10598575051913128
+              ]
+            },
+            "trip": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.134723578261951,
+            "ci95": [
+              0.13310762364329234,
+              0.13633953288060965
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.7662,
+            "second_rate": 0.7852,
+            "difference": -0.019,
+            "paired_se": 0.004341839508095942,
+            "ci95": [
+              -0.027510005435868047,
+              -0.010489994564131954
+            ],
+            "simultaneous_ci": [
+              -0.02750984906252115,
+              -0.01049015093747885
+            ],
+            "first_only": 189,
+            "second_only": 284,
+            "mcnemar_p": 1.4524151675353397e-05,
+            "bonferroni_p": 1.4524151675353397e-05
+          }
+        },
+        "tuned": {
+          "win_rate": 0.7852,
+          "first_kills": {
+            "ARCHER": 3436,
+            "HEALER": 1474,
+            "null": 90
+          },
+          "full_and_partial_kill_order_counts": {
+            "ARCHER>HEALER>BRUTE": 2746,
+            "HEALER>ARCHER>BRUTE": 1156,
+            "ARCHER": 195,
+            "ARCHER>BRUTE>HEALER": 23,
+            "ARCHER>HEALER": 472,
+            "HEALER>ARCHER": 236,
+            "NONE": 90,
+            "HEALER": 80,
+            "HEALER>BRUTE>ARCHER": 1,
+            "HEALER>BRUTE": 1
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "surge": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "wind": {
+              "ratio": 0.06617079653605419,
+              "ci95": [
+                0.06270766219854951,
+                0.06963393087355887
+              ]
+            },
+            "trip": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.13762834724468695,
+            "ci95": [
+              0.13601388465592817,
+              0.13924280983344572
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.7852,
+            "second_rate": 0.7852,
+            "difference": 0.0,
+            "paired_se": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "simultaneous_ci": [
+              0.0,
+              0.0
+            ],
+            "first_only": 0,
+            "second_only": 0,
+            "mcnemar_p": 1.0,
+            "bonferroni_p": 1
+          }
+        }
+      },
+      "pooled_strata": {
+        "durable_brute=0": {
+          "ppo_minus_baseline": {
+            "n": 367,
+            "first_rate": 0.8247048138056311,
+            "second_rate": 0.8392370572207084,
+            "difference": -0.01453224341507722,
+            "paired_se": 0.019911775908102038,
+            "ci95": [
+              -0.05355932419495721,
+              0.024494837364802773
+            ],
+            "simultaneous_ci": [
+              -0.05355860706318953,
+              0.024494120233035096
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.1607629427792916
+        },
+        "durable_brute=1": {
+          "ppo_minus_baseline": {
+            "n": 4633,
+            "first_rate": 0.7373911792215266,
+            "second_rate": 0.7809194906108353,
+            "difference": -0.043528311389308606,
+            "paired_se": 0.006251426851040174,
+            "ci95": [
+              -0.05578110801734735,
+              -0.031275514761269864
+            ],
+            "simultaneous_ci": [
+              -0.055780882869333984,
+              -0.03127573990928323
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.21908050938916468
+        },
+        "soft_brute=0": {
+          "ppo_minus_baseline": {
+            "n": 4633,
+            "first_rate": 0.7373911792215266,
+            "second_rate": 0.7809194906108353,
+            "difference": -0.043528311389308606,
+            "paired_se": 0.006251426851040174,
+            "ci95": [
+              -0.05578110801734735,
+              -0.031275514761269864
+            ],
+            "simultaneous_ci": [
+              -0.055780882869333984,
+              -0.03127573990928323
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.21908050938916468
+        },
+        "soft_brute=1": {
+          "ppo_minus_baseline": {
+            "n": 367,
+            "first_rate": 0.8247048138056311,
+            "second_rate": 0.8392370572207084,
+            "difference": -0.01453224341507722,
+            "paired_se": 0.019911775908102038,
+            "ci95": [
+              -0.05355932419495721,
+              0.024494837364802773
+            ],
+            "simultaneous_ci": [
+              -0.05355860706318953,
+              0.024494120233035096
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.1607629427792916
+        },
+        "low_hp_archer=0": {
+          "ppo_minus_baseline": {
+            "n": 1467,
+            "first_rate": 0.7027948193592365,
+            "second_rate": 0.7368779822767553,
+            "difference": -0.03408316291751877,
+            "paired_se": 0.011560233149519006,
+            "ci95": [
+              -0.056741219890576025,
+              -0.011425105944461517
+            ],
+            "simultaneous_ci": [
+              -0.05674080354346205,
+              -0.011425522291575486
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.2631220177232447
+        },
+        "low_hp_archer=1": {
+          "ppo_minus_baseline": {
+            "n": 3533,
+            "first_rate": 0.7608264930653835,
+            "second_rate": 0.8052646476082649,
+            "difference": -0.044438154542881435,
+            "paired_se": 0.006961201141447192,
+            "ci95": [
+              -0.05808210878011793,
+              -0.03079420030564494
+            ],
+            "simultaneous_ci": [
+              -0.058081858069257045,
+              -0.030794451016505825
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.19473535239173512
+        },
+        "weakest_ge2=0": {
+          "ppo_minus_baseline": {
+            "n": 3687,
+            "first_rate": 0.7516499412349696,
+            "second_rate": 0.7903444534852183,
+            "difference": -0.03869451225024864,
+            "paired_se": 0.006868538214072463,
+            "ci95": [
+              -0.05215684714983067,
+              -0.025232177350666615
+            ],
+            "simultaneous_ci": [
+              -0.05215659977626773,
+              -0.025232424724229555
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.2096555465147817
+        },
+        "weakest_ge2=1": {
+          "ppo_minus_baseline": {
+            "n": 1313,
+            "first_rate": 0.7217567910637218,
+            "second_rate": 0.7707539984767707,
+            "difference": -0.048997207413049026,
+            "paired_se": 0.012069855483748105,
+            "ci95": [
+              -0.07265412416119531,
+              -0.025340290664902742
+            ],
+            "simultaneous_ci": [
+              -0.07265368945979858,
+              -0.025340725366299475
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.22924600152322927
+        },
+        "total_hp_ge60=0": {
+          "ppo_minus_baseline": {
+            "n": 4054,
+            "first_rate": 0.7645124157210984,
+            "second_rate": 0.8001973359644795,
+            "difference": -0.03568492024338105,
+            "paired_se": 0.006457048802985857,
+            "ci95": [
+              -0.04834073589723333,
+              -0.023029104589528775
+            ],
+            "simultaneous_ci": [
+              -0.048340503343650795,
+              -0.02302933714311131
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.1998026640355205
+        },
+        "total_hp_ge60=1": {
+          "ppo_minus_baseline": {
+            "n": 946,
+            "first_rate": 0.6550387596899225,
+            "second_rate": 0.7209302325581395,
+            "difference": -0.06589147286821709,
+            "paired_se": 0.015196522048597132,
+            "ci95": [
+              -0.09567665608346747,
+              -0.03610628965296671
+            ],
+            "simultaneous_ci": [
+              -0.09567610877373631,
+              -0.036106836962697876
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.2790697674418605
+        }
+      },
+      "pooled_ppo_minus_baseline": {
+        "n": 5000,
+        "first_rate": 0.7438,
+        "second_rate": 0.7852,
+        "difference": -0.04140000000000002,
+        "paired_se": 0.005974567616384608,
+        "ci95": [
+          -0.05311015252811385,
+          -0.029689847471886188
+        ],
+        "simultaneous_ci": [
+          -0.05310993735131317,
+          -0.02969006264868687
+        ],
+        "first_only": null,
+        "second_only": null,
+        "mcnemar_p": null,
+        "bonferroni_p": null
+      },
+      "all_tested_policies_lost": 24
+    },
+    "m6": {
+      "runs": {
+        "adaptive": {
+          "win_rate": 0.806,
+          "first_kills": {
+            "BRUTE": 2349,
+            "HEALER": 724,
+            "ARCHER": 1624,
+            "null": 303
+          },
+          "full_and_partial_kill_order_counts": {
+            "BRUTE>ARCHER>HEALER": 1654,
+            "HEALER>BRUTE>ARCHER": 7,
+            "ARCHER>HEALER>BRUTE": 1246,
+            "HEALER": 35,
+            "NONE": 303,
+            "BRUTE>HEALER>ARCHER": 546,
+            "HEALER>ARCHER>BRUTE": 549,
+            "HEALER>ARCHER": 132,
+            "ARCHER>HEALER": 249,
+            "BRUTE": 101,
+            "BRUTE>ARCHER": 26,
+            "ARCHER": 100,
+            "ARCHER>BRUTE>HEALER": 28,
+            "BRUTE>HEALER": 22,
+            "ARCHER>BRUTE": 1,
+            "HEALER>BRUTE": 1
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "surge": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "wind": {
+              "ratio": 0.08164324226769237,
+              "ci95": [
+                0.07766408787969817,
+                0.08562239665568658
+              ]
+            },
+            "trip": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.1458487944047788,
+            "ci95": [
+              0.14413698114854331,
+              0.14756060766101428
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.806,
+            "second_rate": 0.806,
+            "difference": 0.0,
+            "paired_se": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "simultaneous_ci": [
+              0.0,
+              0.0
+            ],
+            "first_only": 0,
+            "second_only": 0,
+            "mcnemar_p": 1.0,
+            "bonferroni_p": 1
+          }
+        },
+        "dive_all": {
+          "win_rate": 0.7936,
+          "first_kills": {
+            "HEALER": 1489,
+            "ARCHER": 3410,
+            "null": 86,
+            "BRUTE": 15
+          },
+          "full_and_partial_kill_order_counts": {
+            "HEALER>ARCHER": 234,
+            "HEALER>BRUTE>ARCHER": 32,
+            "ARCHER>HEALER>BRUTE": 2635,
+            "HEALER": 80,
+            "NONE": 86,
+            "ARCHER>HEALER": 417,
+            "ARCHER>BRUTE>HEALER": 150,
+            "ARCHER": 205,
+            "HEALER>ARCHER>BRUTE": 1140,
+            "BRUTE>ARCHER>HEALER": 8,
+            "BRUTE": 2,
+            "HEALER>BRUTE": 3,
+            "ARCHER>BRUTE": 3,
+            "BRUTE>HEALER>ARCHER": 3,
+            "BRUTE>ARCHER": 1,
+            "BRUTE>HEALER": 1
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "surge": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "wind": {
+              "ratio": 0.06483869398082819,
+              "ci95": [
+                0.061238345483106305,
+                0.06843904247855007
+              ]
+            },
+            "trip": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.15162152853965782,
+            "ci95": [
+              0.14991962196090153,
+              0.15332343511841412
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.7936,
+            "second_rate": 0.806,
+            "difference": -0.0124,
+            "paired_se": 0.005467652791226695,
+            "ci95": [
+              -0.02311659947080432,
+              -0.0016834005291956767
+            ],
+            "simultaneous_ci": [
+              -0.02311640255077422,
+              -0.00168359744922578
+            ],
+            "first_only": 343,
+            "second_only": 405,
+            "mcnemar_p": 0.025656590300423797,
+            "bonferroni_p": 0.025656590300423797
+          }
+        },
+        "hold": {
+          "win_rate": 0.7888,
+          "first_kills": {
+            "BRUTE": 4278,
+            "null": 722
+          },
+          "full_and_partial_kill_order_counts": {
+            "BRUTE>ARCHER>HEALER": 2960,
+            "BRUTE>HEALER>ARCHER": 984,
+            "NONE": 722,
+            "BRUTE": 206,
+            "BRUTE>ARCHER": 78,
+            "BRUTE>HEALER": 50
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "surge": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "wind": {
+              "ratio": 0.0920295632312698,
+              "ci95": [
+                0.08797355515299395,
+                0.09608557130954566
+              ]
+            },
+            "trip": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.13580119968181853,
+            "ci95": [
+              0.13403810559990445,
+              0.1375642937637326
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.7888,
+            "second_rate": 0.806,
+            "difference": -0.0172,
+            "paired_se": 0.0059218110041704165,
+            "ci95": [
+              -0.028806749568174014,
+              -0.005593250431825984
+            ],
+            "simultaneous_ci": [
+              -0.028806536291426987,
+              -0.005593463708573014
+            ],
+            "first_only": 396,
+            "second_only": 482,
+            "mcnemar_p": 0.004097120232229904,
+            "bonferroni_p": 0.004097120232229904
+          }
+        },
+        "naive": {
+          "win_rate": 0.4092,
+          "first_kills": {
+            "BRUTE": 2685,
+            "null": 2315
+          },
+          "full_and_partial_kill_order_counts": {
+            "BRUTE": 436,
+            "NONE": 2315,
+            "BRUTE>HEALER>ARCHER": 500,
+            "BRUTE>ARCHER>HEALER": 1546,
+            "BRUTE>ARCHER": 129,
+            "BRUTE>HEALER": 74
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "surge": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "wind": {
+              "ratio": 0.165663618256195,
+              "ci95": [
+                0.1607133262527832,
+                0.1706139102596068
+              ]
+            },
+            "trip": {
+              "ratio": 0.870403289713221,
+              "ci95": [
+                0.8683381152011922,
+                0.8724684642252498
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.09808924218061103,
+            "ci95": [
+              0.09595252257540779,
+              0.10022596178581428
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.4092,
+            "second_rate": 0.806,
+            "difference": -0.3968,
+            "paired_se": 0.008734140429476065,
+            "ci95": [
+              -0.4139189152417731,
+              -0.37968108475822687
+            ],
+            "simultaneous_ci": [
+              -0.41391860067768826,
+              -0.3796813993223117
+            ],
+            "first_only": 355,
+            "second_only": 2339,
+            "mcnemar_p": 0.0,
+            "bonferroni_p": 0.0
+          }
+        },
+        "ppo_best_s0": {
+          "win_rate": 0.7516,
+          "first_kills": {
+            "BRUTE": 2766,
+            "null": 419,
+            "ARCHER": 1519,
+            "HEALER": 296
+          },
+          "full_and_partial_kill_order_counts": {
+            "BRUTE>ARCHER>HEALER": 2258,
+            "BRUTE>HEALER>ARCHER": 280,
+            "NONE": 419,
+            "ARCHER>BRUTE>HEALER": 533,
+            "HEALER": 58,
+            "ARCHER>HEALER>BRUTE": 501,
+            "BRUTE>ARCHER": 72,
+            "BRUTE": 143,
+            "ARCHER": 296,
+            "HEALER>ARCHER>BRUTE": 175,
+            "ARCHER>BRUTE": 38,
+            "ARCHER>HEALER": 151,
+            "HEALER>BRUTE>ARCHER": 11,
+            "HEALER>ARCHER": 49,
+            "BRUTE>HEALER": 13,
+            "HEALER>BRUTE": 3
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "surge": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "wind": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "trip": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.13697694865989687,
+            "ci95": [
+              0.13525070976472675,
+              0.138703187555067
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.7516,
+            "second_rate": 0.806,
+            "difference": -0.0544,
+            "paired_se": 0.007718811048911727,
+            "ci95": [
+              -0.06952886965586698,
+              -0.039271130344133015
+            ],
+            "simultaneous_ci": [
+              -0.06952859165933682,
+              -0.03927140834066318
+            ],
+            "first_only": 616,
+            "second_only": 888,
+            "mcnemar_p": 2.4414691070140634e-12,
+            "bonferroni_p": 2.4414691070140634e-12
+          }
+        },
+        "ppo_best_s1": {
+          "win_rate": 0.7606,
+          "first_kills": {
+            "ARCHER": 1472,
+            "BRUTE": 2485,
+            "HEALER": 622,
+            "null": 421
+          },
+          "full_and_partial_kill_order_counts": {
+            "ARCHER": 225,
+            "ARCHER>HEALER>BRUTE": 543,
+            "BRUTE>ARCHER>HEALER": 1332,
+            "ARCHER>BRUTE>HEALER": 553,
+            "HEALER>ARCHER>BRUTE": 302,
+            "HEALER": 101,
+            "NONE": 421,
+            "BRUTE>HEALER>ARCHER": 922,
+            "ARCHER>HEALER": 106,
+            "HEALER>BRUTE>ARCHER": 151,
+            "ARCHER>BRUTE": 45,
+            "BRUTE>ARCHER": 58,
+            "HEALER>ARCHER": 51,
+            "BRUTE": 150,
+            "BRUTE>HEALER": 23,
+            "HEALER>BRUTE": 17
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.00445410791184666,
+              "ci95": [
+                0.0033553612216875054,
+                0.005552854602005815
+              ]
+            },
+            "surge": {
+              "ratio": 0.0021109516169889385,
+              "ci95": [
+                0.001635825616071525,
+                0.002586077617906352
+              ]
+            },
+            "wind": {
+              "ratio": 0.004559655492696107,
+              "ci95": [
+                0.003706772067134314,
+                0.0054125389182579
+              ]
+            },
+            "trip": {
+              "ratio": 0.005277379042472346,
+              "ci95": [
+                0.004309407150556198,
+                0.006245350934388495
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.14385510693466944,
+            "ci95": [
+              0.14208569998536302,
+              0.14562451388397585
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.7606,
+            "second_rate": 0.806,
+            "difference": -0.0454,
+            "paired_se": 0.0074698679898347,
+            "ci95": [
+              -0.06004094126007602,
+              -0.03075905873992399
+            ],
+            "simultaneous_ci": [
+              -0.06004067222934462,
+              -0.030759327770655383
+            ],
+            "first_only": 589,
+            "second_only": 816,
+            "mcnemar_p": 1.5211239485807438e-09,
+            "bonferroni_p": 1.5211239485807438e-09
+          }
+        },
+        "ppo_best_s2": {
+          "win_rate": 0.7526,
+          "first_kills": {
+            "BRUTE": 1439,
+            "HEALER": 1653,
+            "null": 317,
+            "ARCHER": 1591
+          },
+          "full_and_partial_kill_order_counts": {
+            "BRUTE>ARCHER>HEALER": 1171,
+            "BRUTE>HEALER>ARCHER": 119,
+            "HEALER>BRUTE>ARCHER": 282,
+            "HEALER>ARCHER>BRUTE": 1008,
+            "NONE": 317,
+            "ARCHER>HEALER>BRUTE": 724,
+            "ARCHER>BRUTE>HEALER": 459,
+            "ARCHER": 224,
+            "ARCHER>HEALER": 166,
+            "BRUTE": 104,
+            "HEALER>ARCHER": 242,
+            "BRUTE>ARCHER": 31,
+            "ARCHER>BRUTE": 18,
+            "HEALER": 107,
+            "BRUTE>HEALER": 14,
+            "HEALER>BRUTE": 14
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.01772082878953108,
+              "ci95": [
+                0.015381231016161255,
+                0.020060426562900906
+              ]
+            },
+            "surge": {
+              "ratio": 0.023928361714621257,
+              "ci95": [
+                0.02136428702881679,
+                0.026492436400425725
+              ]
+            },
+            "wind": {
+              "ratio": 0.0030198808824763025,
+              "ci95": [
+                0.002310242271928509,
+                0.003729519493024096
+              ]
+            },
+            "trip": {
+              "ratio": 0.014176663031624863,
+              "ci95": [
+                0.012425876847433032,
+                0.015927449215816694
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.1471967465550755,
+            "ci95": [
+              0.14539767352455019,
+              0.14899581958560082
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.7526,
+            "second_rate": 0.806,
+            "difference": -0.0534,
+            "paired_se": 0.007670818489004823,
+            "ci95": [
+              -0.06843480423844946,
+              -0.03836519576155055
+            ],
+            "simultaneous_ci": [
+              -0.06843452797039341,
+              -0.03836547202960659
+            ],
+            "first_only": 609,
+            "second_only": 876,
+            "mcnemar_p": 4.4855467724218955e-12,
+            "bonferroni_p": 4.4855467724218955e-12
+          }
+        },
+        "ppo_s0": {
+          "win_rate": 0.7574,
+          "first_kills": {
+            "BRUTE": 2396,
+            "HEALER": 1208,
+            "null": 338,
+            "ARCHER": 1058
+          },
+          "full_and_partial_kill_order_counts": {
+            "BRUTE>ARCHER>HEALER": 1676,
+            "HEALER>ARCHER": 210,
+            "HEALER": 116,
+            "NONE": 338,
+            "BRUTE>HEALER>ARCHER": 532,
+            "ARCHER>BRUTE>HEALER": 266,
+            "BRUTE": 127,
+            "ARCHER>HEALER": 79,
+            "HEALER>ARCHER>BRUTE": 831,
+            "ARCHER": 242,
+            "ARCHER>HEALER>BRUTE": 437,
+            "BRUTE>ARCHER": 43,
+            "HEALER>BRUTE>ARCHER": 45,
+            "HEALER>BRUTE": 6,
+            "ARCHER>BRUTE": 34,
+            "BRUTE>HEALER": 18
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.05186219356958075,
+              "ci95": [
+                0.04594860189424616,
+                0.05777578524491534
+              ]
+            },
+            "surge": {
+              "ratio": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "wind": {
+              "ratio": 0.003921488112347555,
+              "ci95": [
+                0.0030601299743493924,
+                0.0047828462503457176
+              ]
+            },
+            "trip": {
+              "ratio": 0.006446844331293886,
+              "ci95": [
+                0.005029665489712613,
+                0.007864023172875158
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.14588674697090132,
+            "ci95": [
+              0.14412972823003067,
+              0.14764376571177196
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.7574,
+            "second_rate": 0.806,
+            "difference": -0.0486,
+            "paired_se": 0.007588090920960617,
+            "ci95": [
+              -0.0634726582050828,
+              -0.03372734179491719
+            ],
+            "simultaneous_ci": [
+              -0.06347238491649818,
+              -0.03372761508350182
+            ],
+            "first_only": 604,
+            "second_only": 847,
+            "mcnemar_p": 1.920730712105515e-10,
+            "bonferroni_p": 1.920730712105515e-10
+          }
+        },
+        "ppo_s1": {
+          "win_rate": 0.7536,
+          "first_kills": {
+            "ARCHER": 1847,
+            "BRUTE": 2341,
+            "null": 437,
+            "HEALER": 375
+          },
+          "full_and_partial_kill_order_counts": {
+            "ARCHER>HEALER>BRUTE": 750,
+            "BRUTE>ARCHER>HEALER": 1222,
+            "ARCHER>BRUTE>HEALER": 645,
+            "NONE": 437,
+            "ARCHER": 279,
+            "HEALER>BRUTE>ARCHER": 109,
+            "BRUTE>HEALER>ARCHER": 904,
+            "BRUTE": 131,
+            "ARCHER>BRUTE": 66,
+            "ARCHER>HEALER": 107,
+            "HEALER>ARCHER>BRUTE": 138,
+            "HEALER": 85,
+            "BRUTE>ARCHER": 59,
+            "BRUTE>HEALER": 25,
+            "HEALER>ARCHER": 33,
+            "HEALER>BRUTE": 10
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.004000659902664357,
+              "ci95": [
+                0.002930791622530244,
+                0.005070528182798469
+              ]
+            },
+            "surge": {
+              "ratio": 0.001031097913057824,
+              "ci95": [
+                0.0006942541043755831,
+                0.0013679417217400648
+              ]
+            },
+            "wind": {
+              "ratio": 0.002247793450466056,
+              "ci95": [
+                0.0017354248238435955,
+                0.0027601620770885166
+              ]
+            },
+            "trip": {
+              "ratio": 0.011094613544502186,
+              "ci95": [
+                0.009837598937028102,
+                0.01235162815197627
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.14109117178019648,
+            "ci95": [
+              0.13933980941450236,
+              0.1428425341458906
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.7536,
+            "second_rate": 0.806,
+            "difference": -0.0524,
+            "paired_se": 0.007690427591188091,
+            "ci95": [
+              -0.06747323807872865,
+              -0.037326761921271344
+            ],
+            "simultaneous_ci": [
+              -0.06747296110444179,
+              -0.037327038895558225
+            ],
+            "first_only": 615,
+            "second_only": 877,
+            "mcnemar_p": 1.25203284960285e-11,
+            "bonferroni_p": 1.25203284960285e-11
+          }
+        },
+        "ppo_s2": {
+          "win_rate": 0.7452,
+          "first_kills": {
+            "BRUTE": 1398,
+            "HEALER": 1625,
+            "null": 354,
+            "ARCHER": 1623
+          },
+          "full_and_partial_kill_order_counts": {
+            "BRUTE>ARCHER>HEALER": 823,
+            "BRUTE>HEALER>ARCHER": 432,
+            "HEALER>BRUTE>ARCHER": 452,
+            "HEALER>ARCHER>BRUTE": 818,
+            "NONE": 354,
+            "ARCHER>HEALER>BRUTE": 653,
+            "ARCHER>BRUTE>HEALER": 548,
+            "ARCHER": 241,
+            "ARCHER>HEALER": 145,
+            "HEALER>ARCHER": 202,
+            "BRUTE": 100,
+            "ARCHER>BRUTE": 36,
+            "HEALER": 130,
+            "HEALER>BRUTE": 23,
+            "BRUTE>ARCHER": 40,
+            "BRUTE>HEALER": 3
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 8.665886736860349e-05,
+              "ci95": [
+                0.0,
+                0.00022091305637151517
+              ]
+            },
+            "surge": {
+              "ratio": 0.0005416179210537719,
+              "ci95": [
+                0.00029807375115466,
+                0.0007851620909528837
+              ]
+            },
+            "wind": {
+              "ratio": 0.00036830018631656483,
+              "ci95": [
+                0.00012453938876083638,
+                0.0006120609838722933
+              ]
+            },
+            "trip": {
+              "ratio": 0.020971445903202046,
+              "ci95": [
+                0.01880647622766502,
+                0.02313641557873907
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.14708427033234542,
+            "ci95": [
+              0.14527051654178702,
+              0.14889802412290382
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.7452,
+            "second_rate": 0.806,
+            "difference": -0.0608,
+            "paired_se": 0.007760974071835875,
+            "ci95": [
+              -0.07601150918079831,
+              -0.04558849081920169
+            ],
+            "simultaneous_ci": [
+              -0.07601122966574748,
+              -0.045588770334252515
+            ],
+            "first_only": 610,
+            "second_only": 914,
+            "mcnemar_p": 6.857104798622252e-15,
+            "bonferroni_p": 6.857104798622252e-15
+          }
+        },
+        "random": {
+          "win_rate": 0.062,
+          "first_kills": {
+            "null": 3324,
+            "BRUTE": 235,
+            "HEALER": 575,
+            "ARCHER": 866
+          },
+          "full_and_partial_kill_order_counts": {
+            "NONE": 3324,
+            "BRUTE>ARCHER>HEALER": 55,
+            "BRUTE>ARCHER": 22,
+            "HEALER": 356,
+            "HEALER>BRUTE": 20,
+            "ARCHER>HEALER>BRUTE": 70,
+            "ARCHER": 595,
+            "HEALER>ARCHER": 102,
+            "ARCHER>HEALER": 136,
+            "BRUTE": 95,
+            "BRUTE>HEALER>ARCHER": 44,
+            "HEALER>ARCHER>BRUTE": 66,
+            "BRUTE>HEALER": 19,
+            "ARCHER>BRUTE>HEALER": 44,
+            "ARCHER>BRUTE": 21,
+            "HEALER>BRUTE>ARCHER": 31
+          },
+          "end_legal": {
+            "attack": {
+              "ratio": 0.24334729702772792,
+              "ci95": [
+                0.23966506495869205,
+                0.2470295290967638
+              ]
+            },
+            "surge": {
+              "ratio": 0.17751845202473568,
+              "ci95": [
+                0.17227514334380187,
+                0.1827617607056695
+              ]
+            },
+            "wind": {
+              "ratio": 0.1113704368641532,
+              "ci95": [
+                0.10804438076573726,
+                0.11469649296256913
+              ]
+            },
+            "trip": {
+              "ratio": 0.18370237382804708,
+              "ci95": [
+                0.17906583035116957,
+                0.18833891730492458
+              ]
+            }
+          },
+          "expected_overkill": {
+            "ratio": 0.04784805500618456,
+            "ci95": [
+              0.04568265464350673,
+              0.05001345536886239
+            ]
+          },
+          "ppo_minus_baseline": {
+            "n": 5000,
+            "first_rate": 0.062,
+            "second_rate": 0.806,
+            "difference": -0.744,
+            "paired_se": 0.006451443576816353,
+            "ci95": [
+              -0.75664482941056,
+              -0.73135517058944
+            ],
+            "simultaneous_ci": [
+              -0.7566445970588523,
+              -0.7313554029411476
+            ],
+            "first_only": 44,
+            "second_only": 3764,
+            "mcnemar_p": 0.0,
+            "bonferroni_p": 0.0
+          }
+        }
+      },
+      "pooled_strata": {
+        "durable_brute=0": {
+          "ppo_minus_baseline": {
+            "n": 2613,
+            "first_rate": 0.7925755836203597,
+            "second_rate": 0.8415614236509759,
+            "difference": -0.04898584003061617,
+            "paired_se": 0.007487327080633507,
+            "ci95": [
+              -0.06366100110865784,
+              -0.0343106789525745
+            ],
+            "simultaneous_ci": [
+              -0.06366073144912927,
+              -0.03431094861210308
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.15843857634902414
+        },
+        "durable_brute=1": {
+          "ppo_minus_baseline": {
+            "n": 2387,
+            "first_rate": 0.70772238514174,
+            "second_rate": 0.7670716380393799,
+            "difference": -0.05934925289764002,
+            "paired_se": 0.009822339513884596,
+            "ci95": [
+              -0.07860103834485382,
+              -0.040097467450426215
+            ],
+            "simultaneous_ci": [
+              -0.07860068458877849,
+              -0.04009782120650156
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.23292836196062006
+        },
+        "soft_brute=0": {
+          "ppo_minus_baseline": {
+            "n": 2387,
+            "first_rate": 0.70772238514174,
+            "second_rate": 0.7670716380393799,
+            "difference": -0.05934925289764002,
+            "paired_se": 0.009822339513884596,
+            "ci95": [
+              -0.07860103834485382,
+              -0.040097467450426215
+            ],
+            "simultaneous_ci": [
+              -0.07860068458877849,
+              -0.04009782120650156
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.23292836196062006
+        },
+        "soft_brute=1": {
+          "ppo_minus_baseline": {
+            "n": 2613,
+            "first_rate": 0.7925755836203597,
+            "second_rate": 0.8415614236509759,
+            "difference": -0.04898584003061617,
+            "paired_se": 0.007487327080633507,
+            "ci95": [
+              -0.06366100110865784,
+              -0.0343106789525745
+            ],
+            "simultaneous_ci": [
+              -0.06366073144912927,
+              -0.03431094861210308
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.15843857634902414
+        },
+        "low_hp_archer=0": {
+          "ppo_minus_baseline": {
+            "n": 1467,
+            "first_rate": 0.719609179731879,
+            "second_rate": 0.7791411042944786,
+            "difference": -0.05953192456259943,
+            "paired_se": 0.011765216175150384,
+            "ci95": [
+              -0.08259174826589419,
+              -0.036472100859304676
+            ],
+            "simultaneous_ci": [
+              -0.08259132453622227,
+              -0.036472524588976596
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.22085889570552142
+        },
+        "low_hp_archer=1": {
+          "ppo_minus_baseline": {
+            "n": 3533,
+            "first_rate": 0.765543919237664,
+            "second_rate": 0.8171525615624116,
+            "difference": -0.05160864232474764,
+            "paired_se": 0.007130605836005495,
+            "ci95": [
+              -0.06558462976331841,
+              -0.03763265488617687
+            ],
+            "simultaneous_ci": [
+              -0.06558437295126954,
+              -0.03763291169822575
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.18284743843758844
+        },
+        "weakest_ge2=0": {
+          "ppo_minus_baseline": {
+            "n": 3687,
+            "first_rate": 0.7594250067805804,
+            "second_rate": 0.817195551939246,
+            "difference": -0.057770545158665615,
+            "paired_se": 0.007007552389154972,
+            "ci95": [
+              -0.07150534784140936,
+              -0.04403574247592187
+            ],
+            "simultaneous_ci": [
+              -0.07150509546118697,
+              -0.04403599485614426
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.18280444806075402
+        },
+        "weakest_ge2=1": {
+          "ppo_minus_baseline": {
+            "n": 1313,
+            "first_rate": 0.7314039096217313,
+            "second_rate": 0.7745620715917746,
+            "difference": -0.043158161970043185,
+            "paired_se": 0.01239508106001849,
+            "ci95": [
+              -0.06745252084767943,
+              -0.018863803092406945
+            ],
+            "simultaneous_ci": [
+              -0.06745207443313397,
+              -0.018864249506952393
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.2254379284082254
+        },
+        "total_hp_ge60=0": {
+          "ppo_minus_baseline": {
+            "n": 4988,
+            "first_rate": 0.7524057738572574,
+            "second_rate": 0.8065356856455493,
+            "difference": -0.05412991178829192,
+            "paired_se": 0.006108058012044426,
+            "ci95": [
+              -0.06610170549189899,
+              -0.042158118084684844
+            ],
+            "simultaneous_ci": [
+              -0.06610148550738032,
+              -0.04215833806920353
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.19346431435445066
+        },
+        "total_hp_ge60=1": {
+          "ppo_minus_baseline": {
+            "n": 12,
+            "first_rate": 0.611111111111111,
+            "second_rate": 0.5833333333333334,
+            "difference": 0.027777777777777762,
+            "paired_se": 0.17627999104067912,
+            "ci95": [
+              -0.31773100466195336,
+              0.37328656021750883
+            ],
+            "simultaneous_ci": [
+              -0.3177246558569966,
+              0.3732802114125522
+            ],
+            "first_only": null,
+            "second_only": null,
+            "mcnemar_p": null,
+            "bonferroni_p": null
+          },
+          "baseline_loss_rate": 0.41666666666666663
+        }
+      },
+      "pooled_ppo_minus_baseline": {
+        "n": 5000,
+        "first_rate": 0.7520666666666667,
+        "second_rate": 0.806,
+        "difference": -0.05393333333333336,
+        "paired_se": 0.006107111394443288,
+        "ci95": [
+          -0.0659032716664422,
+          -0.041963395000224515
+        ],
+        "simultaneous_ci": [
+          -0.06590305171601639,
+          -0.04196361495065033
+        ],
+        "first_only": null,
+        "second_only": null,
+        "mcnemar_p": null,
+        "bonferroni_p": null
+      },
+      "all_tested_policies_lost": 4
+    }
+  },
+  "replay": {
+    "m5": [
+      {
+        "old_encounter_seed": 3004,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 52.0,
+          "brute_attack": 7.0,
+          "brute_durability": 52.0
+        },
+        "wins": 89,
+        "n": 128,
+        "binomial_ci95": [
+          0.6108489916080531,
+          0.7683943848476078
+        ]
+      },
+      {
+        "old_encounter_seed": 3147,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 53.0,
+          "brute_attack": 7.0,
+          "brute_durability": 50.0
+        },
+        "wins": 100,
+        "n": 128,
+        "binomial_ci95": [
+          0.7020157030455345,
+          0.8440947590506169
+        ]
+      },
+      {
+        "old_encounter_seed": 3322,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 59.0,
+          "brute_attack": 6.0,
+          "brute_durability": 49.090909090909086
+        },
+        "wins": 91,
+        "n": 128,
+        "binomial_ci95": [
+          0.6271668442501395,
+          0.7824160023219742
+        ]
+      },
+      {
+        "old_encounter_seed": 3470,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 57.0,
+          "brute_attack": 7.0,
+          "brute_durability": 50.90909090909091
+        },
+        "wins": 98,
+        "n": 128,
+        "binomial_ci95": [
+          0.6851645688917714,
+          0.8306064230879273
+        ]
+      },
+      {
+        "old_encounter_seed": 3662,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 59.0,
+          "brute_attack": 7.0,
+          "brute_durability": 56.0
+        },
+        "wins": 100,
+        "n": 128,
+        "binomial_ci95": [
+          0.7020157030455345,
+          0.8440947590506169
+        ]
+      },
+      {
+        "old_encounter_seed": 3835,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 59.0,
+          "brute_attack": 6.0,
+          "brute_durability": 50.0
+        },
+        "wins": 95,
+        "n": 128,
+        "binomial_ci95": [
+          0.660130807704431,
+          0.8101309791005884
+        ]
+      },
+      {
+        "old_encounter_seed": 4014,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 57.0,
+          "brute_attack": 6.0,
+          "brute_durability": 58.0
+        },
+        "wins": 80,
+        "n": 128,
+        "binomial_ci95": [
+          0.5386400519080884,
+          0.7040757090235344
+        ]
+      },
+      {
+        "old_encounter_seed": 4164,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 54.0,
+          "brute_attack": 5.0,
+          "brute_durability": 52.0
+        },
+        "wins": 106,
+        "n": 128,
+        "binomial_ci95": [
+          0.7534600319269827,
+          0.8836688405185272
+        ]
+      },
+      {
+        "old_encounter_seed": 4379,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 52.0,
+          "brute_attack": 7.0,
+          "brute_durability": 47.272727272727266
+        },
+        "wins": 82,
+        "n": 128,
+        "binomial_ci95": [
+          0.5545225368033344,
+          0.7185326942447414
+        ]
+      },
+      {
+        "old_encounter_seed": 4551,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 56.0,
+          "brute_attack": 6.0,
+          "brute_durability": 53.333333333333336
+        },
+        "wins": 114,
+        "n": 128,
+        "binomial_ci95": [
+          0.8247655486183226,
+          0.9337212042929989
+        ]
+      },
+      {
+        "old_encounter_seed": 4700,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 55.0,
+          "brute_attack": 7.0,
+          "brute_durability": 45.45454545454545
+        },
+        "wins": 87,
+        "n": 128,
+        "binomial_ci95": [
+          0.5946341124452171,
+          0.7542697938939907
+        ]
+      },
+      {
+        "old_encounter_seed": 4819,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 55.0,
+          "brute_attack": 5.0,
+          "brute_durability": 40.0
+        },
+        "wins": 102,
+        "n": 128,
+        "binomial_ci95": [
+          0.7190073141485271,
+          0.8574426180640773
+        ]
+      },
+      {
+        "old_encounter_seed": 4970,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 56.0,
+          "brute_attack": 6.0,
+          "brute_durability": 45.45454545454545
+        },
+        "wins": 95,
+        "n": 128,
+        "binomial_ci95": [
+          0.660130807704431,
+          0.8101309791005884
+        ]
+      },
+      {
+        "old_encounter_seed": 5106,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 52.0,
+          "brute_attack": 6.0,
+          "brute_durability": 58.0
+        },
+        "wins": 110,
+        "n": 128,
+        "binomial_ci95": [
+          0.7886475076210383,
+          0.9091603050573774
+        ]
+      },
+      {
+        "old_encounter_seed": 5302,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 1.0,
+          "total_hp": 62.0,
+          "brute_attack": 5.0,
+          "brute_durability": 56.0
+        },
+        "wins": 100,
+        "n": 128,
+        "binomial_ci95": [
+          0.7020157030455345,
+          0.8440947590506169
+        ]
+      },
+      {
+        "old_encounter_seed": 5471,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 55.0,
+          "brute_attack": 6.0,
+          "brute_durability": 49.090909090909086
+        },
+        "wins": 103,
+        "n": 128,
+        "binomial_ci95": [
+          0.7275592800992087,
+          0.864060387171622
+        ]
+      },
+      {
+        "old_encounter_seed": 5582,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 55.0,
+          "brute_attack": 6.0,
+          "brute_durability": 54.54545454545454
+        },
+        "wins": 98,
+        "n": 128,
+        "binomial_ci95": [
+          0.6851645688917714,
+          0.8306064230879273
+        ]
+      },
+      {
+        "old_encounter_seed": 5713,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 56.0,
+          "brute_attack": 6.0,
+          "brute_durability": 52.72727272727272
+        },
+        "wins": 85,
+        "n": 128,
+        "binomial_ci95": [
+          0.5785182090110383,
+          0.7400462272117168
+        ]
+      },
+      {
+        "old_encounter_seed": 5843,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 48.0,
+          "brute_attack": 5.0,
+          "brute_durability": 48.0
+        },
+        "wins": 115,
+        "n": 128,
+        "binomial_ci95": [
+          0.8339751366963889,
+          0.9396813512731591
+        ]
+      },
+      {
+        "old_encounter_seed": 5976,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 54.0,
+          "brute_attack": 7.0,
+          "brute_durability": 50.0
+        },
+        "wins": 75,
+        "n": 128,
+        "binomial_ci95": [
+          0.49931859141563495,
+          0.6675484942248558
+        ]
+      },
+      {
+        "old_encounter_seed": 6177,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 56.0,
+          "brute_attack": 5.0,
+          "brute_durability": 58.0
+        },
+        "wins": 94,
+        "n": 128,
+        "binomial_ci95": [
+          0.6518470619103658,
+          0.8032449898364271
+        ]
+      },
+      {
+        "old_encounter_seed": 6325,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 58.0,
+          "brute_attack": 5.0,
+          "brute_durability": 54.0
+        },
+        "wins": 108,
+        "n": 128,
+        "binomial_ci95": [
+          0.7709518905710295,
+          0.8965164519909334
+        ]
+      },
+      {
+        "old_encounter_seed": 6510,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 51.0,
+          "brute_attack": 6.0,
+          "brute_durability": 40.0
+        },
+        "wins": 96,
+        "n": 128,
+        "binomial_ci95": [
+          0.6684443704768314,
+          0.8169871513864143
+        ]
+      },
+      {
+        "old_encounter_seed": 6691,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 54.0,
+          "brute_attack": 5.0,
+          "brute_durability": 43.333333333333336
+        },
+        "wins": 100,
+        "n": 128,
+        "binomial_ci95": [
+          0.7020157030455345,
+          0.8440947590506169
+        ]
+      },
+      {
+        "old_encounter_seed": 6875,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 48.0,
+          "brute_attack": 7.0,
+          "brute_durability": 50.0
+        },
+        "wins": 93,
+        "n": 128,
+        "binomial_ci95": [
+          0.6435923144931467,
+          0.7963300021954197
+        ]
+      },
+      {
+        "old_encounter_seed": 7035,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 1.0,
+          "total_hp": 61.0,
+          "brute_attack": 6.0,
+          "brute_durability": 58.18181818181818
+        },
+        "wins": 98,
+        "n": 128,
+        "binomial_ci95": [
+          0.6851645688917714,
+          0.8306064230879273
+        ]
+      },
+      {
+        "old_encounter_seed": 7163,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 1.0,
+          "total_hp": 61.0,
+          "brute_attack": 5.0,
+          "brute_durability": 50.0
+        },
+        "wins": 99,
+        "n": 128,
+        "binomial_ci95": [
+          0.6935732116243924,
+          0.8373675154135327
+        ]
+      },
+      {
+        "old_encounter_seed": 7310,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 54.0,
+          "brute_attack": 7.0,
+          "brute_durability": 45.0
+        },
+        "wins": 104,
+        "n": 128,
+        "binomial_ci95": [
+          0.7361508192928257,
+          0.8706385830362315
+        ]
+      },
+      {
+        "old_encounter_seed": 7504,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 55.0,
+          "brute_attack": 6.0,
+          "brute_durability": 56.0
+        },
+        "wins": 98,
+        "n": 128,
+        "binomial_ci95": [
+          0.6851645688917714,
+          0.8306064230879273
+        ]
+      },
+      {
+        "old_encounter_seed": 7659,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 59.0,
+          "brute_attack": 5.0,
+          "brute_durability": 45.45454545454545
+        },
+        "wins": 105,
+        "n": 128,
+        "binomial_ci95": [
+          0.7447837371324442,
+          0.8771754002548395
+        ]
+      },
+      {
+        "old_encounter_seed": 7821,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 1.0,
+          "total_hp": 61.0,
+          "brute_attack": 5.0,
+          "brute_durability": 58.18181818181818
+        },
+        "wins": 108,
+        "n": 128,
+        "binomial_ci95": [
+          0.7709518905710295,
+          0.8965164519909334
+        ]
+      },
+      {
+        "old_encounter_seed": 7992,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 1.0,
+          "total_hp": 61.0,
+          "brute_attack": 5.0,
+          "brute_durability": 52.72727272727272
+        },
+        "wins": 90,
+        "n": 128,
+        "binomial_ci95": [
+          0.6189947723495539,
+          0.7754183391643332
+        ]
+      },
+      {
+        "old_encounter_seed": 3000,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 57.0,
+          "brute_attack": 6.0,
+          "brute_durability": 43.333333333333336
+        },
+        "wins": 102,
+        "n": 128,
+        "binomial_ci95": [
+          0.7190073141485271,
+          0.8574426180640773
+        ]
+      },
+      {
+        "old_encounter_seed": 3166,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 57.0,
+          "brute_attack": 5.0,
+          "brute_durability": 45.0
+        },
+        "wins": 93,
+        "n": 128,
+        "binomial_ci95": [
+          0.6435923144931467,
+          0.7963300021954197
+        ]
+      },
+      {
+        "old_encounter_seed": 3323,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 54.0,
+          "brute_attack": 7.0,
+          "brute_durability": 64.0
+        },
+        "wins": 91,
+        "n": 128,
+        "binomial_ci95": [
+          0.6271668442501395,
+          0.7824160023219742
+        ]
+      },
+      {
+        "old_encounter_seed": 3490,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 54.0,
+          "brute_attack": 7.0,
+          "brute_durability": 49.090909090909086
+        },
+        "wins": 107,
+        "n": 128,
+        "binomial_ci95": [
+          0.7621819239629298,
+          0.8901166835408066
+        ]
+      },
+      {
+        "old_encounter_seed": 3640,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 55.0,
+          "brute_attack": 6.0,
+          "brute_durability": 40.0
+        },
+        "wins": 111,
+        "n": 128,
+        "binomial_ci95": [
+          0.7975798330550461,
+          0.9153977146815961
+        ]
+      },
+      {
+        "old_encounter_seed": 3802,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 1.0,
+          "total_hp": 61.0,
+          "brute_attack": 6.0,
+          "brute_durability": 52.72727272727272
+        },
+        "wins": 82,
+        "n": 128,
+        "binomial_ci95": [
+          0.5545225368033344,
+          0.7185326942447414
+        ]
+      },
+      {
+        "old_encounter_seed": 3960,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 53.0,
+          "brute_attack": 5.0,
+          "brute_durability": 46.66666666666667
+        },
+        "wins": 122,
+        "n": 128,
+        "binomial_ci95": [
+          0.9015024775490568,
+          0.9783421558280763
+        ]
+      },
+      {
+        "old_encounter_seed": 4120,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 59.0,
+          "brute_attack": 5.0,
+          "brute_durability": 56.36363636363636
+        },
+        "wins": 103,
+        "n": 128,
+        "binomial_ci95": [
+          0.7275592800992087,
+          0.864060387171622
+        ]
+      },
+      {
+        "old_encounter_seed": 4268,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 53.0,
+          "brute_attack": 6.0,
+          "brute_durability": 45.45454545454545
+        },
+        "wins": 90,
+        "n": 128,
+        "binomial_ci95": [
+          0.6189947723495539,
+          0.7754183391643332
+        ]
+      },
+      {
+        "old_encounter_seed": 4426,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 48.0,
+          "brute_attack": 5.0,
+          "brute_durability": 41.66666666666667
+        },
+        "wins": 118,
+        "n": 128,
+        "binomial_ci95": [
+          0.8621530681952095,
+          0.9570126249490177
+        ]
+      },
+      {
+        "old_encounter_seed": 4588,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 1.0,
+          "total_hp": 60.0,
+          "brute_attack": 5.0,
+          "brute_durability": 51.66666666666667
+        },
+        "wins": 105,
+        "n": 128,
+        "binomial_ci95": [
+          0.7447837371324442,
+          0.8771754002548395
+        ]
+      },
+      {
+        "old_encounter_seed": 4756,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 51.0,
+          "brute_attack": 6.0,
+          "brute_durability": 43.63636363636363
+        },
+        "wins": 119,
+        "n": 128,
+        "binomial_ci95": [
+          0.8717651965063937,
+          0.96257023169606
+        ]
+      },
+      {
+        "old_encounter_seed": 4929,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 54.0,
+          "brute_attack": 5.0,
+          "brute_durability": 58.0
+        },
+        "wins": 108,
+        "n": 128,
+        "binomial_ci95": [
+          0.7709518905710295,
+          0.8965164519909334
+        ]
+      },
+      {
+        "old_encounter_seed": 5091,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 57.0,
+          "brute_attack": 7.0,
+          "brute_durability": 58.18181818181818
+        },
+        "wins": 84,
+        "n": 128,
+        "binomial_ci95": [
+          0.5704962778456514,
+          0.7328984233188772
+        ]
+      },
+      {
+        "old_encounter_seed": 5248,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 57.0,
+          "brute_attack": 7.0,
+          "brute_durability": 53.333333333333336
+        },
+        "wins": 110,
+        "n": 128,
+        "binomial_ci95": [
+          0.7886475076210383,
+          0.9091603050573774
+        ]
+      },
+      {
+        "old_encounter_seed": 5400,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 50.0,
+          "brute_attack": 7.0,
+          "brute_durability": 47.272727272727266
+        },
+        "wins": 104,
+        "n": 128,
+        "binomial_ci95": [
+          0.7361508192928257,
+          0.8706385830362315
+        ]
+      },
+      {
+        "old_encounter_seed": 5577,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 1.0,
+          "total_hp": 61.0,
+          "brute_attack": 5.0,
+          "brute_durability": 50.0
+        },
+        "wins": 98,
+        "n": 128,
+        "binomial_ci95": [
+          0.6851645688917714,
+          0.8306064230879273
+        ]
+      },
+      {
+        "old_encounter_seed": 5750,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 55.0,
+          "brute_attack": 6.0,
+          "brute_durability": 54.54545454545454
+        },
+        "wins": 84,
+        "n": 128,
+        "binomial_ci95": [
+          0.5704962778456514,
+          0.7328984233188772
+        ]
+      },
+      {
+        "old_encounter_seed": 5927,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 58.0,
+          "brute_attack": 6.0,
+          "brute_durability": 56.36363636363636
+        },
+        "wins": 117,
+        "n": 128,
+        "binomial_ci95": [
+          0.852659089457387,
+          0.9513368686286138
+        ]
+      },
+      {
+        "old_encounter_seed": 6081,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 55.0,
+          "brute_attack": 5.0,
+          "brute_durability": 56.0
+        },
+        "wins": 99,
+        "n": 128,
+        "binomial_ci95": [
+          0.6935732116243924,
+          0.8373675154135327
+        ]
+      },
+      {
+        "old_encounter_seed": 6238,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 1.0,
+          "total_hp": 63.0,
+          "brute_attack": 5.0,
+          "brute_durability": 52.72727272727272
+        },
+        "wins": 83,
+        "n": 128,
+        "binomial_ci95": [
+          0.5624978389203745,
+          0.7257271271859276
+        ]
+      },
+      {
+        "old_encounter_seed": 6398,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 55.0,
+          "brute_attack": 7.0,
+          "brute_durability": 43.333333333333336
+        },
+        "wins": 111,
+        "n": 128,
+        "binomial_ci95": [
+          0.7975798330550461,
+          0.9153977146815961
+        ]
+      },
+      {
+        "old_encounter_seed": 6557,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 51.0,
+          "brute_attack": 5.0,
+          "brute_durability": 41.66666666666667
+        },
+        "wins": 106,
+        "n": 128,
+        "binomial_ci95": [
+          0.7534600319269827,
+          0.8836688405185272
+        ]
+      },
+      {
+        "old_encounter_seed": 6716,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 59.0,
+          "brute_attack": 5.0,
+          "brute_durability": 62.0
+        },
+        "wins": 120,
+        "n": 128,
+        "binomial_ci95": [
+          0.8815120889557413,
+          0.9679930743049387
+        ]
+      },
+      {
+        "old_encounter_seed": 6867,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 53.0,
+          "brute_attack": 7.0,
+          "brute_durability": 58.0
+        },
+        "wins": 88,
+        "n": 128,
+        "binomial_ci95": [
+          0.6027289441827964,
+          0.7613446972146379
+        ]
+      },
+      {
+        "old_encounter_seed": 7029,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 55.0,
+          "brute_attack": 5.0,
+          "brute_durability": 50.90909090909091
+        },
+        "wins": 115,
+        "n": 128,
+        "binomial_ci95": [
+          0.8339751366963889,
+          0.9396813512731591
+        ]
+      },
+      {
+        "old_encounter_seed": 7203,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 56.0,
+          "brute_attack": 6.0,
+          "brute_durability": 40.0
+        },
+        "wins": 93,
+        "n": 128,
+        "binomial_ci95": [
+          0.6435923144931467,
+          0.7963300021954197
+        ]
+      },
+      {
+        "old_encounter_seed": 7362,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 54.0,
+          "brute_attack": 6.0,
+          "brute_durability": 43.333333333333336
+        },
+        "wins": 84,
+        "n": 128,
+        "binomial_ci95": [
+          0.5704962778456514,
+          0.7328984233188772
+        ]
+      },
+      {
+        "old_encounter_seed": 7517,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 50.0,
+          "brute_attack": 5.0,
+          "brute_durability": 49.090909090909086
+        },
+        "wins": 118,
+        "n": 128,
+        "binomial_ci95": [
+          0.8621530681952095,
+          0.9570126249490177
+        ]
+      },
+      {
+        "old_encounter_seed": 7678,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 54.0,
+          "brute_attack": 5.0,
+          "brute_durability": 45.0
+        },
+        "wins": 113,
+        "n": 128,
+        "binomial_ci95": [
+          0.8156338413466524,
+          0.9276831765064426
+        ]
+      },
+      {
+        "old_encounter_seed": 7841,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 1.0,
+          "total_hp": 61.0,
+          "brute_attack": 7.0,
+          "brute_durability": 64.0
+        },
+        "wins": 59,
+        "n": 128,
+        "binomial_ci95": [
+          0.3769811559809196,
+          0.5471701687279483
+        ]
+      },
+      {
+        "old_encounter_seed": 7999,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 50.0,
+          "brute_attack": 5.0,
+          "brute_durability": 49.090909090909086
+        },
+        "wins": 105,
+        "n": 128,
+        "binomial_ci95": [
+          0.7447837371324442,
+          0.8771754002548395
+        ]
+      }
+    ],
+    "m6": [
+      {
+        "old_encounter_seed": 3007,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 50.0,
+          "brute_attack": 6.0,
+          "brute_durability": 42.0
+        },
+        "wins": 91,
+        "n": 128,
+        "binomial_ci95": [
+          0.6271668442501395,
+          0.7824160023219742
+        ]
+      },
+      {
+        "old_encounter_seed": 3155,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 51.0,
+          "brute_attack": 6.0,
+          "brute_durability": 38.18181818181818
+        },
+        "wins": 103,
+        "n": 128,
+        "binomial_ci95": [
+          0.7275592800992087,
+          0.864060387171622
+        ]
+      },
+      {
+        "old_encounter_seed": 3328,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 56.0,
+          "brute_attack": 7.0,
+          "brute_durability": 50.0
+        },
+        "wins": 90,
+        "n": 128,
+        "binomial_ci95": [
+          0.6189947723495539,
+          0.7754183391643332
+        ]
+      },
+      {
+        "old_encounter_seed": 3481,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 59.0,
+          "brute_attack": 7.0,
+          "brute_durability": 52.0
+        },
+        "wins": 80,
+        "n": 128,
+        "binomial_ci95": [
+          0.5386400519080884,
+          0.7040757090235344
+        ]
+      },
+      {
+        "old_encounter_seed": 3675,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 57.0,
+          "brute_attack": 7.0,
+          "brute_durability": 45.45454545454545
+        },
+        "wins": 55,
+        "n": 128,
+        "binomial_ci95": [
+          0.3472117133263662,
+          0.5162606711495958
+        ]
+      },
+      {
+        "old_encounter_seed": 3816,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 52.0,
+          "brute_attack": 6.0,
+          "brute_durability": 36.66666666666667
+        },
+        "wins": 105,
+        "n": 128,
+        "binomial_ci95": [
+          0.7447837371324442,
+          0.8771754002548395
+        ]
+      },
+      {
+        "old_encounter_seed": 3973,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 51.0,
+          "brute_attack": 5.0,
+          "brute_durability": 41.81818181818181
+        },
+        "wins": 99,
+        "n": 128,
+        "binomial_ci95": [
+          0.6935732116243924,
+          0.8373675154135327
+        ]
+      },
+      {
+        "old_encounter_seed": 4146,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 55.0,
+          "brute_attack": 7.0,
+          "brute_durability": 47.272727272727266
+        },
+        "wins": 99,
+        "n": 128,
+        "binomial_ci95": [
+          0.6935732116243924,
+          0.8373675154135327
+        ]
+      },
+      {
+        "old_encounter_seed": 4274,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 48.0,
+          "brute_attack": 5.0,
+          "brute_durability": 38.333333333333336
+        },
+        "wins": 113,
+        "n": 128,
+        "binomial_ci95": [
+          0.8156338413466524,
+          0.9276831765064426
+        ]
+      },
+      {
+        "old_encounter_seed": 4463,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 54.0,
+          "brute_attack": 7.0,
+          "brute_durability": 43.333333333333336
+        },
+        "wins": 102,
+        "n": 128,
+        "binomial_ci95": [
+          0.7190073141485271,
+          0.8574426180640773
+        ]
+      },
+      {
+        "old_encounter_seed": 4580,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 51.0,
+          "brute_attack": 7.0,
+          "brute_durability": 38.18181818181818
+        },
+        "wins": 102,
+        "n": 128,
+        "binomial_ci95": [
+          0.7190073141485271,
+          0.8574426180640773
+        ]
+      },
+      {
+        "old_encounter_seed": 4755,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 51.0,
+          "brute_attack": 7.0,
+          "brute_durability": 40.0
+        },
+        "wins": 98,
+        "n": 128,
+        "binomial_ci95": [
+          0.6851645688917714,
+          0.8306064230879273
+        ]
+      },
+      {
+        "old_encounter_seed": 4924,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 47.0,
+          "brute_attack": 6.0,
+          "brute_durability": 41.81818181818181
+        },
+        "wins": 93,
+        "n": 128,
+        "binomial_ci95": [
+          0.6435923144931467,
+          0.7963300021954197
+        ]
+      },
+      {
+        "old_encounter_seed": 5093,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 56.0,
+          "brute_attack": 7.0,
+          "brute_durability": 43.333333333333336
+        },
+        "wins": 101,
+        "n": 128,
+        "binomial_ci95": [
+          0.7104932846593583,
+          0.8507869124950196
+        ]
+      },
+      {
+        "old_encounter_seed": 5254,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 56.0,
+          "brute_attack": 6.0,
+          "brute_durability": 43.63636363636363
+        },
+        "wins": 84,
+        "n": 128,
+        "binomial_ci95": [
+          0.5704962778456514,
+          0.7328984233188772
+        ]
+      },
+      {
+        "old_encounter_seed": 5457,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 55.0,
+          "brute_attack": 7.0,
+          "brute_durability": 41.66666666666667
+        },
+        "wins": 103,
+        "n": 128,
+        "binomial_ci95": [
+          0.7275592800992087,
+          0.864060387171622
+        ]
+      },
+      {
+        "old_encounter_seed": 5613,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 53.0,
+          "brute_attack": 7.0,
+          "brute_durability": 41.81818181818181
+        },
+        "wins": 84,
+        "n": 128,
+        "binomial_ci95": [
+          0.5704962778456514,
+          0.7328984233188772
+        ]
+      },
+      {
+        "old_encounter_seed": 5764,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 55.0,
+          "brute_attack": 5.0,
+          "brute_durability": 52.0
+        },
+        "wins": 96,
+        "n": 128,
+        "binomial_ci95": [
+          0.6684443704768314,
+          0.8169871513864143
+        ]
+      },
+      {
+        "old_encounter_seed": 5971,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 53.0,
+          "brute_attack": 5.0,
+          "brute_durability": 41.81818181818181
+        },
+        "wins": 87,
+        "n": 128,
+        "binomial_ci95": [
+          0.5946341124452171,
+          0.7542697938939907
+        ]
+      },
+      {
+        "old_encounter_seed": 6143,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 50.0,
+          "brute_attack": 6.0,
+          "brute_durability": 38.18181818181818
+        },
+        "wins": 100,
+        "n": 128,
+        "binomial_ci95": [
+          0.7020157030455345,
+          0.8440947590506169
+        ]
+      },
+      {
+        "old_encounter_seed": 6320,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 49.0,
+          "brute_attack": 5.0,
+          "brute_durability": 36.36363636363636
+        },
+        "wins": 104,
+        "n": 128,
+        "binomial_ci95": [
+          0.7361508192928257,
+          0.8706385830362315
+        ]
+      },
+      {
+        "old_encounter_seed": 6516,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 54.0,
+          "brute_attack": 6.0,
+          "brute_durability": 43.333333333333336
+        },
+        "wins": 102,
+        "n": 128,
+        "binomial_ci95": [
+          0.7190073141485271,
+          0.8574426180640773
+        ]
+      },
+      {
+        "old_encounter_seed": 6673,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 48.0,
+          "brute_attack": 7.0,
+          "brute_durability": 46.0
+        },
+        "wins": 83,
+        "n": 128,
+        "binomial_ci95": [
+          0.5624978389203745,
+          0.7257271271859276
+        ]
+      },
+      {
+        "old_encounter_seed": 6815,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 48.0,
+          "brute_attack": 6.0,
+          "brute_durability": 36.66666666666667
+        },
+        "wins": 110,
+        "n": 128,
+        "binomial_ci95": [
+          0.7886475076210383,
+          0.9091603050573774
+        ]
+      },
+      {
+        "old_encounter_seed": 6985,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 48.0,
+          "brute_attack": 7.0,
+          "brute_durability": 40.0
+        },
+        "wins": 99,
+        "n": 128,
+        "binomial_ci95": [
+          0.6935732116243924,
+          0.8373675154135327
+        ]
+      },
+      {
+        "old_encounter_seed": 7126,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 57.0,
+          "brute_attack": 6.0,
+          "brute_durability": 46.0
+        },
+        "wins": 93,
+        "n": 128,
+        "binomial_ci95": [
+          0.6435923144931467,
+          0.7963300021954197
+        ]
+      },
+      {
+        "old_encounter_seed": 7246,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 47.0,
+          "brute_attack": 7.0,
+          "brute_durability": 35.0
+        },
+        "wins": 112,
+        "n": 128,
+        "binomial_ci95": [
+          0.8065737291824854,
+          0.9215735536123834
+        ]
+      },
+      {
+        "old_encounter_seed": 7392,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 48.0,
+          "brute_attack": 7.0,
+          "brute_durability": 46.0
+        },
+        "wins": 108,
+        "n": 128,
+        "binomial_ci95": [
+          0.7709518905710295,
+          0.8965164519909334
+        ]
+      },
+      {
+        "old_encounter_seed": 7553,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 52.0,
+          "brute_attack": 6.0,
+          "brute_durability": 46.0
+        },
+        "wins": 88,
+        "n": 128,
+        "binomial_ci95": [
+          0.6027289441827964,
+          0.7613446972146379
+        ]
+      },
+      {
+        "old_encounter_seed": 7692,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 55.0,
+          "brute_attack": 5.0,
+          "brute_durability": 47.272727272727266
+        },
+        "wins": 116,
+        "n": 128,
+        "binomial_ci95": [
+          0.8432700274269215,
+          0.945556195600853
+        ]
+      },
+      {
+        "old_encounter_seed": 7833,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 50.0,
+          "brute_attack": 7.0,
+          "brute_durability": 38.333333333333336
+        },
+        "wins": 99,
+        "n": 128,
+        "binomial_ci95": [
+          0.6935732116243924,
+          0.8373675154135327
+        ]
+      },
+      {
+        "old_encounter_seed": 7995,
+        "old_won": 0,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 42.0,
+          "brute_attack": 7.0,
+          "brute_durability": 40.0
+        },
+        "wins": 102,
+        "n": 128,
+        "binomial_ci95": [
+          0.7190073141485271,
+          0.8574426180640773
+        ]
+      },
+      {
+        "old_encounter_seed": 3000,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 53.0,
+          "brute_attack": 6.0,
+          "brute_durability": 36.66666666666667
+        },
+        "wins": 103,
+        "n": 128,
+        "binomial_ci95": [
+          0.7275592800992087,
+          0.864060387171622
+        ]
+      },
+      {
+        "old_encounter_seed": 3161,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 55.0,
+          "brute_attack": 6.0,
+          "brute_durability": 50.0
+        },
+        "wins": 84,
+        "n": 128,
+        "binomial_ci95": [
+          0.5704962778456514,
+          0.7328984233188772
+        ]
+      },
+      {
+        "old_encounter_seed": 3319,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 47.0,
+          "brute_attack": 7.0,
+          "brute_durability": 36.66666666666667
+        },
+        "wins": 113,
+        "n": 128,
+        "binomial_ci95": [
+          0.8156338413466524,
+          0.9276831765064426
+        ]
+      },
+      {
+        "old_encounter_seed": 3483,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 53.0,
+          "brute_attack": 6.0,
+          "brute_durability": 43.63636363636363
+        },
+        "wins": 91,
+        "n": 128,
+        "binomial_ci95": [
+          0.6271668442501395,
+          0.7824160023219742
+        ]
+      },
+      {
+        "old_encounter_seed": 3637,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 49.0,
+          "brute_attack": 7.0,
+          "brute_durability": 45.45454545454545
+        },
+        "wins": 81,
+        "n": 128,
+        "binomial_ci95": [
+          0.5465700424986025,
+          0.7113154534912468
+        ]
+      },
+      {
+        "old_encounter_seed": 3801,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 44.0,
+          "brute_attack": 6.0,
+          "brute_durability": 33.333333333333336
+        },
+        "wins": 112,
+        "n": 128,
+        "binomial_ci95": [
+          0.8065737291824854,
+          0.9215735536123834
+        ]
+      },
+      {
+        "old_encounter_seed": 3965,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 49.0,
+          "brute_attack": 5.0,
+          "brute_durability": 42.0
+        },
+        "wins": 114,
+        "n": 128,
+        "binomial_ci95": [
+          0.8247655486183226,
+          0.9337212042929989
+        ]
+      },
+      {
+        "old_encounter_seed": 4123,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 54.0,
+          "brute_attack": 6.0,
+          "brute_durability": 52.0
+        },
+        "wins": 97,
+        "n": 128,
+        "binomial_ci95": [
+          0.6767886369138937,
+          0.8238126200075785
+        ]
+      },
+      {
+        "old_encounter_seed": 4295,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 53.0,
+          "brute_attack": 5.0,
+          "brute_durability": 43.333333333333336
+        },
+        "wins": 107,
+        "n": 128,
+        "binomial_ci95": [
+          0.7621819239629298,
+          0.8901166835408066
+        ]
+      },
+      {
+        "old_encounter_seed": 4449,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 50.0,
+          "brute_attack": 6.0,
+          "brute_durability": 38.18181818181818
+        },
+        "wins": 100,
+        "n": 128,
+        "binomial_ci95": [
+          0.7020157030455345,
+          0.8440947590506169
+        ]
+      },
+      {
+        "old_encounter_seed": 4615,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 47.0,
+          "brute_attack": 5.0,
+          "brute_durability": 40.0
+        },
+        "wins": 114,
+        "n": 128,
+        "binomial_ci95": [
+          0.8247655486183226,
+          0.9337212042929989
+        ]
+      },
+      {
+        "old_encounter_seed": 4776,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 51.0,
+          "brute_attack": 5.0,
+          "brute_durability": 35.0
+        },
+        "wins": 115,
+        "n": 128,
+        "binomial_ci95": [
+          0.8339751366963889,
+          0.9396813512731591
+        ]
+      },
+      {
+        "old_encounter_seed": 4937,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 48.0,
+          "brute_attack": 7.0,
+          "brute_durability": 36.36363636363636
+        },
+        "wins": 94,
+        "n": 128,
+        "binomial_ci95": [
+          0.6518470619103658,
+          0.8032449898364271
+        ]
+      },
+      {
+        "old_encounter_seed": 5096,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 52.0,
+          "brute_attack": 6.0,
+          "brute_durability": 40.0
+        },
+        "wins": 98,
+        "n": 128,
+        "binomial_ci95": [
+          0.6851645688917714,
+          0.8306064230879273
+        ]
+      },
+      {
+        "old_encounter_seed": 5258,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 51.0,
+          "brute_attack": 7.0,
+          "brute_durability": 40.0
+        },
+        "wins": 105,
+        "n": 128,
+        "binomial_ci95": [
+          0.7447837371324442,
+          0.8771754002548395
+        ]
+      },
+      {
+        "old_encounter_seed": 5409,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 50.0,
+          "brute_attack": 7.0,
+          "brute_durability": 41.81818181818181
+        },
+        "wins": 91,
+        "n": 128,
+        "binomial_ci95": [
+          0.6271668442501395,
+          0.7824160023219742
+        ]
+      },
+      {
+        "old_encounter_seed": 5571,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 49.0,
+          "brute_attack": 7.0,
+          "brute_durability": 43.333333333333336
+        },
+        "wins": 98,
+        "n": 128,
+        "binomial_ci95": [
+          0.6851645688917714,
+          0.8306064230879273
+        ]
+      },
+      {
+        "old_encounter_seed": 5736,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 49.0,
+          "brute_attack": 7.0,
+          "brute_durability": 42.0
+        },
+        "wins": 87,
+        "n": 128,
+        "binomial_ci95": [
+          0.5946341124452171,
+          0.7542697938939907
+        ]
+      },
+      {
+        "old_encounter_seed": 5894,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 54.0,
+          "brute_attack": 7.0,
+          "brute_durability": 38.18181818181818
+        },
+        "wins": 100,
+        "n": 128,
+        "binomial_ci95": [
+          0.7020157030455345,
+          0.8440947590506169
+        ]
+      },
+      {
+        "old_encounter_seed": 6047,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 53.0,
+          "brute_attack": 5.0,
+          "brute_durability": 38.18181818181818
+        },
+        "wins": 101,
+        "n": 128,
+        "binomial_ci95": [
+          0.7104932846593583,
+          0.8507869124950196
+        ]
+      },
+      {
+        "old_encounter_seed": 6207,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 52.0,
+          "brute_attack": 6.0,
+          "brute_durability": 33.333333333333336
+        },
+        "wins": 118,
+        "n": 128,
+        "binomial_ci95": [
+          0.8621530681952095,
+          0.9570126249490177
+        ]
+      },
+      {
+        "old_encounter_seed": 6363,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 51.0,
+          "brute_attack": 7.0,
+          "brute_durability": 41.66666666666667
+        },
+        "wins": 100,
+        "n": 128,
+        "binomial_ci95": [
+          0.7020157030455345,
+          0.8440947590506169
+        ]
+      },
+      {
+        "old_encounter_seed": 6514,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 54.0,
+          "brute_attack": 5.0,
+          "brute_durability": 35.0
+        },
+        "wins": 115,
+        "n": 128,
+        "binomial_ci95": [
+          0.8339751366963889,
+          0.9396813512731591
+        ]
+      },
+      {
+        "old_encounter_seed": 6678,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 52.0,
+          "brute_attack": 5.0,
+          "brute_durability": 33.333333333333336
+        },
+        "wins": 112,
+        "n": 128,
+        "binomial_ci95": [
+          0.8065737291824854,
+          0.9215735536123834
+        ]
+      },
+      {
+        "old_encounter_seed": 6847,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 54.0,
+          "brute_attack": 7.0,
+          "brute_durability": 43.63636363636363
+        },
+        "wins": 94,
+        "n": 128,
+        "binomial_ci95": [
+          0.6518470619103658,
+          0.8032449898364271
+        ]
+      },
+      {
+        "old_encounter_seed": 7003,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 49.0,
+          "brute_attack": 7.0,
+          "brute_durability": 33.333333333333336
+        },
+        "wins": 109,
+        "n": 128,
+        "binomial_ci95": [
+          0.7797727087736895,
+          0.9028653688464999
+        ]
+      },
+      {
+        "old_encounter_seed": 7174,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 52.0,
+          "brute_attack": 7.0,
+          "brute_durability": 52.0
+        },
+        "wins": 79,
+        "n": 128,
+        "binomial_ci95": [
+          0.5307322844502991,
+          0.6968137414230975
+        ]
+      },
+      {
+        "old_encounter_seed": 7340,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 52.0,
+          "brute_attack": 7.0,
+          "brute_durability": 38.18181818181818
+        },
+        "wins": 92,
+        "n": 128,
+        "binomial_ci95": [
+          0.6353658087171574,
+          0.7893867729131827
+        ]
+      },
+      {
+        "old_encounter_seed": 7500,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 55.0,
+          "brute_attack": 6.0,
+          "brute_durability": 40.0
+        },
+        "wins": 93,
+        "n": 128,
+        "binomial_ci95": [
+          0.6435923144931467,
+          0.7963300021954197
+        ]
+      },
+      {
+        "old_encounter_seed": 7669,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 0.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 55.0,
+          "brute_attack": 6.0,
+          "brute_durability": 40.0
+        },
+        "wins": 95,
+        "n": 128,
+        "binomial_ci95": [
+          0.660130807704431,
+          0.8101309791005884
+        ]
+      },
+      {
+        "old_encounter_seed": 7841,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 1.0,
+          "soft_brute": 0.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 1.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 55.0,
+          "brute_attack": 7.0,
+          "brute_durability": 52.0
+        },
+        "wins": 66,
+        "n": 128,
+        "binomial_ci95": [
+          0.4298624503761484,
+          0.6004770197403043
+        ]
+      },
+      {
+        "old_encounter_seed": 7999,
+        "old_won": 1,
+        "features": {
+          "durable_brute": 0.0,
+          "soft_brute": 1.0,
+          "low_hp_archer": 1.0,
+          "weakest_ge2": 0.0,
+          "total_hp_ge60": 0.0,
+          "total_hp": 45.0,
+          "brute_attack": 5.0,
+          "brute_durability": 40.0
+        },
+        "wins": 97,
+        "n": 128,
+        "binomial_ci95": [
+          0.6767886369138937,
+          0.8238126200075785
+        ]
+      }
+    ],
+    "metadata": {
+      "rng_seed_start": 236000,
+      "rng_seed_end": 236127,
+      "cpu_seconds": 54.677684,
+      "wall_seconds": 56.673255583000355
+    }
+  },
+  "raw_sha256": {
+    "trace_analysis.json": "d86d44155c94eab16330ad57760bd325f7438dde6d0f388cda415eef9af15843",
+    "confirmation.json": "abf3e6ffe84e34908b4cd98c48611f58b5fde6f433d8ab391e9866acdc1a277d",
+    "replay.json": "acbc135eca3e3222ed30618b4c78064dc88f8397639a39b0a041a93a6aa61853",
+    "killorders.json": "f0548d95015ae50491ddaf98c7e5331de5f8670af9c293825ff1059a65c4ea9f"
+  },
+  "kill_order_metadata": {
+    "cpu_seconds": 35.264876,
+    "wall_seconds": 36.70763070800058
+  },
+  "cpu_seconds": 303.05209
+}

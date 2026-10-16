@@ -130,4 +130,24 @@ def test_train_smoke_writes_artifacts(tmp_path) -> None:
 def test_damage_reward_is_restricted_to_m2() -> None:
     with pytest.raises(SystemExit):
         parse_args(["--stage", "m1b", "--reward", "damage"])
+    with pytest.raises(SystemExit):
+        parse_args(["--stage", "m3", "--reward", "damage"])
+    with pytest.raises(SystemExit):
+        parse_args(["--stage", "m4", "--reward", "damage"])
     assert parse_args(["--stage", "m2", "--reward", "damage"]).reward == "damage"
+
+
+def test_tactical_stages_train_and_reject_damage_reward(tmp_path) -> None:
+    for stage in ("m5", "m6"):
+        assert parse_args(["--stage", stage]).save_dir == f"runs/{stage}_ppo_s0"
+        with pytest.raises(SystemExit):
+            parse_args(["--stage", stage, "--reward", "damage"])
+    args = parse_args([
+        "--stage", "m6", "--timesteps", "64", "--n-envs", "1", "--n-steps", "64",
+        "--batch-size", "32", "--n-epochs", "1", "--eval-episodes", "2",
+        "--eval-freq", "64", "--checkpoint-freq", "100000", "--save-dir", str(tmp_path),
+    ])
+    payload = train(args)
+    assert payload["episodes"] == 2 and (tmp_path / "final_model.zip").exists()
+    card = json.loads((tmp_path / "final_run_card.json").read_text())
+    assert card["stage"] == "m6" and len(card["action_names"]) == 13

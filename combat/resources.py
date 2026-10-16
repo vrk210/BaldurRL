@@ -11,6 +11,10 @@ class Resource(Enum):
     SECOND_WIND = auto()
     ACTION_SURGE = auto()
     CLEAVE = auto()
+    HEAL = auto()
+    MOVEMENT = auto()
+    REACTION = auto()
+    TRIP = auto()
 
 
 @dataclass

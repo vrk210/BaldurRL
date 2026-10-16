@@ -1,0 +1,1573 @@
+{
+  "date": "2026-10-15",
+  "predeclaration_commit": "6c2162e755fd46385a528ba01c2a61dda8f2cf07",
+  "confirmation": {
+    "m5": {
+      "manifest": {
+        "command": "run",
+        "stage": "m5",
+        "phase": "confirmation",
+        "seed_start": 223000,
+        "episodes": 1000,
+        "workers": 4,
+        "agent_seed": 20261015,
+        "alpha": 0.05,
+        "looks": [
+          32,
+          128,
+          1024
+        ],
+        "futility_margin": 0.0,
+        "prune_nonpositive": true,
+        "out": "runs/headroom_probe/confirm_m5",
+        "code_revision": "6c2162e755fd46385a528ba01c2a61dda8f2cf07"
+      },
+      "summary": {
+        "paired": {
+          "episodes": 1000,
+          "first_win_rate": 0.803,
+          "second_win_rate": 0.786,
+          "difference": 0.017,
+          "paired_se": 0.009099109505539176,
+          "z": 1.8683146949326281,
+          "first_only_wins": 50,
+          "second_only_wins": 33,
+          "ci95_conservative": [
+            -0.012262373857433534,
+            0.046101449770213965
+          ],
+          "ci95_normal_approx": [
+            -0.000834254630856783,
+            0.034834254630856785
+          ],
+          "mcnemar_exact_two_sided_p": 0.07841962481580761
+        },
+        "decisions": 28557,
+        "nonforced_decisions": 19832,
+        "deviations": 421,
+        "deviation_rate": 0.014742444934692019,
+        "deviation_rate_nonforced": 0.021228317870108915,
+        "fights_with_deviation": 326,
+        "fight_deviation_rate": 0.326,
+        "cpu_seconds": 31729.188661000044,
+        "planning_seconds": 32376.777408656097,
+        "seconds_per_decision": 1.1337597579807437,
+        "simulated_episodes": 14935520,
+        "deviations_by_type": {
+          "ACTION_SURGE -> END_TURN": {
+            "count": 107,
+            "mean_estimated_gain": 0.08914099007009346
+          },
+          "ACTION_SURGE -> TRIP_ENEMY_0": {
+            "count": 4,
+            "mean_estimated_gain": 0.066650390625
+          },
+          "ACTION_SURGE -> TRIP_ENEMY_1": {
+            "count": 2,
+            "mean_estimated_gain": 0.04736328125
+          },
+          "ACTION_SURGE -> TRIP_ENEMY_2": {
+            "count": 4,
+            "mean_estimated_gain": 0.04931640625
+          },
+          "ATTACK_ENEMY_0 -> ATTACK_ENEMY_1": {
+            "count": 15,
+            "mean_estimated_gain": 0.0669921875
+          },
+          "ATTACK_ENEMY_0 -> ATTACK_ENEMY_2": {
+            "count": 16,
+            "mean_estimated_gain": 0.06378173828125
+          },
+          "ATTACK_ENEMY_0 -> DODGE": {
+            "count": 6,
+            "mean_estimated_gain": 0.058919270833333336
+          },
+          "ATTACK_ENEMY_0 -> SECOND_WIND": {
+            "count": 11,
+            "mean_estimated_gain": 0.050248579545454544
+          },
+          "ATTACK_ENEMY_0 -> TRIP_ENEMY_2": {
+            "count": 2,
+            "mean_estimated_gain": 0.05224609375
+          },
+          "ATTACK_ENEMY_1 -> ATTACK_ENEMY_0": {
+            "count": 8,
+            "mean_estimated_gain": 0.0589599609375
+          },
+          "ATTACK_ENEMY_1 -> ATTACK_ENEMY_2": {
+            "count": 8,
+            "mean_estimated_gain": 0.10986328125
+          },
+          "ATTACK_ENEMY_1 -> CLEAVE": {
+            "count": 1,
+            "mean_estimated_gain": 0.09375
+          },
+          "ATTACK_ENEMY_1 -> DODGE": {
+            "count": 5,
+            "mean_estimated_gain": 0.11171875
+          },
+          "ATTACK_ENEMY_1 -> SECOND_WIND": {
+            "count": 9,
+            "mean_estimated_gain": 0.07703993055555555
+          },
+          "ATTACK_ENEMY_1 -> TRIP_ENEMY_2": {
+            "count": 4,
+            "mean_estimated_gain": 0.04833984375
+          },
+          "ATTACK_ENEMY_2 -> ATTACK_ENEMY_0": {
+            "count": 10,
+            "mean_estimated_gain": 0.05341796875
+          },
+          "ATTACK_ENEMY_2 -> ATTACK_ENEMY_1": {
+            "count": 11,
+            "mean_estimated_gain": 0.11931818181818182
+          },
+          "ATTACK_ENEMY_2 -> CLEAVE": {
+            "count": 4,
+            "mean_estimated_gain": 0.094482421875
+          },
+          "ATTACK_ENEMY_2 -> DODGE": {
+            "count": 2,
+            "mean_estimated_gain": 0.0380859375
+          },
+          "ATTACK_ENEMY_2 -> END_TURN": {
+            "count": 1,
+            "mean_estimated_gain": 0.0546875
+          },
+          "ATTACK_ENEMY_2 -> SECOND_WIND": {
+            "count": 14,
+            "mean_estimated_gain": 0.052036830357142856
+          },
+          "ATTACK_ENEMY_2 -> TRIP_ENEMY_0": {
+            "count": 2,
+            "mean_estimated_gain": 0.0615234375
+          },
+          "ATTACK_ENEMY_2 -> TRIP_ENEMY_1": {
+            "count": 1,
+            "mean_estimated_gain": 0.375
+          },
+          "CLEAVE -> ATTACK_ENEMY_0": {
+            "count": 12,
+            "mean_estimated_gain": 0.09684244791666667
+          },
+          "CLEAVE -> ATTACK_ENEMY_1": {
+            "count": 4,
+            "mean_estimated_gain": 0.091064453125
+          },
+          "CLEAVE -> ATTACK_ENEMY_2": {
+            "count": 5,
+            "mean_estimated_gain": 0.0658203125
+          },
+          "CLEAVE -> TRIP_ENEMY_0": {
+            "count": 2,
+            "mean_estimated_gain": 0.052734375
+          },
+          "CLEAVE -> TRIP_ENEMY_1": {
+            "count": 2,
+            "mean_estimated_gain": 0.05908203125
+          },
+          "CLEAVE -> TRIP_ENEMY_2": {
+            "count": 1,
+            "mean_estimated_gain": 0.0576171875
+          },
+          "END_TURN -> SECOND_WIND": {
+            "count": 43,
+            "mean_estimated_gain": 0.06829124273255814
+          },
+          "SECOND_WIND -> ATTACK_ENEMY_0": {
+            "count": 4,
+            "mean_estimated_gain": 0.12841796875
+          },
+          "SECOND_WIND -> ATTACK_ENEMY_1": {
+            "count": 3,
+            "mean_estimated_gain": 0.0859375
+          },
+          "SECOND_WIND -> ATTACK_ENEMY_2": {
+            "count": 1,
+            "mean_estimated_gain": 0.1484375
+          },
+          "SECOND_WIND -> CLEAVE": {
+            "count": 1,
+            "mean_estimated_gain": 0.0673828125
+          },
+          "SECOND_WIND -> DODGE": {
+            "count": 1,
+            "mean_estimated_gain": 0.09375
+          },
+          "TRIP_ENEMY_0 -> ATTACK_ENEMY_0": {
+            "count": 1,
+            "mean_estimated_gain": 0.0498046875
+          },
+          "TRIP_ENEMY_0 -> END_TURN": {
+            "count": 2,
+            "mean_estimated_gain": 0.0947265625
+          },
+          "TRIP_ENEMY_0 -> SECOND_WIND": {
+            "count": 6,
+            "mean_estimated_gain": 0.07991536458333333
+          },
+          "TRIP_ENEMY_0 -> TRIP_ENEMY_1": {
+            "count": 5,
+            "mean_estimated_gain": 0.103125
+          },
+          "TRIP_ENEMY_0 -> TRIP_ENEMY_2": {
+            "count": 13,
+            "mean_estimated_gain": 0.11020132211538461
+          },
+          "TRIP_ENEMY_1 -> ATTACK_ENEMY_0": {
+            "count": 1,
+            "mean_estimated_gain": 0.06640625
+          },
+          "TRIP_ENEMY_1 -> ATTACK_ENEMY_2": {
+            "count": 1,
+            "mean_estimated_gain": 0.07421875
+          },
+          "TRIP_ENEMY_1 -> SECOND_WIND": {
+            "count": 7,
+            "mean_estimated_gain": 0.068359375
+          },
+          "TRIP_ENEMY_1 -> TRIP_ENEMY_0": {
+            "count": 15,
+            "mean_estimated_gain": 0.0623046875
+          },
+          "TRIP_ENEMY_1 -> TRIP_ENEMY_2": {
+            "count": 11,
+            "mean_estimated_gain": 0.11115056818181818
+          },
+          "TRIP_ENEMY_2 -> ATTACK_ENEMY_0": {
+            "count": 1,
+            "mean_estimated_gain": 0.34375
+          },
+          "TRIP_ENEMY_2 -> ATTACK_ENEMY_2": {
+            "count": 1,
+            "mean_estimated_gain": 0.40625
+          },
+          "TRIP_ENEMY_2 -> CLEAVE": {
+            "count": 1,
+            "mean_estimated_gain": 0.375
+          },
+          "TRIP_ENEMY_2 -> END_TURN": {
+            "count": 3,
+            "mean_estimated_gain": 0.119140625
+          },
+          "TRIP_ENEMY_2 -> SECOND_WIND": {
+            "count": 5,
+            "mean_estimated_gain": 0.0666015625
+          },
+          "TRIP_ENEMY_2 -> TRIP_ENEMY_0": {
+            "count": 8,
+            "mean_estimated_gain": 0.07763671875
+          },
+          "TRIP_ENEMY_2 -> TRIP_ENEMY_1": {
+            "count": 14,
+            "mean_estimated_gain": 0.08363560267857142
+          }
+        },
+        "wall_seconds": 8110.228896416999
+      },
+      "independent_recheck": {
+        "seed": 20261016,
+        "samples": 12,
+        "actual_samples": 12,
+        "budget": 1024,
+        "total_deviations": 421,
+        "results": [
+          {
+            "encounter": 223685,
+            "step": 17,
+            "anchor": 10,
+            "chosen": 8,
+            "paired_difference": 0.013671875,
+            "paired_se": 0.00584663305820425,
+            "chosen_only_wins": 25,
+            "anchor_only_wins": 11
+          },
+          {
+            "encounter": 223834,
+            "step": 2,
+            "anchor": 9,
+            "chosen": 10,
+            "paired_difference": -0.0361328125,
+            "paired_se": 0.01768585106295306,
+            "chosen_only_wins": 146,
+            "anchor_only_wins": 183
+          },
+          {
+            "encounter": 223813,
+            "step": 7,
+            "anchor": 9,
+            "chosen": 10,
+            "paired_difference": 0.0703125,
+            "paired_se": 0.016779429941247283,
+            "chosen_only_wins": 186,
+            "anchor_only_wins": 114
+          },
+          {
+            "encounter": 223773,
+            "step": 36,
+            "anchor": 1,
+            "chosen": 2,
+            "paired_difference": 0.04296875,
+            "paired_se": 0.019396375706327063,
+            "chosen_only_wins": 220,
+            "anchor_only_wins": 176
+          },
+          {
+            "encounter": 223673,
+            "step": 7,
+            "anchor": 9,
+            "chosen": 10,
+            "paired_difference": 0.0419921875,
+            "paired_se": 0.015423441417222787,
+            "chosen_only_wins": 147,
+            "anchor_only_wins": 104
+          },
+          {
+            "encounter": 223102,
+            "step": 17,
+            "anchor": 10,
+            "chosen": 8,
+            "paired_difference": 0.0126953125,
+            "paired_se": 0.007101872974530102,
+            "chosen_only_wins": 33,
+            "anchor_only_wins": 20
+          },
+          {
+            "encounter": 223360,
+            "step": 27,
+            "anchor": 10,
+            "chosen": 8,
+            "paired_difference": 0.07421875,
+            "paired_se": 0.01802524031775018,
+            "chosen_only_wins": 211,
+            "anchor_only_wins": 135
+          },
+          {
+            "encounter": 223442,
+            "step": 7,
+            "anchor": 9,
+            "chosen": 10,
+            "paired_difference": 0.0712890625,
+            "paired_se": 0.01544204651763669,
+            "chosen_only_wins": 164,
+            "anchor_only_wins": 91
+          },
+          {
+            "encounter": 223695,
+            "step": 27,
+            "anchor": 1,
+            "chosen": 8,
+            "paired_difference": 0.1181640625,
+            "paired_se": 0.021152449990478713,
+            "chosen_only_wins": 302,
+            "anchor_only_wins": 181
+          },
+          {
+            "encounter": 223298,
+            "step": 10,
+            "anchor": 3,
+            "chosen": 5,
+            "paired_difference": 0.146484375,
+            "paired_se": 0.020308031215466146,
+            "chosen_only_wins": 302,
+            "anchor_only_wins": 152
+          },
+          {
+            "encounter": 223688,
+            "step": 11,
+            "anchor": 0,
+            "chosen": 1,
+            "paired_difference": -0.0068359375,
+            "paired_se": 0.009110712945744783,
+            "chosen_only_wins": 40,
+            "anchor_only_wins": 47
+          },
+          {
+            "encounter": 223584,
+            "step": 14,
+            "anchor": 5,
+            "chosen": 8,
+            "paired_difference": 0.0458984375,
+            "paired_se": 0.00931230940668765,
+            "chosen_only_wins": 70,
+            "anchor_only_wins": 23
+          }
+        ],
+        "cpu_seconds": 29.427534,
+        "mean_local_gain": 0.049560546875,
+        "conditional_mc_se": 0.004476786428815415,
+        "positive_states": 10
+      }
+    },
+    "m6": {
+      "manifest": {
+        "command": "run",
+        "stage": "m6",
+        "phase": "confirmation",
+        "seed_start": 223000,
+        "episodes": 1000,
+        "workers": 4,
+        "agent_seed": 20261015,
+        "alpha": 0.05,
+        "looks": [
+          32,
+          128,
+          1024
+        ],
+        "futility_margin": 0.0,
+        "prune_nonpositive": true,
+        "out": "runs/headroom_probe/confirm_m6",
+        "code_revision": "6c2162e755fd46385a528ba01c2a61dda8f2cf07"
+      },
+      "summary": {
+        "paired": {
+          "episodes": 1000,
+          "first_win_rate": 0.816,
+          "second_win_rate": 0.796,
+          "difference": 0.02,
+          "paired_se": 0.009470464069394335,
+          "z": 2.111828929760045,
+          "first_only_wins": 55,
+          "second_only_wins": 35,
+          "ci95_conservative": [
+            -0.010342884882560188,
+            0.05015787593744239
+          ],
+          "ci95_normal_approx": [
+            0.001437890423987103,
+            0.0385621095760129
+          ],
+          "mcnemar_exact_two_sided_p": 0.04459752462791594
+        },
+        "decisions": 28615,
+        "nonforced_decisions": 21512,
+        "deviations": 387,
+        "deviation_rate": 0.013524375327625371,
+        "deviation_rate_nonforced": 0.01798995909259948,
+        "fights_with_deviation": 294,
+        "fight_deviation_rate": 0.294,
+        "cpu_seconds": 32542.72555000001,
+        "planning_seconds": 33187.60474297687,
+        "seconds_per_decision": 1.1597974748550366,
+        "simulated_episodes": 13599200,
+        "deviations_by_type": {
+          "ACTION_SURGE -> ADVANCE": {
+            "count": 8,
+            "mean_estimated_gain": 0.102294921875
+          },
+          "ACTION_SURGE -> END_TURN": {
+            "count": 116,
+            "mean_estimated_gain": 0.10377660290948276
+          },
+          "ACTION_SURGE -> SECOND_WIND": {
+            "count": 1,
+            "mean_estimated_gain": 0.1142578125
+          },
+          "ACTION_SURGE -> TRIP_ENEMY_1": {
+            "count": 2,
+            "mean_estimated_gain": 0.0390625
+          },
+          "ADVANCE -> ATTACK_ENEMY_0": {
+            "count": 2,
+            "mean_estimated_gain": 0.1279296875
+          },
+          "ADVANCE -> ATTACK_ENEMY_1": {
+            "count": 4,
+            "mean_estimated_gain": 0.083740234375
+          },
+          "ADVANCE -> ATTACK_ENEMY_2": {
+            "count": 4,
+            "mean_estimated_gain": 0.09521484375
+          },
+          "ADVANCE -> TRIP_ENEMY_0": {
+            "count": 1,
+            "mean_estimated_gain": 0.0458984375
+          },
+          "ADVANCE -> TRIP_ENEMY_1": {
+            "count": 1,
+            "mean_estimated_gain": 0.0439453125
+          },
+          "ADVANCE -> TRIP_ENEMY_2": {
+            "count": 3,
+            "mean_estimated_gain": 0.09895833333333333
+          },
+          "ATTACK_ENEMY_0 -> ADVANCE": {
+            "count": 11,
+            "mean_estimated_gain": 0.0908203125
+          },
+          "ATTACK_ENEMY_0 -> ATTACK_ENEMY_1": {
+            "count": 10,
+            "mean_estimated_gain": 0.05830078125
+          },
+          "ATTACK_ENEMY_0 -> ATTACK_ENEMY_2": {
+            "count": 12,
+            "mean_estimated_gain": 0.079833984375
+          },
+          "ATTACK_ENEMY_0 -> CLEAVE": {
+            "count": 5,
+            "mean_estimated_gain": 0.10859375
+          },
+          "ATTACK_ENEMY_0 -> DODGE": {
+            "count": 2,
+            "mean_estimated_gain": 0.05908203125
+          },
+          "ATTACK_ENEMY_0 -> SECOND_WIND": {
+            "count": 3,
+            "mean_estimated_gain": 0.0703125
+          },
+          "ATTACK_ENEMY_0 -> TRIP_ENEMY_2": {
+            "count": 1,
+            "mean_estimated_gain": 0.0458984375
+          },
+          "ATTACK_ENEMY_1 -> ADVANCE": {
+            "count": 10,
+            "mean_estimated_gain": 0.07412109375
+          },
+          "ATTACK_ENEMY_1 -> ATTACK_ENEMY_0": {
+            "count": 4,
+            "mean_estimated_gain": 0.083984375
+          },
+          "ATTACK_ENEMY_1 -> ATTACK_ENEMY_2": {
+            "count": 11,
+            "mean_estimated_gain": 0.05344460227272727
+          },
+          "ATTACK_ENEMY_1 -> CLEAVE": {
+            "count": 2,
+            "mean_estimated_gain": 0.10888671875
+          },
+          "ATTACK_ENEMY_1 -> DODGE": {
+            "count": 3,
+            "mean_estimated_gain": 0.060872395833333336
+          },
+          "ATTACK_ENEMY_1 -> SECOND_WIND": {
+            "count": 3,
+            "mean_estimated_gain": 0.030924479166666668
+          },
+          "ATTACK_ENEMY_1 -> TRIP_ENEMY_0": {
+            "count": 1,
+            "mean_estimated_gain": 0.0478515625
+          },
+          "ATTACK_ENEMY_2 -> ADVANCE": {
+            "count": 9,
+            "mean_estimated_gain": 0.07291666666666667
+          },
+          "ATTACK_ENEMY_2 -> ATTACK_ENEMY_0": {
+            "count": 13,
+            "mean_estimated_gain": 0.0821063701923077
+          },
+          "ATTACK_ENEMY_2 -> ATTACK_ENEMY_1": {
+            "count": 24,
+            "mean_estimated_gain": 0.08064778645833333
+          },
+          "ATTACK_ENEMY_2 -> CLEAVE": {
+            "count": 3,
+            "mean_estimated_gain": 0.140625
+          },
+          "ATTACK_ENEMY_2 -> DODGE": {
+            "count": 1,
+            "mean_estimated_gain": 0.21875
+          },
+          "ATTACK_ENEMY_2 -> SECOND_WIND": {
+            "count": 3,
+            "mean_estimated_gain": 0.054036458333333336
+          },
+          "ATTACK_ENEMY_2 -> TRIP_ENEMY_0": {
+            "count": 1,
+            "mean_estimated_gain": 0.1484375
+          },
+          "CLEAVE -> ATTACK_ENEMY_0": {
+            "count": 1,
+            "mean_estimated_gain": 0.05078125
+          },
+          "CLEAVE -> ATTACK_ENEMY_1": {
+            "count": 3,
+            "mean_estimated_gain": 0.056315104166666664
+          },
+          "CLEAVE -> ATTACK_ENEMY_2": {
+            "count": 4,
+            "mean_estimated_gain": 0.123779296875
+          },
+          "CLEAVE -> TRIP_ENEMY_0": {
+            "count": 1,
+            "mean_estimated_gain": 0.0556640625
+          },
+          "CLEAVE -> TRIP_ENEMY_1": {
+            "count": 1,
+            "mean_estimated_gain": 0.05859375
+          },
+          "END_TURN -> ADVANCE": {
+            "count": 3,
+            "mean_estimated_gain": 0.049153645833333336
+          },
+          "END_TURN -> SECOND_WIND": {
+            "count": 12,
+            "mean_estimated_gain": 0.0849609375
+          },
+          "SECOND_WIND -> ATTACK_ENEMY_0": {
+            "count": 3,
+            "mean_estimated_gain": 0.053059895833333336
+          },
+          "SECOND_WIND -> ATTACK_ENEMY_1": {
+            "count": 5,
+            "mean_estimated_gain": 0.0529296875
+          },
+          "SECOND_WIND -> ATTACK_ENEMY_2": {
+            "count": 1,
+            "mean_estimated_gain": 0.25
+          },
+          "SECOND_WIND -> DODGE": {
+            "count": 1,
+            "mean_estimated_gain": 0.07421875
+          },
+          "SECOND_WIND -> TRIP_ENEMY_0": {
+            "count": 1,
+            "mean_estimated_gain": 0.05078125
+          },
+          "TRIP_ENEMY_0 -> ADVANCE": {
+            "count": 9,
+            "mean_estimated_gain": 0.1003689236111111
+          },
+          "TRIP_ENEMY_0 -> ATTACK_ENEMY_0": {
+            "count": 1,
+            "mean_estimated_gain": 0.02734375
+          },
+          "TRIP_ENEMY_0 -> ATTACK_ENEMY_1": {
+            "count": 1,
+            "mean_estimated_gain": 0.0458984375
+          },
+          "TRIP_ENEMY_0 -> ATTACK_ENEMY_2": {
+            "count": 2,
+            "mean_estimated_gain": 0.0703125
+          },
+          "TRIP_ENEMY_0 -> CLEAVE": {
+            "count": 2,
+            "mean_estimated_gain": 0.04931640625
+          },
+          "TRIP_ENEMY_0 -> SECOND_WIND": {
+            "count": 4,
+            "mean_estimated_gain": 0.07275390625
+          },
+          "TRIP_ENEMY_0 -> TRIP_ENEMY_1": {
+            "count": 4,
+            "mean_estimated_gain": 0.0673828125
+          },
+          "TRIP_ENEMY_0 -> TRIP_ENEMY_2": {
+            "count": 6,
+            "mean_estimated_gain": 0.048828125
+          },
+          "TRIP_ENEMY_1 -> ADVANCE": {
+            "count": 12,
+            "mean_estimated_gain": 0.07600911458333333
+          },
+          "TRIP_ENEMY_1 -> ATTACK_ENEMY_1": {
+            "count": 1,
+            "mean_estimated_gain": 0.0615234375
+          },
+          "TRIP_ENEMY_1 -> END_TURN": {
+            "count": 2,
+            "mean_estimated_gain": 0.18359375
+          },
+          "TRIP_ENEMY_1 -> SECOND_WIND": {
+            "count": 4,
+            "mean_estimated_gain": 0.066162109375
+          },
+          "TRIP_ENEMY_1 -> TRIP_ENEMY_0": {
+            "count": 2,
+            "mean_estimated_gain": 0.07421875
+          },
+          "TRIP_ENEMY_1 -> TRIP_ENEMY_2": {
+            "count": 2,
+            "mean_estimated_gain": 0.17626953125
+          },
+          "TRIP_ENEMY_2 -> ADVANCE": {
+            "count": 11,
+            "mean_estimated_gain": 0.10209517045454546
+          },
+          "TRIP_ENEMY_2 -> ATTACK_ENEMY_0": {
+            "count": 1,
+            "mean_estimated_gain": 0.046875
+          },
+          "TRIP_ENEMY_2 -> END_TURN": {
+            "count": 3,
+            "mean_estimated_gain": 0.1474609375
+          },
+          "TRIP_ENEMY_2 -> SECOND_WIND": {
+            "count": 3,
+            "mean_estimated_gain": 0.058268229166666664
+          },
+          "TRIP_ENEMY_2 -> TRIP_ENEMY_0": {
+            "count": 2,
+            "mean_estimated_gain": 0.08935546875
+          },
+          "TRIP_ENEMY_2 -> TRIP_ENEMY_1": {
+            "count": 5,
+            "mean_estimated_gain": 0.1087890625
+          }
+        },
+        "wall_seconds": 8318.518773875
+      },
+      "independent_recheck": {
+        "seed": 20261016,
+        "samples": 12,
+        "actual_samples": 12,
+        "budget": 1024,
+        "total_deviations": 387,
+        "results": [
+          {
+            "encounter": 223764,
+            "step": 10,
+            "anchor": 4,
+            "chosen": 12,
+            "paired_difference": -0.0087890625,
+            "paired_se": 0.019416335290919216,
+            "chosen_only_wins": 193,
+            "anchor_only_wins": 202
+          },
+          {
+            "encounter": 223899,
+            "step": 0,
+            "anchor": 10,
+            "chosen": 2,
+            "paired_difference": -0.0078125,
+            "paired_se": 0.018536415372501926,
+            "chosen_only_wins": 176,
+            "anchor_only_wins": 184
+          },
+          {
+            "encounter": 223870,
+            "step": 22,
+            "anchor": 1,
+            "chosen": 8,
+            "paired_difference": 0.0361328125,
+            "paired_se": 0.010776844559139161,
+            "chosen_only_wins": 80,
+            "anchor_only_wins": 43
+          },
+          {
+            "encounter": 223842,
+            "step": 8,
+            "anchor": 9,
+            "chosen": 12,
+            "paired_difference": 0.0458984375,
+            "paired_se": 0.015597261957846317,
+            "chosen_only_wins": 152,
+            "anchor_only_wins": 105
+          },
+          {
+            "encounter": 223744,
+            "step": 9,
+            "anchor": 9,
+            "chosen": 12,
+            "paired_difference": 0.0537109375,
+            "paired_se": 0.02122776734018773,
+            "chosen_only_wins": 265,
+            "anchor_only_wins": 210
+          },
+          {
+            "encounter": 223121,
+            "step": 8,
+            "anchor": 6,
+            "chosen": 2,
+            "paired_difference": -0.0185546875,
+            "paired_se": 0.017109286208283708,
+            "chosen_only_wins": 144,
+            "anchor_only_wins": 163
+          },
+          {
+            "encounter": 223334,
+            "step": 18,
+            "anchor": 1,
+            "chosen": 2,
+            "paired_difference": 0.017578125,
+            "paired_se": 0.008386825452724738,
+            "chosen_only_wins": 46,
+            "anchor_only_wins": 28
+          },
+          {
+            "encounter": 223423,
+            "step": 7,
+            "anchor": 9,
+            "chosen": 12,
+            "paired_difference": 0.1201171875,
+            "paired_se": 0.019546303117449797,
+            "chosen_only_wins": 269,
+            "anchor_only_wins": 146
+          },
+          {
+            "encounter": 223778,
+            "step": 10,
+            "anchor": 9,
+            "chosen": 12,
+            "paired_difference": 0.0283203125,
+            "paired_se": 0.00885710650716581,
+            "chosen_only_wins": 56,
+            "anchor_only_wins": 27
+          },
+          {
+            "encounter": 223264,
+            "step": 32,
+            "anchor": 2,
+            "chosen": 0,
+            "paired_difference": 0.0341796875,
+            "paired_se": 0.007804321901017676,
+            "chosen_only_wins": 50,
+            "anchor_only_wins": 15
+          },
+          {
+            "encounter": 223766,
+            "step": 1,
+            "anchor": 1,
+            "chosen": 10,
+            "paired_difference": 0.041015625,
+            "paired_se": 0.019202679037439444,
+            "chosen_only_wins": 215,
+            "anchor_only_wins": 173
+          },
+          {
+            "encounter": 223582,
+            "step": 12,
+            "anchor": 8,
+            "chosen": 3,
+            "paired_difference": 0.0380859375,
+            "paired_se": 0.013379189493397593,
+            "chosen_only_wins": 114,
+            "anchor_only_wins": 75
+          }
+        ],
+        "cpu_seconds": 40.885735000000004,
+        "mean_local_gain": 0.031656901041666664,
+        "conditional_mc_se": 0.004536006937927799,
+        "positive_states": 9
+      }
+    }
+  },
+  "development_selection": {
+    "pilot_m5": {
+      "manifest": {
+        "command": "run",
+        "stage": "m5",
+        "phase": "pilot",
+        "seed_start": 220010,
+        "episodes": 4,
+        "workers": 2,
+        "agent_seed": 20261015,
+        "alpha": 0.01,
+        "looks": [
+          16,
+          64,
+          256
+        ],
+        "futility_margin": 0.0,
+        "out": "runs/headroom_probe/pilot_m5"
+      },
+      "summary": {
+        "paired": {
+          "episodes": 4,
+          "first_win_rate": 0.5,
+          "second_win_rate": 0.5,
+          "difference": 0.0,
+          "paired_se": 0.0,
+          "z": 0.0,
+          "first_only_wins": 0,
+          "second_only_wins": 0,
+          "ci95_conservative": [
+            -0.665629847511789,
+            0.665629847511789
+          ],
+          "ci95_normal_approx": [
+            0.0,
+            0.0
+          ],
+          "mcnemar_exact_two_sided_p": 1.0
+        },
+        "decisions": 105,
+        "nonforced_decisions": 71,
+        "deviations": 0,
+        "deviation_rate": 0.0,
+        "deviation_rate_nonforced": 0.0,
+        "fights_with_deviation": 0,
+        "fight_deviation_rate": 0.0,
+        "cpu_seconds": 62.206888,
+        "planning_seconds": 62.44537874600246,
+        "seconds_per_decision": 0.5947178928190711,
+        "simulated_episodes": 33408,
+        "deviations_by_type": {},
+        "wall_seconds": 31.689066334000017
+      }
+    },
+    "pilot_m6": {
+      "manifest": {
+        "command": "run",
+        "stage": "m6",
+        "phase": "pilot",
+        "seed_start": 220010,
+        "episodes": 4,
+        "workers": 2,
+        "agent_seed": 20261015,
+        "alpha": 0.01,
+        "looks": [
+          16,
+          64,
+          256
+        ],
+        "futility_margin": 0.0,
+        "out": "runs/headroom_probe/pilot_m6"
+      },
+      "summary": {
+        "paired": {
+          "episodes": 4,
+          "first_win_rate": 0.75,
+          "second_win_rate": 0.75,
+          "difference": 0.0,
+          "paired_se": 0.0,
+          "z": 0.0,
+          "first_only_wins": 0,
+          "second_only_wins": 0,
+          "ci95_conservative": [
+            -0.665629847511789,
+            0.665629847511789
+          ],
+          "ci95_normal_approx": [
+            0.0,
+            0.0
+          ],
+          "mcnemar_exact_two_sided_p": 1.0
+        },
+        "decisions": 101,
+        "nonforced_decisions": 77,
+        "deviations": 0,
+        "deviation_rate": 0.0,
+        "deviation_rate_nonforced": 0.0,
+        "fights_with_deviation": 0,
+        "fight_deviation_rate": 0.0,
+        "cpu_seconds": 83.69017699999999,
+        "planning_seconds": 84.09455087599963,
+        "seconds_per_decision": 0.8326193156039567,
+        "simulated_episodes": 42496,
+        "deviations_by_type": {},
+        "wall_seconds": 46.91699820899976
+      }
+    },
+    "select_m5_a": {
+      "manifest": {
+        "command": "run",
+        "stage": "m5",
+        "phase": "selection",
+        "seed_start": 221000,
+        "episodes": 12,
+        "workers": 2,
+        "agent_seed": 20261015,
+        "alpha": 0.01,
+        "looks": [
+          16,
+          64,
+          256
+        ],
+        "futility_margin": 0.0,
+        "out": "runs/headroom_probe/select_m5_a"
+      },
+      "summary": {
+        "paired": {
+          "episodes": 12,
+          "first_win_rate": 0.8333333333333334,
+          "second_win_rate": 0.8333333333333334,
+          "difference": 0.0,
+          "paired_se": 0.0,
+          "z": 0.0,
+          "first_only_wins": 0,
+          "second_only_wins": 0,
+          "ci95_conservative": [
+            -0.30592057947271045,
+            0.30592057947271045
+          ],
+          "ci95_normal_approx": [
+            0.0,
+            0.0
+          ],
+          "mcnemar_exact_two_sided_p": 1.0
+        },
+        "decisions": 360,
+        "nonforced_decisions": 252,
+        "deviations": 2,
+        "deviation_rate": 0.005555555555555556,
+        "deviation_rate_nonforced": 0.007936507936507936,
+        "fights_with_deviation": 1,
+        "fight_deviation_rate": 0.08333333333333333,
+        "cpu_seconds": 218.905671,
+        "planning_seconds": 226.74676974799786,
+        "seconds_per_decision": 0.629852138188883,
+        "simulated_episodes": 101520,
+        "deviations_by_type": {
+          "TRIP_ENEMY_1 -> ATTACK_ENEMY_2": {
+            "count": 1,
+            "mean_estimated_gain": 0.15234375
+          },
+          "TRIP_ENEMY_1 -> END_TURN": {
+            "count": 1,
+            "mean_estimated_gain": 0.25
+          }
+        },
+        "wall_seconds": 125.24715966699932
+      },
+      "independent_recheck": {
+        "seed": 20261016,
+        "samples": 12,
+        "budget": 1024,
+        "total_deviations": 2,
+        "results": [
+          {
+            "encounter": 221010,
+            "step": 13,
+            "anchor": 4,
+            "chosen": 2,
+            "paired_difference": 0.0478515625,
+            "paired_se": 0.01989554321329308,
+            "chosen_only_wins": 233,
+            "anchor_only_wins": 184
+          },
+          {
+            "encounter": 221010,
+            "step": 14,
+            "anchor": 4,
+            "chosen": 10,
+            "paired_difference": 0.0185546875,
+            "paired_se": 0.01994327944414044,
+            "chosen_only_wins": 218,
+            "anchor_only_wins": 199
+          }
+        ],
+        "cpu_seconds": 7.565562000000001,
+        "actual_samples": 2,
+        "mean_local_gain": 0.033203125,
+        "conditional_mc_se": 0.014085160939257022,
+        "positive_states": 2
+      }
+    },
+    "select_m5_b": {
+      "manifest": {
+        "command": "run",
+        "stage": "m5",
+        "phase": "selection",
+        "seed_start": 221000,
+        "episodes": 12,
+        "workers": 2,
+        "agent_seed": 20261015,
+        "alpha": 0.05,
+        "looks": [
+          16,
+          64,
+          512
+        ],
+        "futility_margin": 0.0,
+        "out": "runs/headroom_probe/select_m5_b"
+      },
+      "summary": {
+        "paired": {
+          "episodes": 12,
+          "first_win_rate": 0.9166666666666666,
+          "second_win_rate": 0.8333333333333334,
+          "difference": 0.08333333333333333,
+          "paired_se": 0.08333333333333333,
+          "z": 1.0,
+          "first_only_wins": 1,
+          "second_only_wins": 0,
+          "ci95_conservative": [
+            -0.3048728968252309,
+            0.42679152309692936
+          ],
+          "ci95_normal_approx": [
+            -0.08,
+            0.24666666666666665
+          ],
+          "mcnemar_exact_two_sided_p": 1.0
+        },
+        "decisions": 366,
+        "nonforced_decisions": 256,
+        "deviations": 2,
+        "deviation_rate": 0.00546448087431694,
+        "deviation_rate_nonforced": 0.0078125,
+        "fights_with_deviation": 2,
+        "fight_deviation_rate": 0.16666666666666666,
+        "cpu_seconds": 385.17080500000003,
+        "planning_seconds": 394.1757432889963,
+        "seconds_per_decision": 1.076982905161192,
+        "simulated_episodes": 194704,
+        "deviations_by_type": {
+          "ACTION_SURGE -> END_TURN": {
+            "count": 1,
+            "mean_estimated_gain": 0.072265625
+          },
+          "ATTACK_ENEMY_1 -> ATTACK_ENEMY_2": {
+            "count": 1,
+            "mean_estimated_gain": 0.078125
+          }
+        },
+        "wall_seconds": 210.6083270830004
+      },
+      "independent_recheck": {
+        "seed": 20261016,
+        "samples": 12,
+        "budget": 1024,
+        "total_deviations": 2,
+        "results": [
+          {
+            "encounter": 221010,
+            "step": 7,
+            "anchor": 9,
+            "chosen": 10,
+            "paired_difference": 0.111328125,
+            "paired_se": 0.01729411563410998,
+            "chosen_only_wins": 220,
+            "anchor_only_wins": 106
+          },
+          {
+            "encounter": 221011,
+            "step": 14,
+            "anchor": 1,
+            "chosen": 2,
+            "paired_difference": 0.0322265625,
+            "paired_se": 0.01934283257976026,
+            "chosen_only_wins": 213,
+            "anchor_only_wins": 180
+          }
+        ],
+        "cpu_seconds": 8.725014,
+        "actual_samples": 2,
+        "mean_local_gain": 0.07177734375,
+        "conditional_mc_se": 0.012973353534982794,
+        "positive_states": 2
+      }
+    },
+    "select_m5_c": {
+      "manifest": {
+        "command": "run",
+        "stage": "m5",
+        "phase": "selection",
+        "seed_start": 221100,
+        "episodes": 12,
+        "workers": 2,
+        "agent_seed": 20261015,
+        "alpha": 0.05,
+        "looks": [
+          32,
+          128,
+          1024
+        ],
+        "futility_margin": 0.0,
+        "prune_nonpositive": true,
+        "out": "runs/headroom_probe/select_m5_c"
+      },
+      "summary": {
+        "paired": {
+          "episodes": 12,
+          "first_win_rate": 0.8333333333333334,
+          "second_win_rate": 0.9166666666666666,
+          "difference": -0.08333333333333333,
+          "paired_se": 0.08333333333333333,
+          "z": -1.0,
+          "first_only_wins": 0,
+          "second_only_wins": 1,
+          "ci95_conservative": [
+            -0.42679152309692936,
+            0.3048728968252309
+          ],
+          "ci95_normal_approx": [
+            -0.24666666666666665,
+            0.08
+          ],
+          "mcnemar_exact_two_sided_p": 1.0
+        },
+        "decisions": 378,
+        "nonforced_decisions": 260,
+        "deviations": 6,
+        "deviation_rate": 0.015873015873015872,
+        "deviation_rate_nonforced": 0.023076923076923078,
+        "fights_with_deviation": 6,
+        "fight_deviation_rate": 0.5,
+        "cpu_seconds": 312.952264,
+        "planning_seconds": 315.25339216700377,
+        "seconds_per_decision": 0.8340036829814914,
+        "simulated_episodes": 172832,
+        "deviations_by_type": {
+          "ACTION_SURGE -> END_TURN": {
+            "count": 2,
+            "mean_estimated_gain": 0.05712890625
+          },
+          "ATTACK_ENEMY_0 -> SECOND_WIND": {
+            "count": 1,
+            "mean_estimated_gain": 0.083984375
+          },
+          "TRIP_ENEMY_2 -> SECOND_WIND": {
+            "count": 2,
+            "mean_estimated_gain": 0.111328125
+          },
+          "TRIP_ENEMY_2 -> TRIP_ENEMY_0": {
+            "count": 1,
+            "mean_estimated_gain": 0.0341796875
+          }
+        },
+        "wall_seconds": 157.84057404099985
+      },
+      "independent_recheck": {
+        "seed": 20261016,
+        "samples": 12,
+        "budget": 1024,
+        "total_deviations": 6,
+        "results": [
+          {
+            "encounter": 221102,
+            "step": 13,
+            "anchor": 0,
+            "chosen": 8,
+            "paired_difference": 0.076171875,
+            "paired_se": 0.014624903453875357,
+            "chosen_only_wins": 154,
+            "anchor_only_wins": 76
+          },
+          {
+            "encounter": 221103,
+            "step": 10,
+            "anchor": 5,
+            "chosen": 8,
+            "paired_difference": 0.0244140625,
+            "paired_se": 0.014036413720017576,
+            "chosen_only_wins": 116,
+            "anchor_only_wins": 91
+          },
+          {
+            "encounter": 221104,
+            "step": 7,
+            "anchor": 9,
+            "chosen": 10,
+            "paired_difference": 0.025390625,
+            "paired_se": 0.010216483296626758,
+            "chosen_only_wins": 68,
+            "anchor_only_wins": 42
+          },
+          {
+            "encounter": 221107,
+            "step": 7,
+            "anchor": 9,
+            "chosen": 10,
+            "paired_difference": 0.1044921875,
+            "paired_se": 0.017636022000314208,
+            "chosen_only_wins": 222,
+            "anchor_only_wins": 115
+          },
+          {
+            "encounter": 221108,
+            "step": 14,
+            "anchor": 5,
+            "chosen": 8,
+            "paired_difference": 0.015625,
+            "paired_se": 0.0075523335019406865,
+            "chosen_only_wins": 38,
+            "anchor_only_wins": 22
+          },
+          {
+            "encounter": 221110,
+            "step": 8,
+            "anchor": 5,
+            "chosen": 3,
+            "paired_difference": 0.0263671875,
+            "paired_se": 0.012599194256667497,
+            "chosen_only_wins": 97,
+            "anchor_only_wins": 70
+          }
+        ],
+        "cpu_seconds": 17.825636,
+        "actual_samples": 6,
+        "mean_local_gain": 0.04541015625,
+        "conditional_mc_se": 0.005380241504653527,
+        "positive_states": 6
+      }
+    },
+    "select_m6_a": {
+      "manifest": {
+        "command": "run",
+        "stage": "m6",
+        "phase": "selection",
+        "seed_start": 221000,
+        "episodes": 12,
+        "workers": 2,
+        "agent_seed": 20261015,
+        "alpha": 0.01,
+        "looks": [
+          16,
+          64,
+          256
+        ],
+        "futility_margin": 0.0,
+        "out": "runs/headroom_probe/select_m6_a"
+      },
+      "summary": {
+        "paired": {
+          "episodes": 12,
+          "first_win_rate": 0.8333333333333334,
+          "second_win_rate": 0.8333333333333334,
+          "difference": 0.0,
+          "paired_se": 0.0,
+          "z": 0.0,
+          "first_only_wins": 0,
+          "second_only_wins": 0,
+          "ci95_conservative": [
+            -0.30592057947271045,
+            0.30592057947271045
+          ],
+          "ci95_normal_approx": [
+            0.0,
+            0.0
+          ],
+          "mcnemar_exact_two_sided_p": 1.0
+        },
+        "decisions": 331,
+        "nonforced_decisions": 245,
+        "deviations": 0,
+        "deviation_rate": 0.0,
+        "deviation_rate_nonforced": 0.0,
+        "fights_with_deviation": 0,
+        "fight_deviation_rate": 0.0,
+        "cpu_seconds": 235.71879099999998,
+        "planning_seconds": 243.7609851250072,
+        "seconds_per_decision": 0.7364380215257016,
+        "simulated_episodes": 90288,
+        "deviations_by_type": {},
+        "wall_seconds": 136.62335229199925
+      }
+    },
+    "select_m6_b": {
+      "manifest": {
+        "command": "run",
+        "stage": "m6",
+        "phase": "selection",
+        "seed_start": 221000,
+        "episodes": 12,
+        "workers": 2,
+        "agent_seed": 20261015,
+        "alpha": 0.05,
+        "looks": [
+          16,
+          64,
+          512
+        ],
+        "futility_margin": 0.0,
+        "out": "runs/headroom_probe/select_m6_b"
+      },
+      "summary": {
+        "paired": {
+          "episodes": 12,
+          "first_win_rate": 0.8333333333333334,
+          "second_win_rate": 0.8333333333333334,
+          "difference": 0.0,
+          "paired_se": 0.0,
+          "z": 0.0,
+          "first_only_wins": 0,
+          "second_only_wins": 0,
+          "ci95_conservative": [
+            -0.30592057947271045,
+            0.30592057947271045
+          ],
+          "ci95_normal_approx": [
+            0.0,
+            0.0
+          ],
+          "mcnemar_exact_two_sided_p": 1.0
+        },
+        "decisions": 342,
+        "nonforced_decisions": 252,
+        "deviations": 1,
+        "deviation_rate": 0.0029239766081871343,
+        "deviation_rate_nonforced": 0.003968253968253968,
+        "fights_with_deviation": 1,
+        "fight_deviation_rate": 0.08333333333333333,
+        "cpu_seconds": 357.527687,
+        "planning_seconds": 366.67182271999536,
+        "seconds_per_decision": 1.0721398325146063,
+        "simulated_episodes": 138992,
+        "deviations_by_type": {
+          "ACTION_SURGE -> END_TURN": {
+            "count": 1,
+            "mean_estimated_gain": 0.375
+          }
+        },
+        "wall_seconds": 213.9290168339994
+      },
+      "independent_recheck": {
+        "seed": 20261016,
+        "samples": 12,
+        "budget": 1024,
+        "total_deviations": 1,
+        "results": [
+          {
+            "encounter": 221011,
+            "step": 3,
+            "anchor": 9,
+            "chosen": 12,
+            "paired_difference": -0.0048828125,
+            "paired_se": 0.017882110843331293,
+            "chosen_only_wins": 165,
+            "anchor_only_wins": 170
+          }
+        ],
+        "cpu_seconds": 6.718988,
+        "actual_samples": 1,
+        "mean_local_gain": -0.0048828125,
+        "conditional_mc_se": 0.017882110843331293,
+        "positive_states": 0
+      }
+    },
+    "select_m6_c": {
+      "manifest": {
+        "command": "run",
+        "stage": "m6",
+        "phase": "selection",
+        "seed_start": 221100,
+        "episodes": 12,
+        "workers": 2,
+        "agent_seed": 20261015,
+        "alpha": 0.05,
+        "looks": [
+          32,
+          128,
+          1024
+        ],
+        "futility_margin": 0.0,
+        "prune_nonpositive": true,
+        "out": "runs/headroom_probe/select_m6_c"
+      },
+      "summary": {
+        "paired": {
+          "episodes": 12,
+          "first_win_rate": 0.5833333333333334,
+          "second_win_rate": 0.5833333333333334,
+          "difference": 0.0,
+          "paired_se": 0.0,
+          "z": 0.0,
+          "first_only_wins": 0,
+          "second_only_wins": 0,
+          "ci95_conservative": [
+            -0.30592057947271045,
+            0.30592057947271045
+          ],
+          "ci95_normal_approx": [
+            0.0,
+            0.0
+          ],
+          "mcnemar_exact_two_sided_p": 1.0
+        },
+        "decisions": 322,
+        "nonforced_decisions": 246,
+        "deviations": 3,
+        "deviation_rate": 0.009316770186335404,
+        "deviation_rate_nonforced": 0.012195121951219513,
+        "fights_with_deviation": 2,
+        "fight_deviation_rate": 0.16666666666666666,
+        "cpu_seconds": 334.101718,
+        "planning_seconds": 336.35516167300193,
+        "seconds_per_decision": 1.0445812474316831,
+        "simulated_episodes": 167776,
+        "deviations_by_type": {
+          "ATTACK_ENEMY_0 -> ATTACK_ENEMY_2": {
+            "count": 1,
+            "mean_estimated_gain": 0.064453125
+          },
+          "TRIP_ENEMY_0 -> TRIP_ENEMY_2": {
+            "count": 1,
+            "mean_estimated_gain": 0.08984375
+          },
+          "TRIP_ENEMY_1 -> ADVANCE": {
+            "count": 1,
+            "mean_estimated_gain": 0.0478515625
+          }
+        },
+        "wall_seconds": 175.9706061249999
+      },
+      "independent_recheck": {
+        "seed": 20261016,
+        "samples": 12,
+        "budget": 1024,
+        "total_deviations": 3,
+        "results": [
+          {
+            "encounter": 221108,
+            "step": 12,
+            "anchor": 3,
+            "chosen": 5,
+            "paired_difference": 0.0751953125,
+            "paired_se": 0.01620855425882633,
+            "chosen_only_wins": 179,
+            "anchor_only_wins": 102
+          },
+          {
+            "encounter": 221111,
+            "step": 0,
+            "anchor": 4,
+            "chosen": 10,
+            "paired_difference": 0.0341796875,
+            "paired_se": 0.015442287994870525,
+            "chosen_only_wins": 143,
+            "anchor_only_wins": 108
+          },
+          {
+            "encounter": 221111,
+            "step": 10,
+            "anchor": 0,
+            "chosen": 2,
+            "paired_difference": 0.0458984375,
+            "paired_se": 0.015900334778718533,
+            "chosen_only_wins": 157,
+            "anchor_only_wins": 110
+          }
+        ],
+        "cpu_seconds": 11.564815,
+        "actual_samples": 3,
+        "mean_local_gain": 0.0517578125,
+        "conditional_mc_se": 0.009153033108411935,
+        "positive_states": 3
+      }
+    }
+  },
+  "cost": {
+    "confirmation_worker_cpu_seconds": 64271.914211000054,
+    "development_selection_worker_cpu_seconds": 1990.2740010000002,
+    "independent_recheck_cpu_seconds": 122.713284,
+    "experiment_cpu_seconds": 66384.90149600005,
+    "excludes": "Test execution, Python startup/imports, and parent-process scheduling/summary overhead"
+  },
+  "raw_decision_audits": {
+    "m5": {
+      "episodes": 1000,
+      "decisions": 28557,
+      "gated_deviations": 421,
+      "no_deviation_outcome_mismatches": 0,
+      "all_switches_pass_original_family_gate": true,
+      "paired_seed_outcomes_match_when_no_switch": true,
+      "rollout_counts_reconcile": true
+    },
+    "m6": {
+      "episodes": 1000,
+      "decisions": 28615,
+      "gated_deviations": 387,
+      "no_deviation_outcome_mismatches": 0,
+      "all_switches_pass_original_family_gate": true,
+      "paired_seed_outcomes_match_when_no_switch": true,
+      "rollout_counts_reconcile": true
+    }
+  },
+  "environment": {
+    "python": "3.11.9 (v3.11.9:de54cf5be3, Apr  2 2024, 07:12:50) [Clang 13.0.0 (clang-1300.0.29.30)]",
+    "numpy": "2.4.6",
+    "gymnasium": "1.3.0"
+  },
+  "encounter_seed_usage": {
+    "unit_tests": "220000\u2013220007",
+    "pilot": "220010\u2013220013",
+    "selection": [
+      "221000\u2013221011",
+      "221100\u2013221111"
+    ],
+    "confirmation": "223000\u2013223999 (1,000 per stage)",
+    "spare": "228000\u2013229999 unused",
+    "frozen": "130000\u2013132999 untouched"
+  }
+}
