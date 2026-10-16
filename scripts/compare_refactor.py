@@ -316,7 +316,10 @@ def fingerprints(root: Path) -> tuple[dict[str, str], dict[str, str]]:
         with tempfile.TemporaryDirectory(prefix=f"baldurrl-{name}-") as directory:
             scratch = Path(directory).resolve()
             try:
-                results[name] = digest(scenario(scratch, root), scratch=scratch, root=root)
+                # Printed output is observable behavior, so it is fingerprinted with the result.
+                with contextlib.redirect_stdout(io.StringIO()) as printed:
+                    value = scenario(scratch, root)
+                results[name] = digest({"result": value, "stdout": printed.getvalue()}, scratch=scratch, root=root)
             except (Exception, SystemExit) as error:
                 errors[name] = f"{type(error).__name__}: {error}"
     return results, errors
