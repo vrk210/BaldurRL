@@ -68,6 +68,13 @@ The complete developer environment is documented in the root README.
    it into [BG3 Mod Manager](https://github.com/LaughingLeader/BG3ModManager),
    activate and export load order. UUID: `d860477b-c599-4f12-9e95-5b8ec7235860`.
    Get-Help describes script options.
+
+   **Fallback, unverified:** if packaging fails, copy `bg3/h0/Mods/BaldurRL_H0`
+   to `<BG3>/Data/Mods/BaldurRL_H0` as loose files, a layout the
+   [community setup example](https://github.com/LaughingLeader/BG3ModdingTools/wiki/Script-Extender-Lua-Setup)
+   supports. The module must still be activated in the load order. Use the
+   package or the loose copy, never both. Prefer the package: it is what
+   `package-h0.ps1` builds and records in its manifest.
 4. Load the save and confirm the server bootstrap, listener output and
    `[BaldurRL H0] New session:` GUID/path. Investigate UNAVAILABLE or HALTED.
    H0 starts on SessionLoaded/ResetCompleted; stop/start and reload create new
