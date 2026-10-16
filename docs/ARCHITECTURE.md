@@ -105,13 +105,14 @@ Tests and the replay oracle remain independent where they catch different errors
 | `pyproject.toml` | supported | Pinned-tool lint configuration; no packaging framework. |
 | `requirements.txt` | supported | Pinned Python 3.11 simulator/development dependency graph; includes harness and quality manifests. |
 | `requirements-quality.txt` | supported | Pinned lint tool used by repository CI. |
-| `scripts/compare_refactor.py` | verification-only | CLI: python scripts/compare_refactor.py --base COMMIT; fixed-seed semantic equivalence across revisions. |
+| `scripts/compare_refactor.py` | verification-only | CLI: python scripts/compare_refactor.py --base COMMIT; simulator, planner, evaluation and integration scenario fingerprints across revisions, plus which changed functions the scenarios ran. |
 | `scripts/check_repository.py` | supported | CLI: python scripts/check_repository.py; inventory, docs, artifacts and PR budget checks. |
 | `scripts/windows/bootstrap-harness.ps1` | supported | CLI: scripts/windows/bootstrap-harness.ps1; isolated harness environment. |
 | `scripts/windows/package-h0.ps1` | supported | CLI: scripts/windows/package-h0.ps1; Divine packaging and source manifest. |
 | `tests/m2_oracle.py` | verification-only | pytest verification: m2 oracle. |
 | `tests/test_bg3_h0_lua.py` | verification-only | pytest verification: bg3 h0 lua. |
 | `tests/test_combat_regression.py` | verification-only | pytest verification: combat regression. |
+| `tests/test_compare_refactor.py` | verification-only | pytest verification: compare refactor. |
 | `tests/test_encounter_trial.py` | verification-only | pytest verification: encounter trial. |
 | `tests/test_env.py` | verification-only | pytest verification: env. |
 | `tests/test_evaluation.py` | verification-only | pytest verification: evaluation. |
