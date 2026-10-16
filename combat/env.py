@@ -1,4 +1,34 @@
-"""Gymnasium interface for the fixed M0 Fighter-versus-Goblin encounter."""
+"""M0 contract: one preset Fighter versus one preset Goblin at fixed melee range.
+
+This is a regression simulator, not a verified BG3 encounter. Fighter: 20 HP,
+AC 16, +5 attack, 1d8+3. Goblin: 15 HP, AC 15, +4, 1d6+2. Fighter acts first;
+no initiative, movement, terrain, inventory or additional creatures are modeled.
+
+M0_ACTIONS fixes indices 0 ATTACK, 1 SECOND_WIND, 2 ACTION_SURGE, 3 END_TURN;
+enum numeric values are not this mapping. One step is one Fighter decision.
+Abilities return immediately; END_TURN runs one Goblin attack if both live,
+then returns at the next Fighter turn. Death terminates immediately, with no
+later attack or turn refresh. The Goblin has no alternative policy.
+
+OBSERVATION_FIELDS fixes the seven unnormalized float32 fields. Constant preset
+stats are omitted; action masks are separate. Masks combine known ability,
+catalog affordability and effect-specific legality. Terminal/truncated masks
+are all false. Masked/invalid actions raise ValueError; ended episodes require
+reset. No reward penalty substitutes for validation.
+
+Reset starts round 1 with fresh presets. ACTION and BONUS_ACTION refresh to 1
+at Fighter turn start; SECOND_WIND and ACTION_SURGE never refresh in an episode.
+The Goblin's Action refreshes before its automatic turn. Action Surge grants
+one extra Action, including before the first attack; Second Wind spends its
+charge and Bonus Action, heals 1d10+2 capped at max HP, and requires missing HP.
+
+Default rewards are +1 victory, -1 defeat, otherwise 0. Completing round 50
+without an outcome truncates at round 50 with zero reward; never enter round 51.
+Reward injection receives immutable before/after RewardSnapshots and semantic
+Action; it cannot change transitions. Info is diagnostic, not policy input.
+All sampling uses the environment's seeded RNG passed into mechanics; agents
+must never access its future draws. Mechanics define natural-roll/critical rules.
+"""
 
 from dataclasses import asdict, dataclass
 from typing import Any, Callable

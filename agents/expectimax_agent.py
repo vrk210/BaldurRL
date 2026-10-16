@@ -5,7 +5,8 @@ exact `TransitionModel` for legal decisions and merged successor distributions,
 and maximizes win probability: max over the active ally's decisions,
 expectation over chance outcomes. Depth counts controlled-turn boundaries: each
 `END_TURN` (which includes any following automatic enemy phase) consumes one
-unit. Depth 1 therefore searches the rest of the current ally's turn plus the
+unit. Boundaries are tested per successor via model.turn_passed: a lethal M6
+Advance also consumes depth when it hands play to the next ally. Depth 1 therefore searches the rest of the current ally's turn plus the
 transition into the next controlled turn; ongoing states reached with no depth
 left are scored by the leaf value. Terminal states score exactly (victory 1,
 defeat or truncation 0). `depth=None` searches to termination (exact, feasible
@@ -31,6 +32,19 @@ whole turn can branch into hundreds of thousands of nodes (one three-target
 Cleave alone has hundreds of outcomes), so the one-decision horizon keeps the
 cost bounded by the root's outcomes.
 The agent contains no combat rules; all dynamics come from `combat.transitions`.
+
+Search keys transpositions by (state, remaining depth), backs values up after
+batched leaf scoring and breaks ties within 1e-12 by lowest action index. Cache
+state is cleared at turn/encounter boundaries. always_search=True supplies a
+root value even for forced decisions; last_diagnostics is the current decision,
+not a guarantee of good play. An epsilon wrapper must clear it on random choices.
+
+The supported exact model is RosterTransitionModel for M0–M4 and the table
+model for M5/M6. The replay oracle and tests/m2_oracle.py independently verify
+transition/search behavior. Neither oracle proves the shared simulator rules
+match BG3. Revisit deeper search only when frontier values and decision latency
+justify it; measured outcomes and limitations belong in docs/RESULTS.md.
+
 """
 
 from collections.abc import Callable

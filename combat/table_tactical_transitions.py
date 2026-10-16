@@ -3,10 +3,8 @@
 Why this exists: the replay oracle (`tactical_transitions.TacticalTransitionModel`)
 runs real environment code for every random path. A three-target Cleave or a
 three-enemy END_TURN took seconds, which made full-turn and enemy-phase search
-impractical in the 2026-10-10 planner pilots. This model computes the same
-distributions from cached HP tables. On the benchmark (seeds 210000–210009) it
-is 16× faster per transition on M5 and 53× faster on M6. It became the registered
-M5/M6 model on 2026-10-15.
+impractical. This model computes the same distributions from cached HP tables;
+measured speed and audit results are in docs/RESULTS.md.
 
 HP tables merge capped damage/healing before expanding successor states. Costs,
 reach, roll modes, target selection, and lifecycle updates come from the shared
@@ -15,9 +13,7 @@ rules. Only turn coordination and compact-state writes live here.
 Correctness contract: it must equal the oracle exactly. This is checked by
 `tests/test_table_tactical_transitions.py`, by
 `python -m evaluation.tactical_transition_benchmark`, and by
-`python -m evaluation.tactical_transition_audit`. The audit covered 118,089 cases,
-including constructed edge states, with no mismatches on 2026-10-11. Rerun the
-audit after any change to M5/M6 rules. Both checks compare against the
+`python -m evaluation.tactical_transition_audit`. The audit includes constructed edge states. Rerun it after any change to M5/M6 rules. Both checks compare against the
 environment's own code, so neither can catch a rule that is wrong in `tactics.py`.
 """
 from collections import defaultdict

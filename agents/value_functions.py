@@ -4,8 +4,16 @@
 race squashed by a two-parameter logistic). `MLPValue` runs a small trained
 multilayer perceptron in NumPy. Both read observations through the stage's
 published field names and never step the simulator. Expected damage per attack
-comes from the exact distribution helper in `combat.mechanics`, so no dice
+comes from the exact distribution helper in `combat.distributions`, so no dice
 formula is restated here.
+
+MLP inputs divide by observation-space highs and zero inactive allies' per-turn
+fields: those fields reset before the ally next acts. Afterstate values zero
+all allies' per-turn fields and train only on END_TURN rows. EnsembleValue
+averages logits. These are frontier estimates, not exact combat values; lower
+validation loss alone does not establish better play. Evaluation must use fresh
+paired encounters. Measured comparisons belong in docs/RESULTS.md.
+
 """
 
 import json

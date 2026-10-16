@@ -6,13 +6,26 @@ successor states, including the complete automatic phase after `END_TURN`.
 Identical successors are merged, so HP outcomes collapse into few states.
 
 Rules are not re-derived here: dice, hit/critical, damage halving, and healing
-come from the distribution helpers in `mechanics.py`; costs from the ability
+come from the distribution helpers in `distributions.py`; costs from the ability
 catalog; legality and the automatic enemy policy from `legality.py`; turn order
 and refresh from the environment's `TurnManager` order and `turn_refresh`.
 
 New stages plug in by registering a factory (`register_transition_model`) that
 returns any object satisfying `TransitionModel`, i.e. their own outcome
 enumeration over their own state encoding. Planners depend only on the protocol.
+
+state_from_observation validates a live allied decision, same_encounter checks
+static encounter identity, status/ legal_actions match the environment, and
+observations reconstructs batches for leaf evaluation. outcomes returns exact
+merged (probability, successor) pairs. ends_turn identifies explicit hand-over;
+turn_passed checks each successor, including own-turn death. Enemy resources
+are omitted only when they refresh before use; do not omit persistent state.
+
+Verification uses scripted-RNG path enumeration in tests/test_transitions.py,
+sampling for large branches and an independent M2 oracle for search. M5/M6 use
+the independent environment replay oracle as described by tactical_transitions.
+The simulator is frozen: registry extensibility is not authorization for stages.
+
 """
 
 from collections import defaultdict

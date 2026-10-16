@@ -1,4 +1,36 @@
-"""Small stage selector and Gymnasium environments for M1A, M1B, M2, M3, and M4."""
+"""M1A–M4 contracts and the M0–M6 environment factory.
+
+All stages are simulator choices, not verified BG3 stat blocks. M1A has one
+enemy, M1B/M2 two, M3 two allies versus two enemies, M4 two versus three.
+Fighters use the M0 preset. M1A–M3 enemies independently sample inclusive HP
+8–20, AC 12–18, attack +2–+6, one d4/d6/d8 and damage bonus 0–4. M4 uses HP
+12–24, AC 12–18, attack +3–+7 and bonus 2–6. All begin at max HP.
+
+The stage decision tuples fix indices: attacks in enemy slot order; then Cleave
+when present (M2+), Second Wind, Action Surge, END_TURN. M1A has one ATTACK.
+Cleave costs one Action and its once-per-encounter charge, independently attacks
+each living target in slot order and halves damage after critical dice, with
+minimum 1 on a hit. No cone geometry exists. Dead targets are masked.
+
+One step is one controlled ally decision. Fixed order is allies in slot order,
+then enemies in slot order; dead actors are skipped. M3/M4 ally 0 hands directly
+to ally 1; the final living ally's END_TURN resolves the living enemies before
+the next round. Each enemy attacks the lowest living ally slot. One ally dying
+does not end combat. All enemies dead with an ally alive wins; all allies dead
+loses. If an injected transition kills both sides, defeat takes precedence.
+Terminal rewards are +1/-1 and otherwise 0, with round-50 truncation as in M0.
+Only M2 permits damage shaping: add 0.2 * enemy HP reduction / initial enemy max
+HP total per controlled decision. Enemy damage is excluded. Evaluate outcomes
+with terminal reward regardless of training shaping.
+
+The field-name builders and observation bounds define the exact float32 index
+contract: active ally index (M3/M4), ally blocks in slot order, enemy blocks in
+slot order, round last. Do not reorder them independently of saved models.
+On terminal observations active_actor_index is the first surviving ally or 0.
+Info/evaluation use ally_hps and total surviving ally HP for party stages;
+defeat requires the whole allied side dead. Masks are all false outside a live
+controlled turn. M5/M6 contracts live in tactical_env and tactics.
+"""
 
 from dataclasses import asdict
 from typing import Any, Callable

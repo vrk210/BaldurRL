@@ -287,7 +287,7 @@ class TacticalTransitionModel:
 
     def turn_passed(self, state: State, action: int, successor: State) -> bool:
         # An ally killed on its own turn hands play on exactly as END_TURN would
-        # (STAGES_SPEC, "Death on an ally's own turn"); its (side, slot, round) then changes.
+        # (tactical_env, "Death during one's own ADVANCE"); its (side, slot, round) then changes.
         return self.ends_turn(action) or successor[1:4] != state[1:4]
 
     def legal_actions(self, state: State) -> tuple[int, ...]:

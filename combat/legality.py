@@ -92,7 +92,7 @@ def tactical_legal_mask(
     enemies: Sequence[TacticalEnemy],
     decisions: Sequence[DecisionSpec],
 ) -> list[bool]:
-    """M5/M6 legal decisions for one ally on its turn (see docs/STAGES_SPEC.md).
+    """M5/M6 legal decisions for one ally on its turn (see combat/tactical_env.py and combat/tactics.py).
 
     Combines known abilities and catalog costs with each effect's own
     conditions from ``combat.tactics`` (reach, Prone, Dodging, ranks), so the

@@ -6,7 +6,7 @@ This is an implementation reference, not a general BG3 wiki. Labels mean:
 - **M0_SIMPLIFICATION:** A deliberate prototype choice that may differ from full BG3.
 - **TODO_VERIFY:** Possible BG3 behavior or API detail requiring verification before implementation.
 
-**TODO_VERIFY information must never be treated as implementation truth.** `docs/M0_SPEC.md` governs current simulator behavior.
+**TODO_VERIFY information must never be treated as implementation truth.** the owning combat modules document current simulator contracts.
 
 ## Current M0 knowledge
 
@@ -73,7 +73,7 @@ No new behavior in this section is labeled `VERIFIED_BG3`.
 
 ### SIMULATOR_SIMPLIFICATION (owner-authorized designs, not BG3 rules)
 
-The project owner authorized designing these mechanics for decision headroom. They are specified in [STAGES_SPEC.md](STAGES_SPEC.md) and must not be cited as BG3 behavior:
+The project owner authorized designing these mechanics for decision headroom. They are specified in [the stage contracts](../combat/tactical_env.py) and must not be cited as BG3 behavior:
 
 - Enemy roles Brute, Archer, and Healer, one of each per M5/M6 encounter, with role-specific stat ranges; the Healer heals the most-injured enemy at or below half HP (2d6+2, limited charges) instead of attacking.
 - Enemy targeting policies `WEAKEST`, `RETALIATE` (last ally to attack or trip it), and `RANDOM`, sampled per enemy and visible to the policy.
@@ -95,7 +95,7 @@ Listing a topic here does **not** authorize its implementation. These are future
 1. Label new knowledge `VERIFIED_BG3`, `M0_SIMPLIFICATION`, `SIMULATOR_SIMPLIFICATION`, or `TODO_VERIFY`.
 2. Cite or describe the source of verified mechanics where practical.
 3. Never silently promote `TODO_VERIFY` material into implementation behavior.
-4. Update `M0_SPEC.md` if a mechanic becomes part of the current environment.
+4. If a simulator rule change is explicitly authorized, update its owning module contract and behavior tests.
 
 ## Simulator tactical evidence (hypotheses for BG3)
 
