@@ -92,3 +92,21 @@ architecture and contracts in a few maintained documents. Put completed task
 plans and implementation history in PRs or Git history rather than new docs.
 Add a standalone document when it serves an ongoing purpose; necessary temporary
 handoffs must state when they should be removed.
+
+Experiment artifacts are temporary by default. Write raw logs, transcripts,
+research bundles and result JSON under an ignored location such as `runs/`,
+with one canonical location per experiment; do not commit them by default.
+
+Before summarizing or retiring artifacts, inspect them for missing/non-finite
+data, inconsistent configurations or provenance, failures, and unexpected or
+promising results. Alert the user to anything worth investigating. Preserve
+the smallest relevant evidence and its provenance until the question is resolved.
+
+Keep concise findings in an existing results or knowledge document: what was
+tested and why, configuration/code revision, seeds/sample size, uncertainty,
+limitations, and unresolved questions. Raw output is not a substitute for this
+summary. Retire summarized, regenerable output once no active investigation
+needs it. Retain artifacts only for a concrete ongoing purpose, such as unique
+live captures, active training data, or small regression fixtures; record their
+location and retention/removal condition. Do not routinely discard irreplaceable
+data or evidence for an unresolved issue.
