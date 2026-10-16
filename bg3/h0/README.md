@@ -225,7 +225,8 @@ Lua. No tests emulate engine timing or prove an installed SE version works.
   no overwrites, contiguous sequences within each session, and no mixed sessions.
 
 - [ ] Compare selected host and enemy component dumps: HP/max HP, armor class,
-  position, alive/dead/downed state. HP=0 alone does not establish death.
+  position, alive/dead/downed state. Check that the Osiris HP/max HP in
+  snapshots matches the ECS values. HP=0 alone does not establish death.
 - [ ] Identify the Basic Attack, Second Wind and Action Surge ability IDs, the
   Action/Bonus Action/Movement/slot resource IDs, and how Second Wind / Action
   Surge availability is represented; compare SpellBook, HasSpell and visible UI
