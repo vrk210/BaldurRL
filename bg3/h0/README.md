@@ -67,7 +67,7 @@ The complete developer environment is documented in the root README.
    manifest; `-Force` explicitly permits replacing an existing package. Import
    it into [BG3 Mod Manager](https://github.com/LaughingLeader/BG3ModManager),
    activate and export load order. UUID: `d860477b-c599-4f12-9e95-5b8ec7235860`.
-   Do not install both a package and loose copy. Get-Help describes script options.
+   Get-Help describes script options.
 4. Load the save and confirm the server bootstrap, listener output and
    `[BaldurRL H0] New session:` GUID/path. Investigate UNAVAILABLE or HALTED.
    H0 starts on SessionLoaded/ResetCompleted; stop/start and reload create new
@@ -209,7 +209,8 @@ Lua. No tests emulate engine timing or prove an installed SE version works.
 - [ ] Confirm exact IO root and UTF-8 bytes; test `.pending` readback, `.ready`
   completion, publisher atomic replacement, immutable `.json` records, and
   `python -m integration.inspect <directory>`. Interrupt a write: no partial
-  completed JSON; an interrupted capture may require a fresh session.
+  completed JSON; an interrupted capture may require a fresh session. Measure
+  the delay between a record's `.ready` marker and the publisher picking it up.
 - [ ] Confirm every arity and argument position above using an actual 1v1 fight:
   combat start/end, entry, round/turn start/end, manual ability use/target, damage,
   miss, critical, and death. Investigate any `UNAVAILABLE`/`HALTED` message.
@@ -225,10 +226,13 @@ Lua. No tests emulate engine timing or prove an installed SE version works.
 
 - [ ] Compare selected host and enemy component dumps: HP/max HP, armor class,
   position, alive/dead/downed state. HP=0 alone does not establish death.
-- [ ] Identify Action/Bonus Action/Movement/slot resource IDs and Second Wind /
-  Action Surge availability; compare SpellBook, HasSpell and visible UI abilities.
+- [ ] Identify the Basic Attack, Second Wind and Action Surge ability IDs, the
+  Action/Bonus Action/Movement/slot resource IDs, and how Second Wind / Action
+  Surge availability is represented; compare SpellBook, HasSpell and visible UI
+  abilities.
 - [ ] Compare candidate legality to enabled UI actions, including range, LOS and
-  status restrictions; an absent/unknown result never becomes LEGAL.
+  status restrictions, and test `CanCastSpellOnEnemyInSameCombat`; an
+  absent/unknown result never becomes LEGAL.
 - [ ] For future command trials, establish capture-after-terminal-result timing,
   excluding queued old snapshots. Acceptance and callback start are insufficient.
 
