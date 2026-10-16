@@ -1,6 +1,9 @@
 """Compare semantic fingerprints of the maintained code against a Git base.
 
-Usage: python scripts/compare_refactor.py --base COMMIT
+Usage: python scripts/compare_refactor.py --base COMMIT [--event GITHUB_EVENT_JSON]
+
+With --event, as in CI, it runs only if the PR body has a line that is exactly
+`Behavior: preserve`; a body that merely mentions the marker does not count.
 
 Why: a PR that declares `Behavior: preserve` may rewrite tests that checked
 implementation, so its tests alone cannot show that behavior is unchanged. This
@@ -408,6 +411,11 @@ def changed_functions(root: Path, base: str) -> set[tuple[str, str]]:
             for name in changed_definitions((root / path).read_text(encoding="utf-8"), numbers)}
 
 
+def declares_behavior_preserved(body: str | None) -> bool:
+    """True if the PR body has a line that is exactly `Behavior: preserve`."""
+    return re.search(r"^Behavior: preserve\s*$", body or "", re.M) is not None
+
+
 def run_worker(script: str, tree: Path, *, record_calls: bool) -> dict[str, Any]:
     """Fingerprint tree in a fresh interpreter; results travel by file, so scenario output can't corrupt them."""
     with tempfile.TemporaryDirectory(prefix="baldurrl-worker-") as directory:
@@ -420,6 +428,7 @@ def run_worker(script: str, tree: Path, *, record_calls: bool) -> dict[str, Any]
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base", help="Git commit whose runtime behavior must be preserved")
+    parser.add_argument("--event", type=Path, help="GitHub event JSON; compare only if its PR body declares preservation")
     parser.add_argument("--worker", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--output", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--record-calls", action="store_true", help=argparse.SUPPRESS)
@@ -435,6 +444,11 @@ def main() -> int:
         return 0
     if not args.base:
         parser.error("--base is required")
+    if args.event:
+        event = json.loads(args.event.read_text(encoding="utf-8"))
+        if not declares_behavior_preserved(event.get("pull_request", {}).get("body")):
+            print("The PR body has no 'Behavior: preserve' line; comparison skipped.")
+            return 0
     root = Path(__file__).resolve().parents[1]
     revision = subprocess.check_output(["git", "rev-parse", "--verify", "--end-of-options", f"{args.base}^{{commit}}"],
                                        cwd=root, text=True).strip()
