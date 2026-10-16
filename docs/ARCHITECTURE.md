@@ -92,7 +92,8 @@ Tests and the replay oracle remain independent where they catch different errors
 | `integration/command_transport.py` | supported | Atomic session command publication, freshness and feedback validation. |
 | `integration/commands.py` | supported | Model-independent commands, targets, legality evidence and result states. |
 | `integration/encounter_trial.py` | supported | CLI: python -m integration.encounter_trial; evidence analysis; missing live facts remain inconclusive. |
-| `integration/inspect.py` | supported | CLI: python -m integration.inspect; passive record inspection. |
+| `integration/inspect_records.py` | supported | CLI: python -m integration.inspect_records; passive record inspection. |
+| `integration/intervals.py` | supported | Snapshot intervals from ordered records and the single controlled action in each; ambiguity raises. |
 | `integration/mock_executor.py` | verification-only | CLI: python -m integration.mock_executor; synthetic command acknowledgements. |
 | `integration/mock_h0.py` | verification-only | CLI: python -m integration.mock_h0; synthetic passive collector. |
 | `integration/publish.py` | supported | CLI: python -m integration.publish; ready-marker record publication. |
@@ -100,7 +101,6 @@ Tests and the replay oracle remain independent where they catch different errors
 | `integration/schema.py` | supported | Versioned passive GameSnapshot/GameEvent records; preserve compatibility. |
 | `integration/serialization.py` | supported | Strict passive-record JSON decoding/encoding. |
 | `integration/session_runner.py` | supported | CLI: python -m integration.session_runner; isolated capture archival and health. |
-| `integration/trace.py` | supported | Snapshot intervals from ordered records and the single controlled action in each; ambiguity raises. |
 | `integration/windows_preflight.py` | supported | CLI: python -m integration.windows_preflight; read-only installation checks. |
 | `pyproject.toml` | supported | Pinned-tool lint configuration; no packaging framework. |
 | `requirements.txt` | supported | Pinned Python 3.11 simulator/development dependency graph; includes harness and quality manifests. |
@@ -120,12 +120,12 @@ Tests and the replay oracle remain independent where they catch different errors
 | `tests/test_heuristic.py` | verification-only | pytest verification: heuristic. |
 | `tests/test_integration_command_transport.py` | verification-only | pytest verification: integration command transport. |
 | `tests/test_integration_commands.py` | verification-only | pytest verification: integration commands. |
+| `tests/test_integration_intervals.py` | verification-only | pytest verification: integration intervals. |
 | `tests/test_integration_post_execution_fence.py` | verification-only | pytest verification: integration post execution fence. |
 | `tests/test_integration_publish.py` | verification-only | pytest verification: integration publish. |
 | `tests/test_integration_reader.py` | verification-only | pytest verification: integration reader. |
 | `tests/test_integration_schema.py` | verification-only | pytest verification: integration schema. |
 | `tests/test_integration_serialization.py` | verification-only | pytest verification: integration serialization. |
-| `tests/test_integration_trace.py` | verification-only | pytest verification: integration trace. |
 | `tests/test_legality.py` | verification-only | pytest verification: legality. |
 | `tests/test_m3.py` | verification-only | pytest verification: m3. |
 | `tests/test_m4.py` | verification-only | pytest verification: m4. |

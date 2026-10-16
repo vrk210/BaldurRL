@@ -4,9 +4,9 @@ from argparse import ArgumentParser
 from collections import Counter
 from pathlib import Path
 
+from .intervals import AmbiguousActionError, controlled_action, reconstruct_intervals
 from .reader import RecordDirectoryReader
 from .schema import GameEvent, GameSnapshot
-from .trace import AmbiguousActionError, controlled_action, reconstruct_intervals
 
 
 def inspect_directory(directory: str | Path) -> str:

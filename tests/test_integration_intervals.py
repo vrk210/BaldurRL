@@ -1,10 +1,10 @@
 import pytest
 
-from integration.inspect import inspect_directory
+from integration.inspect_records import inspect_directory
+from integration.intervals import AmbiguousActionError, controlled_action, reconstruct_intervals
 from integration.mock_h0 import write_mock_trace
 from integration.reader import RecordDirectoryReader, validate_sequence
 from integration.schema import EventKind, GameEvent, GameSnapshot
-from integration.trace import AmbiguousActionError, controlled_action, reconstruct_intervals
 
 
 def test_intervals_and_controlled_action() -> None:

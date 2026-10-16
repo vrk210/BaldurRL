@@ -103,7 +103,7 @@ The passive Lua producer in [bg3/h0](../bg3/h0/README.md) chooses increasing seq
 
 ```text
 python -m integration.mock_h0 /tmp/baldurrl-h0
-python -m integration.inspect /tmp/baldurrl-h0
+python -m integration.inspect_records /tmp/baldurrl-h0
 ```
 
 One record directory represents one collector session / sequence namespace. For H0, a restarted collector should start a new output directory rather than reuse sequence IDs in an existing directory. `RecordDirectoryReader(directory, start_sequence=1).read_new()` emits each record once and stops at a missing sequence, retaining later records until another poll. Use `start_sequence` when attaching to a stream that starts after 1. `read_all()` returns all available records sorted by embedded sequence; `validate_all()` reports gaps for offline inspection. Duplicate IDs and invalid JSON or schema records raise errors naming the offending file. Record files are treated as immutable after a successful read.
@@ -319,7 +319,7 @@ intake; this Python lock does not freeze BG3 or cover an independent Lua writer.
 
 ```text
 python -m integration.mock_executor /tmp/baldurrl-command-session-001
-python -m integration.inspect /tmp/baldurrl-command-session-001/records
+python -m integration.inspect_records /tmp/baldurrl-command-session-001/records
 ```
 
 Use a fresh empty session tree for each demo. The CLI writes a synthetic
