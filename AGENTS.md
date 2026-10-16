@@ -81,7 +81,9 @@ counted separately and must be justified by behavior, not implementation shape.
   explicitly marked as cleanup debt in the inventory must be removed in the
   simplification PR. Use caller-supplied
   seeded RNGs for mechanics; no global randomness or hidden live RNG access.
-- Behavior-preserving refactors must pass existing tests unchanged and match
+- Behavior-preserving refactors state `Behavior: preserve` in the PR body so CI
+  checks test-file identity and fixed-seed fingerprints. They must pass existing
+  tests unchanged and match
   fixed-seed semantic traces against their base commit. Exclude timings and
   filesystem locations. Keep independent verification that detects distinct
   errors. Do not change schemas, action/observation ordering, reward semantics,
