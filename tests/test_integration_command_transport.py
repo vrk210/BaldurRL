@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from integration.command_transport import CommandSession
+from integration.command_transport import CommandSession, publish_protocol_record
 from integration.commands import (
     ActionCommand, ActionType, AcknowledgementStatus as Status, CommandAcknowledgement, PostExecutionObservation,
 )
@@ -23,6 +23,14 @@ def selected(command_id="c1", sequence=1) -> ActionCommand:
                          ActionType.USE_ABILITY, candidate.target_kind,
                          observed.combat.combat_id, candidate.ability_id,
                          candidate.target_entity_id)
+
+
+def test_publication_never_replaces_an_existing_record(tmp_path) -> None:
+    path = tmp_path / "record.json"
+    publish_protocol_record(path, {"a": 1})
+    with pytest.raises(ValueError, match="Duplicate publication"):
+        publish_protocol_record(path, {"a": 2})
+    assert json.loads(path.read_text(encoding="utf-8")) == {"a": 1}
 
 
 @pytest.fixture
