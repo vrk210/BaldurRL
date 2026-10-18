@@ -47,18 +47,27 @@ Work has one of two motives. Don't write code without one.
 5. **Test in practice.** Check how something behaves when actually used, and
    check it before the PR, not after.
 
-## Where to look
+## Where things live
 
-- `README.md`: what the project is and how to run it.
-- `docs/ARCHITECTURE.md`: the system as it is now. It holds the boundaries, the
-  file inventory, and the current decisions with their reasons and revisit
-  conditions. Read it before changing code. Its decisions bind you as much as
-  this file; if one seems wrong, raise it with the owner instead of working
-  around it. The owner approves every inventory status change.
-- `docs/BG3_INTEGRATION.md`: the contracts between the game and the code.
-- `docs/GAME_KNOWLEDGE.md`: what we know about the game, and how we know it.
+Each fact has one home. Read it before changing what it covers.
+
+- `README.md`: what the project is, setup, and the commands that run it.
+- `docs/ARCHITECTURE.md`: the system as it is now: module boundaries and
+  dependency direction, the file inventory, and simulator-wide decisions with
+  their reasons and revisit conditions. Read it before changing code. Its
+  decisions bind you as much as this file; if one seems wrong, raise it with
+  the owner instead of working around it. The owner approves every inventory
+  status change.
+- `docs/BG3_INTEGRATION.md`: the contracts between the game and the code
+  (records, commands, transport, recovery) and the decisions about them.
+- `docs/GAME_KNOWLEDGE.md`: facts and hypotheses about the game, each with its
+  evidence label.
 - `docs/RESULTS.md`: measured results, with their limits and open questions.
-- `bg3/h0/README.md`: installing and running the in-game collector.
+- `bg3/h0/README.md`: the Windows procedure for installing, capturing with and
+  verifying the in-game collector.
+- A module's docstring: that module's contract.
+- A decision comment: a decision that constrains only the code beside it.
+- PR bodies and Git history: how the code got here.
 
 ## Writing code
 
@@ -85,7 +94,7 @@ def run_chunk(stage: str, spec: dict, seeds: list[int]) -> list[dict]: ...  # wh
   - when to revisit.
 
   One line is fine. Results tables, timings, commit hashes and the history of
-  the work belong in the experiment history, not in code.
+  the work belong in RESULTS.md or the PR, not in code.
 - **Decision comments** have a date and a reason to revisit:
   `# Decision (YYYY-MM-DD): ... Revisit if ...`. When the decision changes,
   rewrite the comment; Git keeps the old one.
@@ -97,8 +106,9 @@ def run_chunk(stage: str, spec: dict, seeds: list[int]) -> list[dict]: ...  # wh
 - **Errors:** messages name the bad value and the rule it broke. Never
   silently catch programming errors; catch broad exceptions only at process
   boundaries, and record the failure there.
-- **Imports and output:** don't import `_private` names across modules.
-  Library code doesn't print.
+- **Imports and output:** production code doesn't import `_private` names
+  from other modules; CI checks this outside `tests/`. Library code doesn't
+  print.
 - **Determinism:** randomness comes from a caller-supplied
   `numpy.random.Generator`.
 - **Paths** come from arguments and default to `runs/`.
@@ -166,11 +176,10 @@ For other outcome work, the PR is the record. Entries carry no narrative.
 ## Documentation
 
 - Adding a document is the owner's decision.
-- This file holds only how we work and where to look. What the system is now
-  goes in ARCHITECTURE.md, or in a decision comment beside the code it
-  constrains.
+- This file holds only how we work and where things live. Everything else
+  goes in its home under *Where things live*.
 - Update documents in the same PR as the code.
-- State each caveat once.
+- State each fact and caveat once, in its home, and link to it elsewhere.
 - Describe only the current system.
 
 ## Review, then PR

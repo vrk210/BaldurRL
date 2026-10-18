@@ -35,14 +35,16 @@ def test_removed_inventory_path_is_rejected(tmp_path):
     assert "Inventory path is not tracked: gone.py" in check(tmp_path, tracked)
 
 
-def test_extra_document_needs_explicit_retirement(tmp_path):
-    tracked = repository(tmp_path, row("old.md", "remove"), {"old.md": "", "plan.md": ""})
+def test_unagreed_document_is_rejected(tmp_path):
+    tracked = repository(tmp_path, row("a.py"), {"a.py": "", "plan.md": ""})
     assert check(tmp_path, tracked) == ["Document needs an agreed ongoing purpose: plan.md"]
 
 
 def test_relative_links_must_exist_and_stay_inside_repository(tmp_path):
-    tracked = repository(tmp_path, row("a.py"), {"a.py": "", "README.md": "[bad](missing.py) [outside](../outside.md) [web](https://example.com)"})
-    errors = check(tmp_path, tracked)
+    (tmp_path / "outside.md").write_text("", encoding="utf-8")
+    root = tmp_path / "repo"
+    tracked = repository(root, row("a.py"), {"a.py": "", "README.md": "[bad](missing.py) [outside](../outside.md) [web](https://example.com)"})
+    errors = check(root, tracked)
     assert len(errors) == 2
     assert all("Broken/outside-repository link" in error for error in errors)
 
@@ -64,7 +66,3 @@ def test_private_import_and_unlisted_cli_are_rejected(tmp_path):
     tracked = repository(tmp_path, row("a.py"), {"a.py": "from other import _hidden\nif __name__ == '__main__':\n    pass\n"})
     assert len(check(tmp_path, tracked)) == 2
 
-
-def test_retiring_experiment_may_exist_until_removal(tmp_path):
-    tracked = repository(tmp_path, row("old.py", "remove") + row("result.json", "remove"), {"old.py": "from other import _hidden", "result.json": "{}"})
-    assert check(tmp_path, tracked) == []
