@@ -22,7 +22,7 @@ DOCS = {
 }
 SOURCE_SUFFIXES = {".py", ".lua", ".ps1"}
 ARTIFACT_SUFFIXES = {".json", ".jsonl", ".npz", ".zip", ".log"}
-ROW = re.compile(r"^\| `([^`]+)` \| (supported|verification-only|remove) \| (.+) \|$", re.M)
+ROW = re.compile(r"^\| `([^`]+)` \| (supported|verification-only) \| (.+) \|$", re.M)
 LINK = re.compile(r"\[[^\]]*\]\(([^\s)]+)(?:\s+[^)]*)?\)")
 
 
@@ -56,7 +56,7 @@ def check(root: Path, tracked: set[str]) -> list[str]:
         if path.suffix in SOURCE_SUFFIXES and name not in rows:
             errors.append(f"Module/entry point needs an inventory row: {name}")
         if path.suffix == ".md":
-            if name not in DOCS and row.status != "remove":
+            if name not in DOCS:
                 errors.append(f"Document needs an agreed ongoing purpose: {name}")
             for target in LINK.findall(path.read_text(encoding="utf-8")):
                 if re.match(r"[a-zA-Z][a-zA-Z0-9+.-]*:", target):
@@ -66,8 +66,6 @@ def check(root: Path, tracked: set[str]) -> list[str]:
                 if not resolved.is_relative_to(root.resolve()) or not resolved.exists():
                     errors.append(f"Broken/outside-repository link in {name}: {target}")
         if path.suffix in ARTIFACT_SUFFIXES:
-            if row.status == "remove":
-                continue
             if row.purpose.startswith("fixture:"):
                 match = re.match(r"fixture: (tests/[^; ]+\.py)", row.purpose)
                 if not match or match[1] not in tracked:
@@ -82,10 +80,10 @@ def check(root: Path, tracked: set[str]) -> list[str]:
             for node in ast.walk(tree):
                 if isinstance(node, ast.ImportFrom):
                     for alias in node.names:
-                        if alias.name.startswith("_") and row.status != "remove" and f"private:{alias.name}" not in row.purpose:
+                        if alias.name.startswith("_") and f"private:{alias.name}" not in row.purpose:
                             errors.append(f"Private-name import in {name}:{node.lineno}")
             cli = any(isinstance(node, ast.If) and "__main__" in ast.unparse(node.test) for node in tree.body)
-            if cli and row.status != "remove" and "CLI:" not in row.purpose:
+            if cli and "CLI:" not in row.purpose:
                 errors.append(f"Inventory must identify the CLI: {name}")
     return errors
 

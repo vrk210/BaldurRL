@@ -80,7 +80,7 @@ The project owner authorized designing these mechanics for decision headroom. Th
 - Advantage/disadvantage: two d20, keep higher/lower; any advantage plus any disadvantage cancel; sources never stack.
 - Trip: a Bonus Action plus one of two per-encounter charges; an attack roll against AC knocks the target Prone. Prone grants advantage to ally melee attacks and disadvantage to the Prone creature's attacks until the end of its next turn.
 - Dodge: the Action; enemy attacks against the ally have disadvantage until its next turn.
-- M6 ranks: Brute in front, Archer and Healer behind; allies are at the line or deep; reach, the engaged-Archer disadvantage, Movement, Reaction, Advance, opportunity attacks, and Disengage follow the stage specification. There are no distances or grid.
+- M6 ranks: Brute in front, Archer and Healer behind; allies are at the line or deep; reach, the engaged-Archer disadvantage, Movement, Reaction, Advance, opportunity attacks, and Disengage follow the stage contracts. There are no distances or grid.
 
 Advantage, Prone, Dodge, Disengage, opportunity attacks, and Reactions resemble BG3/5e concepts, but every number, duration, and trigger above is a simulator choice.
 

@@ -6,8 +6,7 @@ The simulator uses **semantic state and semantic actions**, not mouse coordinate
 
 This is the single inventory of modules and entry points. `supported` means an
 ongoing operational or research interface. `verification-only` means a test,
-mock, or independent oracle; it is not evidence of live BG3 behavior. `remove`
-means retirement is decided, with the prerequisite stated below. CI checks
+mock, or independent oracle; it is not evidence of live BG3 behavior. CI checks
 coverage against tracked source files and rejects stale or duplicate rows. It
 also reads three purpose prefixes: `CLI:` names a module's command line,
 `fixture: tests/<file>.py` names the test that reads a committed data file, and
