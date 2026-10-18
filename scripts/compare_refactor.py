@@ -19,8 +19,8 @@ they observe:
 - evaluation run cards and traces, trace and paired comparisons, behavior
   summaries, planning rows, value-training data, training arguments and the
   seed registry;
-- the passive record path, the session runner, the mock command handshake,
-  encounter-trial analysis and static preflight.
+- the passive record path, the session runner, the mock command handshake and
+  static preflight.
 
 Timings, temporary paths and generated UUIDs are normalized away. Scenarios use
 smoke seeds 0..99, never research or final-test encounters, and run no trained
@@ -262,7 +262,6 @@ def file_tree(directory: Path) -> list[tuple[str, Any]]:
 
 
 def integration(*, scratch: Path, root: Path) -> dict[str, Any]:
-    from integration.encounter_trial import analyze_file
     from integration.inspect import inspect_directory
     from integration.mock_executor import run_demo
     from integration.mock_h0 import mock_records, write_mock_trace
@@ -288,7 +287,6 @@ def integration(*, scratch: Path, root: Path) -> dict[str, Any]:
         sessions = runner.poll()
     with contextlib.redirect_stdout(io.StringIO()) as demo_output:
         command, acknowledgements = run_demo(scratch / "commands")
-    trial = root / "bg3" / "trials" / "synthetic_human_attack"
     return {
         "published": [path.name for path in published],
         "records": [record_to_dict(record) for record in records],
@@ -302,7 +300,6 @@ def integration(*, scratch: Path, root: Path) -> dict[str, Any]:
         "command": command.to_dict(),
         "acknowledgements": [acknowledgement.to_dict() for acknowledgement in acknowledgements],
         "command_tree": file_tree(scratch / "commands"),
-        "trial": analyze_file(trial / "trial.json", trial / "records"),
         "preflight": run_preflight(scratch / "game", script_extender_root=scratch / "se",
                                    modsettings=scratch / "modsettings.lsx", repo_root=root,
                                    system="Windows"),
