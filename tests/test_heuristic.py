@@ -49,7 +49,7 @@ def test_heuristic_skips_second_wind_at_full_hp() -> None:
 
 
 def test_heuristic_second_wind_threshold_boundary() -> None:
-    agent = HeuristicAgent(second_wind_threshold=10)
+    agent = HeuristicAgent()
     assert (
         agent.choose_action(_obs(fighter_hp=10.0), _mask((True, True, False, True))) == 1
     )

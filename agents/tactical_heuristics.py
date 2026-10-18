@@ -25,7 +25,7 @@ _FIGHTER_AC = 16
 _FIGHTER_ATTACK = 5
 _FIGHTER_DIE = 8
 _FIGHTER_BONUS = 3
-_PRIORITIES = ("lowest_hp", "role", "threat")
+_PRIORITIES = ("lowest_hp", "role")
 _ADVANCE_MODES = ("never", "all", "adaptive")
 
 
@@ -140,9 +140,6 @@ class TacticalHeuristicAgent:
             return max(attack, self._heal_value)
         return attack
 
-    def _our_damage(self, enemy: _Enemy) -> float:
-        return expected_damage(_FIGHTER_ATTACK, _FIGHTER_DIE, _FIGHTER_BONUS, enemy.ac, advantage=enemy.prone)
-
     def _priority_key(self, enemy: _Enemy) -> tuple[float, ...]:
         """Smaller keys are attacked first."""
         if self.config.priority == "role":
@@ -151,8 +148,6 @@ class TacticalHeuristicAgent:
             else:
                 rank = 1 if enemy.role == "archer" else 3
             return (rank, enemy.hp, enemy.slot)
-        if self.config.priority == "threat":
-            return (-self._threat(enemy) * self._our_damage(enemy) / max(enemy.hp, 1), enemy.slot)
         return (enemy.hp, enemy.slot)
 
     # --- decisions ---------------------------------------------------------------

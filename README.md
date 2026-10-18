@@ -61,7 +61,7 @@ python -m evaluation.compare runs/a/run_card.json runs/b/run_card.json --output 
 python -m integration.mock_executor runs/mock-session
 ```
 
-The last command runs the synthetic command handshake in a fresh session
+The last command runs the synthetic command handshake and needs a fresh, empty
 directory; the [integration contract](docs/BG3_INTEGRATION.md#synthetic-cli-demonstration)
 says what it shows and what it doesn't.
 

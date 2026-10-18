@@ -233,8 +233,8 @@ preserved under tag `archive/simulator-research-2026-10-15`, paths
   2026-10-15. It is 16× faster on M5 and 53× faster on M6 (benchmark seeds
   210000–210009), with no mismatches in 118,089 audited cases, constructed edge
   states included. The audit and benchmark scripts were retired with the
-  simulator phase: `git show 61ff6b5:evaluation/tactical_transition_audit.py`
-  and `git show 61ff6b5:evaluation/tactical_transition_benchmark.py`.
+  simulator phase: `git show bff5f88:evaluation/tactical_transition_audit.py`
+  and `git show bff5f88:evaluation/tactical_transition_benchmark.py`.
 
 **Planner pilots (2026-10-10, selection seeds from 122000).** Value networks
 were trained on outcomes.

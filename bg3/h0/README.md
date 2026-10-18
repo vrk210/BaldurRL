@@ -1,10 +1,11 @@
 # BaldurRL passive BG3 H0 collector
 
-**Implemented and verified offline; never loaded in BG3/Windows.** This source
-mod observes human gameplay on the host server. No game-state writes, agent,
-input injection, training, or model calls. The only writes are collector files.
-Loader behavior, API availability, callback timing, and Windows IO remain live
-verification blockers; this is a source mod, not a tested release `.pak`.
+**Verified offline only; never loaded in BG3.** The
+[integration contract](../../docs/BG3_INTEGRATION.md#python-use) lists what
+still needs live verification. This source mod observes human gameplay on the
+host server. No game-state writes, agent, input injection, training, or model
+calls. The only writes are collector files. It is a source mod, not a tested
+release `.pak`.
 
 ## Layout and installation
 

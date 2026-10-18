@@ -175,6 +175,6 @@ Snapshots preserve original game IDs and unknown facts; a future adapter chooses
 policy features. Commands require current evidence, and acceptance is distinct
 from execution and post-execution observation. The
 [integration contract](BG3_INTEGRATION.md) owns wire and recovery semantics and
-says what is implemented and what is live-verified;
+says what is implemented and what still needs live verification;
 [the H0 runbook](../bg3/h0/README.md#first-windows-session) is the Windows
 procedure.

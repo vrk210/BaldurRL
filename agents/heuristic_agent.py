@@ -17,6 +17,7 @@ _END_TURN = 3
 _FIGHTER_HP = 0
 _FIGHTER_ACTION_COUNT = 1
 _FIGHTER_MAX_HP = 20
+_SECOND_WIND_HP = 10  # Second Wind at or below this HP
 
 
 def _first_legal_index(action_mask: np.ndarray) -> int:
@@ -29,9 +30,6 @@ def _first_legal_index(action_mask: np.ndarray) -> int:
 class HeuristicAgent:
     """Priority policy: heal when low, attack, surge for an extra attack, end turn."""
 
-    def __init__(self, second_wind_threshold: int = 10) -> None:
-        self.second_wind_threshold = second_wind_threshold
-
     def choose_action(self, observation: np.ndarray, action_mask: np.ndarray) -> int:
         if np.flatnonzero(action_mask).size == 0:
             raise ValueError("No legal actions available")
@@ -39,7 +37,7 @@ class HeuristicAgent:
         fighter_action_count = int(observation[_FIGHTER_ACTION_COUNT])
         if (
             bool(action_mask[_SECOND_WIND])
-            and fighter_hp <= self.second_wind_threshold
+            and fighter_hp <= _SECOND_WIND_HP
             and fighter_hp < _FIGHTER_MAX_HP
         ):
             return _SECOND_WIND
@@ -59,15 +57,12 @@ class M1AHeuristicAgent(HeuristicAgent):
 class M1BHeuristicAgent:
     """Heal at low HP, otherwise attack the living target with lowest HP."""
 
-    def __init__(self, second_wind_threshold: int = 10) -> None:
-        self.second_wind_threshold = second_wind_threshold
-
     def choose_action(self, observation: np.ndarray, action_mask: np.ndarray) -> int:
         if not np.any(action_mask):
             raise ValueError("No legal actions available")
         hp = int(observation[0])
         actions = int(observation[1])
-        if action_mask[2] and hp <= self.second_wind_threshold:
+        if action_mask[2] and hp <= _SECOND_WIND_HP:
             return 2
         legal_targets = [index for index in (0, 1) if action_mask[index]]
         if legal_targets:
@@ -82,15 +77,12 @@ class M1BHeuristicAgent:
 class M2HeuristicAgent:
     """Use Cleave against two living enemies, then focus the lower-HP target."""
 
-    def __init__(self, second_wind_threshold: int = 10) -> None:
-        self.second_wind_threshold = second_wind_threshold
-
     def choose_action(self, observation: np.ndarray, action_mask: np.ndarray) -> int:
         if not np.any(action_mask):
             raise ValueError("No legal actions available")
         hp = int(observation[0])
         actions = int(observation[1])
-        if action_mask[3] and hp <= self.second_wind_threshold:
+        if action_mask[3] and hp <= _SECOND_WIND_HP:
             return 3
         # M2 inserts Cleave resource after the four other Fighter resource fields.
         enemy_0_hp, enemy_1_hp = observation[6], observation[12]
@@ -109,16 +101,13 @@ class M2HeuristicAgent:
 class M3HeuristicAgent:
     """M2 priorities applied to whichever ally is active."""
 
-    def __init__(self, second_wind_threshold: int = 10) -> None:
-        self.second_wind_threshold = second_wind_threshold
-
     def choose_action(self, observation: np.ndarray, action_mask: np.ndarray) -> int:
         if not np.any(action_mask):
             raise ValueError("No legal actions available")
         base = 1 + 6 * int(observation[0])
         hp = int(observation[base])
         actions = int(observation[base + 1])
-        if action_mask[3] and hp <= self.second_wind_threshold:
+        if action_mask[3] and hp <= _SECOND_WIND_HP:
             return 3
         enemy_0_hp, enemy_1_hp = observation[13], observation[19]
         if action_mask[2] and enemy_0_hp > 0 and enemy_1_hp > 0:
@@ -136,16 +125,13 @@ class M3HeuristicAgent:
 class M4HeuristicAgent:
     """M3 priorities against three enemies; Cleave while two or more live."""
 
-    def __init__(self, second_wind_threshold: int = 10) -> None:
-        self.second_wind_threshold = second_wind_threshold
-
     def choose_action(self, observation: np.ndarray, action_mask: np.ndarray) -> int:
         if not np.any(action_mask):
             raise ValueError("No legal actions available")
         base = 1 + 6 * int(observation[0])
         hp = int(observation[base])
         actions = int(observation[base + 1])
-        if action_mask[4] and hp <= self.second_wind_threshold:
+        if action_mask[4] and hp <= _SECOND_WIND_HP:
             return 4
         enemy_hps = (observation[13], observation[19], observation[25])
         if action_mask[3] and sum(h > 0 for h in enemy_hps) >= 2:
@@ -189,15 +175,14 @@ def make_heuristic_agent(stage: str, variant: str | None = None) -> Policy:
 class M4ThreatAwareAgent:
     """M4 heuristic with threat-aware targeting.
 
-    Same priorities as `M4HeuristicAgent` (Second Wind at <= threshold HP, Cleave
+    Same priorities as `M4HeuristicAgent` (Second Wind at or below 10 HP, Cleave
     while two or more enemies live, Action Surge when out of Actions), but attacks
     the living enemy minimizing expected attacks-to-kill divided by its expected
     damage per attack against a Fighter. Both expectations come from
     `combat.distributions.attack_damage_distribution`.
     """
 
-    def __init__(self, second_wind_threshold: int = 10) -> None:
-        self.second_wind_threshold = second_wind_threshold
+    def __init__(self) -> None:
         self._fighter = new_fighter()
 
     def _score(self, observation: np.ndarray, index: int) -> tuple[float, int]:
@@ -212,7 +197,7 @@ class M4ThreatAwareAgent:
         if not np.any(action_mask):
             raise ValueError("No legal actions available")
         base = 1 + 6 * int(observation[0])
-        if action_mask[4] and observation[base] <= self.second_wind_threshold:
+        if action_mask[4] and observation[base] <= _SECOND_WIND_HP:
             return 4
         living = [index for index in range(3) if observation[13 + 6 * index] > 0]
         if action_mask[3] and len(living) >= 2:

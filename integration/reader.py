@@ -1,4 +1,4 @@
-"""Sequence-aware polling and offline checks for one-record JSON files."""
+"""Sequence-aware reading and offline checks for one-record JSON files."""
 
 import json
 from dataclasses import dataclass
@@ -42,18 +42,14 @@ def validate_sequence(records: Iterable[Record], *, start_sequence: int | None =
 
 
 class RecordDirectoryReader:
-    """Read a directory of one-record JSON files in embedded sequence order.
+    """Read one collector session's records in embedded sequence order.
 
-    The caller supplies the first expected sequence if a stream begins after 1;
-    gap reports start there. Files are scanned again on every read so a newly
+    Sequences start at 1. Files are scanned again on every read so a newly
     created duplicate is caught.
     """
 
-    def __init__(self, directory: str | Path, *, start_sequence: int = 1) -> None:
-        if start_sequence < 1:
-            raise ValueError("start_sequence must be positive")
+    def __init__(self, directory: str | Path) -> None:
         self.directory = Path(directory)
-        self.start_sequence = start_sequence
         self._seen: dict[Path, Record] = {}
 
     def _scan(self) -> list[Record]:
@@ -84,5 +80,5 @@ class RecordDirectoryReader:
         """Return every record in embedded sequence order, including across gaps."""
         return tuple(self._scan())
 
-    def validate_all(self, *, start_sequence: int | None = None) -> SequenceReport:
-        return validate_sequence(self.read_all(), start_sequence=self.start_sequence if start_sequence is None else start_sequence)
+    def validate_all(self) -> SequenceReport:
+        return validate_sequence(self.read_all(), start_sequence=1)
