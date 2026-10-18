@@ -35,7 +35,7 @@ Tests and the replay oracle remain independent where they catch different errors
 
 | Path | Status | Entry point / responsibility |
 | --- | --- | --- |
-| `.github/workflows/repository.yml` | supported | Inventory/lint checks and PR size accounting. |
+| `.github/workflows/repository.yml` | supported | Inventory/lint checks. |
 | `.github/workflows/windows-harness.yml` | supported | Offline Windows harness verification; no game execution. |
 | `agents/__init__.py` | supported | Public baseline-policy re-exports; no CLI. |
 | `agents/expectimax_agent.py` | supported | Exact chance search with bounded turn/decision horizons. |
@@ -110,7 +110,7 @@ Tests and the replay oracle remain independent where they catch different errors
 | `integration/windows_preflight.py` | supported | CLI: python -m integration.windows_preflight; read-only installation checks. |
 | `pyproject.toml` | supported | Pinned-tool lint configuration; no packaging framework. |
 | `requirements-quality.txt` | supported | Pinned lint tool used by repository CI. |
-| `scripts/check_repository.py` | supported | CLI: python scripts/check_repository.py; inventory, docs, artifacts and PR budget checks. |
+| `scripts/check_repository.py` | supported | CLI: python scripts/check_repository.py; inventory, docs and artifact checks. |
 | `scripts/windows/bootstrap-harness.ps1` | supported | CLI: scripts/windows/bootstrap-harness.ps1; isolated harness environment. |
 | `scripts/windows/package-h0.ps1` | supported | CLI: scripts/windows/package-h0.ps1; Divine packaging and source manifest. |
 | `tests/m2_oracle.py` | verification-only | pytest verification: m2 oracle. |
