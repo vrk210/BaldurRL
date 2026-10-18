@@ -107,8 +107,8 @@ def run_chunk(stage: str, spec: dict, seeds: list[int]) -> list[dict]: ...  # wh
   silently catch programming errors; catch broad exceptions only at process
   boundaries, and record the failure there.
 - **Imports and output:** production code doesn't import `_private` names
-  from other modules; CI checks this outside `tests/`. Library code doesn't
-  print.
+  from other modules; CI checks this outside `tests/`, apart from imports the
+  inventory records as `private:` debt. Library code doesn't print.
 - **Determinism:** randomness comes from a caller-supplied
   `numpy.random.Generator`.
 - **Paths** come from arguments and default to `runs/`.
