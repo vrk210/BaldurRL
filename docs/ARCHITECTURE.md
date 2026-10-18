@@ -15,7 +15,8 @@ Tests and the replay oracle remain independent where they catch different errors
 
 | Path | Status | Entry point / responsibility |
 | --- | --- | --- |
-| `.github/workflows/repository.yml` | supported | Inventory/lint checks, the full Windows test suite, and the behavior comparison for `Behavior: preserve` PRs. |
+| `.github/workflows/behavior.yml` | supported | The behavior comparison for PRs whose body says `Behavior: preserve`. |
+| `.github/workflows/repository.yml` | supported | Inventory/lint checks and the full Windows test suite. |
 | `.github/workflows/windows-harness.yml` | supported | Offline Windows harness verification; no game execution. |
 | `agents/__init__.py` | supported | Public baseline-policy re-exports; no CLI. |
 | `agents/expectimax_agent.py` | supported | Exact chance search with bounded turn/decision horizons. |
@@ -86,7 +87,7 @@ Tests and the replay oracle remain independent where they catch different errors
 | `requirements.txt` | supported | Pinned Python 3.11 simulator/development dependency graph; includes harness and quality manifests. |
 | `requirements-quality.txt` | supported | Pinned lint tool used by repository CI. |
 | `scripts/check_repository.py` | supported | CLI: python scripts/check_repository.py; inventory, docs and artifact checks. |
-| `scripts/compare_refactor.py` | verification-only | CLI: python scripts/compare_refactor.py --base COMMIT; simulator, planner, evaluation and integration scenario fingerprints across revisions, plus which changed functions the scenarios ran. |
+| `scripts/compare_refactor.py` | verification-only | CLI: python scripts/compare_refactor.py --base COMMIT; fingerprints simulator, planner, evaluation and integration scenarios on two revisions and checks that every changed statement ran. |
 | `scripts/windows/bootstrap-harness.ps1` | supported | CLI: scripts/windows/bootstrap-harness.ps1; isolated harness environment. |
 | `scripts/windows/package-h0.ps1` | supported | CLI: scripts/windows/package-h0.ps1; Divine packaging and source manifest. |
 | `tests/m2_oracle.py` | verification-only | pytest verification: m2 oracle. |
