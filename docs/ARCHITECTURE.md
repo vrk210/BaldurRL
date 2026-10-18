@@ -4,15 +4,15 @@ The simulator uses **semantic state and semantic actions**, not mouse coordinate
 
 ## Maintained system inventory
 
-This is the single inventory of modules and entry points. `supported` means an
-ongoing operational or research interface. `verification-only` means a test,
-mock, or independent oracle; it is not evidence of live BG3 behavior. CI checks
-that every tracked file except the agreed documents has exactly one row and that
-every row names a tracked file. It also reads three purpose prefixes: `CLI:`
-names a module's command line, `fixture: <reader>.py` names the test or script
-that reads a committed data file (and must mention the file or its directory),
-and `config:` marks committed configuration.
-Tests and the replay oracle remain independent where they catch different errors.
+This is the single inventory of tracked files. CI checks that every tracked
+file except the agreed documents has exactly one row and that every row names a
+tracked file. `supported` means an ongoing operational or research interface.
+`verification-only` means a test, mock, or independent oracle; it is not
+evidence of live BG3 behavior. The checker reads four purpose prefixes:
+- `CLI:` on every Python file outside `tests/` with a `__main__` block;
+- `fixture: <reader>.py`, naming the test or script that reads it, or
+  `config:` on every committed `.json`, `.jsonl`, `.npz`, `.zip` or `.log` file;
+- `private:<name>` for a recorded private-name import that a later PR removes.
 
 | Path | Status | Entry point / responsibility |
 | --- | --- | --- |

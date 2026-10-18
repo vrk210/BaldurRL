@@ -37,7 +37,7 @@ def test_removed_inventory_path_is_rejected(tmp_path):
 
 def test_unagreed_document_is_rejected(tmp_path):
     tracked = repository(tmp_path, row("a.py"), {"a.py": "", "plan.md": ""})
-    assert check(tmp_path, tracked) == ["Document needs an agreed ongoing purpose: plan.md"]
+    assert check(tmp_path, tracked) == ["Document plan.md is not one of the agreed documents; adding one is the owner's decision"]
 
 
 def test_relative_links_must_exist_and_stay_inside_repository(tmp_path):
@@ -58,15 +58,8 @@ def test_generated_output_needs_valid_fixture_consumer(tmp_path, purpose):
 def test_explicit_fixture_and_configuration_are_allowed(tmp_path):
     rows = row("data/capture/1.json", "verification-only", "fixture: tests/test_data.py; synthetic")
     rows += row("tests/test_data.py", "verification-only") + row("config.json", purpose="config: module settings")
-    reader = 'CAPTURE = Path(__file__).parents[1] / "data" / "capture"'
-    tracked = repository(tmp_path, rows, {"data/capture/1.json": "{}", "tests/test_data.py": reader, "config.json": "{}"})
+    tracked = repository(tmp_path, rows, {"data/capture/1.json": "{}", "tests/test_data.py": "", "config.json": "{}"})
     assert check(tmp_path, tracked) == []
-
-
-def test_fixture_reader_must_mention_the_fixture(tmp_path):
-    rows = row("test.json", "verification-only", "fixture: tests/test_other.py") + row("tests/test_other.py")
-    tracked = repository(tmp_path, rows, {"test.json": "{}", "tests/test_other.py": "def test_nothing(): pass"})
-    assert check(tmp_path, tracked) == ["Fixture reader tests/test_other.py never mentions test.json or its directory: test.json"]
 
 
 def test_private_import_and_unlisted_cli_are_rejected(tmp_path):

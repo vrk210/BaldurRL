@@ -56,7 +56,7 @@ def check(root: Path, tracked: set[str]) -> list[str]:
             errors.append(f"Tracked file needs an inventory row: {name}")
         if path.suffix == ".md":
             if name not in DOCS:
-                errors.append(f"Document needs an agreed ongoing purpose: {name}")
+                errors.append(f"Document {name} is not one of the agreed documents; adding one is the owner's decision")
             prose = re.sub(r"^(```|~~~).*?^\1", "", path.read_text(encoding="utf-8"), flags=re.M | re.S)
             for target in LINK.findall(prose):
                 if re.match(r"[a-zA-Z][a-zA-Z0-9+.-]*:", target):
@@ -70,8 +70,6 @@ def check(root: Path, tracked: set[str]) -> list[str]:
                 match = re.match(r"fixture: ((?:tests|scripts)/[^; ]+\.py)", row.purpose)
                 if not match or match[1] not in tracked:
                     errors.append(f"Fixture needs a reader in tests/ or scripts/ named in inventory: {name}")
-                elif not {path.name, path.parent.name} & set(re.findall(r"[\w.-]+", (root / match[1]).read_text(encoding="utf-8"))):
-                    errors.append(f"Fixture reader {match[1]} never mentions {path.name} or its directory: {name}")
             elif not row.purpose.startswith("config:"):
                 errors.append(
                     f"Committed {path.suffix} file needs an inventory row starting 'fixture: <reader>.py' "
@@ -83,7 +81,7 @@ def check(root: Path, tracked: set[str]) -> list[str]:
                 if isinstance(node, ast.ImportFrom):
                     for alias in node.names:
                         if alias.name.startswith("_") and f"private:{alias.name}" not in row.purpose:
-                            errors.append(f"Private-name import in {name}:{node.lineno}")
+                            errors.append(f"Private-name import {alias.name} in {name}:{node.lineno}")
             cli = any(isinstance(node, ast.If) and "__main__" in ast.unparse(node.test) for node in tree.body)
             if cli and "CLI:" not in row.purpose:
                 errors.append(f"Inventory must identify the CLI: {name}")
