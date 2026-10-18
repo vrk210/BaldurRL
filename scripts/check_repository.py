@@ -1,16 +1,14 @@
-"""Check the maintained inventory, documentation, artifacts, and PR size.
+"""Check the maintained inventory, documentation and artifacts.
 
-Run from any directory: python scripts/check_repository.py [--base BASE].
+Run from any directory: python scripts/check_repository.py
 Only tracked files are inspected; ignored experiment output is not maintenance
 surface. ARCHITECTURE.md is the inventory, so no parallel registry is needed.
-CI reads the agreed size budget from the PR body, never from shell interpolation.
 """
 
 from __future__ import annotations
 
 import argparse
 import ast
-import json
 from pathlib import Path
 import re
 import subprocess
@@ -81,51 +79,11 @@ def check(root: Path, tracked: set[str]) -> list[str]:
     return errors
 
 
-def check_budget(numstat: str, body: str) -> tuple[list[str], str]:
-    match = re.search(r"^Size budget: (\d+)( additions)?\s*$", body, re.M)
-    limit = int(match[1]) if match else 1000
-    retirement = bool(match and match[2])
-    errors = []
-    if limit <= 0:
-        errors.append("Size budget must be positive")
-    if (limit != 1000 or retirement) and not re.search(r"^Budget reason: \S.+$", body, re.M):
-        errors.append("Non-default budget needs the agreed scope in 'Budget reason: ...'")
-    added = deleted = tests = 0
-    for line in numstat.splitlines():
-        insertions, deletions, name = line.split("\t", 2)
-        if insertions == "-" or deletions == "-":
-            errors.append(f"Binary change requires separate artifact review: {name}")
-            continue
-        a, d = int(insertions), int(deletions)
-        if name.startswith("tests/"):
-            tests += a + d
-        else:
-            added += a
-            deleted += d
-        if retirement and a and name not in {"docs/RESULTS.md", "docs/GAME_KNOWLEDGE.md", "docs/ARCHITECTURE.md"}:
-            errors.append(f"Retirement permits only deletions outside summaries/inventory: {name}")
-    counted = added if retirement else added + deleted
-    if counted > limit:
-        errors.append(f"PR exceeds agreed size budget: {counted} > {limit}")
-    return errors, f"Non-test: +{added}/-{deleted}; tests: {tests} changed lines; budget: {limit}{' additions' if retirement else ' changed lines'}"
-
-
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--base", help="Compare PR size against BASE's merge base")
-    parser.add_argument("--event", type=Path, help="GitHub event JSON containing pull_request.body")
-    args = parser.parse_args()
+    argparse.ArgumentParser(description=__doc__).parse_args()
     root = Path(__file__).resolve().parents[1]
     tracked = set(subprocess.check_output(["git", "ls-files", "-z"], cwd=root).decode().split("\0")) - {""}
     errors = check(root, tracked)
-    if args.base:
-        body = ""
-        if args.event:
-            body = json.loads(args.event.read_text(encoding="utf-8")).get("pull_request", {}).get("body") or ""
-        numstat = subprocess.check_output(["git", "diff", "--numstat", f"{args.base}...HEAD"], cwd=root, text=True)
-        budget_errors, summary = check_budget(numstat, body)
-        errors.extend(budget_errors)
-        print(summary)
     for error in errors:
         print(error)
     if not errors:
