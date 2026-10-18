@@ -1,5 +1,4 @@
 .venv*/
-.venv-harness/
 .idea/
 __pycache__/
 *.py[cod]
