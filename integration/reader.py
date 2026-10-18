@@ -42,10 +42,11 @@ def validate_sequence(records: Iterable[Record], *, start_sequence: int | None =
 
 
 class RecordDirectoryReader:
-    """Poll a directory and emit each contiguous record once.
+    """Read a directory of one-record JSON files in embedded sequence order.
 
-    The caller supplies the first expected sequence if a stream begins after 1.
-    Files are scanned again on every poll so a newly created duplicate is caught.
+    The caller supplies the first expected sequence if a stream begins after 1;
+    gap reports start there. Files are scanned again on every read so a newly
+    created duplicate is caught.
     """
 
     def __init__(self, directory: str | Path, *, start_sequence: int = 1) -> None:
@@ -53,7 +54,6 @@ class RecordDirectoryReader:
             raise ValueError("start_sequence must be positive")
         self.directory = Path(directory)
         self.start_sequence = start_sequence
-        self.next_sequence = start_sequence
         self._seen: dict[Path, Record] = {}
 
     def _scan(self) -> list[Record]:
@@ -79,15 +79,6 @@ class RecordDirectoryReader:
             by_sequence[record.sequence] = path
             records.append(record)
         return sorted(records, key=lambda record: record.sequence)
-
-    def read_new(self) -> tuple[Record, ...]:
-        """Emit only the next contiguous run; retain later records for future polls."""
-        records = {record.sequence: record for record in self._scan()}
-        emitted: list[Record] = []
-        while self.next_sequence in records:
-            emitted.append(records[self.next_sequence])
-            self.next_sequence += 1
-        return tuple(emitted)
 
     def read_all(self) -> tuple[Record, ...]:
         """Return every record in embedded sequence order, including across gaps."""

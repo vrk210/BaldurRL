@@ -80,7 +80,7 @@ def test_unclosed_events_and_gaps() -> None:
 
 def test_mock_h0_end_to_end(tmp_path) -> None:
     write_mock_trace(tmp_path)
-    records = RecordDirectoryReader(tmp_path).read_new()
+    records = RecordDirectoryReader(tmp_path).read_all()
     assert len(records) == 10
     assert validate_sequence(records).gaps == ()
     intervals = reconstruct_intervals(records)

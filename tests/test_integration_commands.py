@@ -146,7 +146,6 @@ def test_acknowledgement_round_trip_and_semantics(status) -> None:
     index = 1 if status in (Status.ACCEPTED, Status.REJECTED) else 2
     ack = CommandAcknowledgement(1, "command-001", index, status, "explicit evidence or reason", 5)
     assert parse_acknowledgement(json.loads(json.dumps(ack.to_dict()))) == ack
-    assert ack.confirmed_resolved == (status is Status.RESOLVED)
     assert ack.releases_in_flight == (status in (Status.RESOLVED, Status.REJECTED, Status.FAILED))
 
 

@@ -68,8 +68,6 @@ Tests and the replay oracle remain independent where they catch different errors
 | `evaluation/planning_eval.py` | supported | CLI: python -m evaluation.planning_eval; parallel planner evaluation. |
 | `evaluation/seeds.py` | supported | CLI: python -m evaluation.seeds; seed reservations and frozen-set enforcement. |
 | `evaluation/tactical_behavior.py` | supported | CLI: python -m evaluation.tactical_behavior; trace behavior summaries. |
-| `evaluation/tactical_transition_audit.py` | verification-only | CLI: python -m evaluation.tactical_transition_audit; adversarial oracle comparison. |
-| `evaluation/tactical_transition_benchmark.py` | verification-only | CLI: python -m evaluation.tactical_transition_benchmark; exactness and timing. |
 | `integration/__init__.py` | supported | Package marker; no entry point. |
 | `integration/command_transport.py` | supported | Atomic session command publication, freshness and feedback validation. |
 | `integration/commands.py` | supported | Model-independent commands, targets, legality evidence and result states. |
@@ -166,8 +164,7 @@ Models reconstruct observations without reading the live simulator's RNG.
 M0–M4 exact transitions share rule/distribution primitives with sampling. M5/M6
 table transitions are the fast default and retain the independent environment
 replay oracle for verification. Oracle agreement detects implementation drift,
-not an incorrect shared rule or a mismatch with BG3. The transition audit and
-benchmark remain verification tools; their commands are in module --help.
+not an incorrect shared rule or a mismatch with BG3.
 
 Expectimax depends on the TransitionModel protocol and a pluggable frontier
 value. It contains no combat rules. The sampling planner remains a verification
@@ -181,9 +178,8 @@ bundles are retained through tags cited in RESULTS.md.
 The integration package is independent of combat, Gymnasium and ML models.
 Snapshots preserve original game IDs and unknown facts; a future adapter chooses
 policy features. Commands require current evidence, and acceptance is distinct
-from execution and post-execution observation. The passive H0 collector and
-Windows capture tools exist with offline tests. No real action executor or
-BG3-backed policy environment is implemented; game loading and IO require live
-verification. The [integration contract](BG3_INTEGRATION.md) owns wire/recovery
-semantics; [the H0 runbook](../bg3/h0/README.md#first-windows-session) is the sole
-Windows installation/capture/verification procedure.
+from execution and post-execution observation. The
+[integration contract](BG3_INTEGRATION.md) owns wire and recovery semantics and
+says what is implemented and what is live-verified;
+[the H0 runbook](../bg3/h0/README.md#first-windows-session) is the Windows
+procedure.

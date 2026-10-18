@@ -31,7 +31,7 @@ BG3
 
 The harness captures rich semantic facts from the real game. It does **not** emit M0's seven-value PPO observation or infer simulator resources. An observation adapter will later choose what each policy sees and map raw BG3 IDs to policy concepts. Preserve entity, ability, and resource IDs supplied by BG3 until that boundary. Unknown facts remain `None`, an empty tuple when enumeration is incomplete, or `Legality.UNKNOWN`; do not fill them with simulator presets. The current `evaluation/evaluate.py` JSONL trace is a separate simulator format with flat vectors, masks, and diagnostic `info`.
 
-`integration/schema.py` is a platform-neutral contract, independent of Gymnasium and the simulator. `GameSnapshot` answers **what is true now**; `GameEvent` answers **what just happened**. A snapshot contains no event history. Both carry `schema_version = 1` and a collector-assigned `sequence`. The collector increases sequence across its emitted records within one session directory; timestamp milliseconds are optional. `to_dict()` emits JSON-compatible primitives and arrays, with enum values as lowercase strings and unknown values as JSON `null`. Python serialization, reading, inspection, interval reconstruction, and passive Lua collection are implemented and tested offline. Live collection remains unverified; policy adaptation and action execution are future work.
+`integration/schema.py` is a platform-neutral contract, independent of Gymnasium and the simulator. `GameSnapshot` answers **what is true now**; `GameEvent` answers **what just happened**. A snapshot contains no event history. Both carry `schema_version = 1` and a collector-assigned `sequence`. The collector increases sequence across its emitted records within one session directory; timestamp milliseconds are optional. `to_dict()` emits JSON-compatible primitives and arrays, with enum values as lowercase strings and unknown values as JSON `null`.
 
 `CombatSnapshot.participant_ids` may be empty until participant enumeration works. `EntitySnapshot.armor_class`, `alive`, and `position` may remain unknown if unavailable at capture time. `AbilitySnapshot.visible` does not assert usability. A candidate decision describes ability and target intent; `LEGAL` means a source establishes current legality, `ILLEGAL` means a source establishes rejection, and `UNKNOWN` means available evidence is insufficient. `legality_source` and `legality_reason` preserve that evidence. Ability ownership plus apparent resources do not reconstruct BG3 UI legality in general: target validity, range, line of sight, status, and other conditions can matter. Do not label such a candidate legal solely from ownership and resources.
 
@@ -81,7 +81,7 @@ SnapshotInterval reconstruction
 Demonstration assembly (NOT IMPLEMENTED)
 ```
 
-[Script Extender documents `Ext.IO.SaveFile` and `Ext.IO.LoadFile`](https://github.com/Norbyte/bg3se/blob/main/Docs/API.md), but no atomic rename API. The Lua collector stages immutable payloads and completion markers; the Python publisher validates them and uses `os.replace` to expose complete `.json` files. This protocol is tested offline. Output-root resolution, readback behavior, and atomic replacement on Windows remain `TODO_VERIFY`. The optional publisher watch loop polls files every 0.5 seconds. The Python reader uses simple polling through repeated `read_new()` calls; it does not watch the filesystem asynchronously. Lua collection is event-driven, without per-frame polling.
+[Script Extender documents `Ext.IO.SaveFile` and `Ext.IO.LoadFile`](https://github.com/Norbyte/bg3se/blob/main/Docs/API.md), but no atomic rename API. The Lua collector stages immutable payloads and completion markers; the Python publisher validates them and uses `os.replace` to expose complete `.json` files. This protocol is tested offline. Output-root resolution, readback behavior, and atomic replacement on Windows remain `TODO_VERIFY`. The optional publisher watch loop polls files every 0.5 seconds. The session runner polls the record directory with `read_all()`; nothing watches the filesystem asynchronously. Lua collection is event-driven, without per-frame polling.
 
 ### Version 1 wire record
 
@@ -97,7 +97,7 @@ Each `.json` file contains one top-level record. The existing v1 `GameSnapshot.t
 
 The IDs above are **synthetic test IDs**, not discovered BG3 IDs. `integration.serialization.parse_record()` rejects unsupported versions, unknown types and fields, and malformed nested values. Optional facts may be omitted or `null`; omitted collections default to empty arrays. Required fields are `record_type`, `schema_version`, and positive integer `sequence`, plus `kind` for events. Nested entities require `entity_id`; resources require `resource_id` and `amount`; abilities require `ability_id`; candidates require `ability_id`, `target_kind`, and `legality`. Enum values are lowercase strings. Schema v1 uses no simulator defaults.
 
-The passive Lua producer in [bg3/h0](../bg3/h0/README.md) chooses increasing sequences, populates `schema_version` and `record_type`, and stages one JSON document per record. `python -m integration.publish` validates completion markers and atomically publishes `.json` files for this reader. Each collector session has its own directory and sequence namespace. It does not need PPO, Gymnasium, reward, or observation encoding. Lua execution and Python compatibility are tested offline; BG3 loading, APIs, event timing, and Windows IO remain live-unverified.
+The passive Lua producer in [bg3/h0](../bg3/h0/README.md) chooses increasing sequences, populates `schema_version` and `record_type`, and stages one JSON document per record. `python -m integration.publish` validates completion markers and atomically publishes `.json` files for this reader. Each collector session has its own directory and sequence namespace. It does not need PPO, Gymnasium, reward, or observation encoding.
 
 ### Python use
 
@@ -106,7 +106,7 @@ python -m integration.mock_h0 /tmp/baldurrl-h0
 python -m integration.inspect_records /tmp/baldurrl-h0
 ```
 
-One record directory represents one collector session / sequence namespace. For H0, a restarted collector should start a new output directory rather than reuse sequence IDs in an existing directory. `RecordDirectoryReader(directory, start_sequence=1).read_new()` emits each record once and stops at a missing sequence, retaining later records until another poll. Use `start_sequence` when attaching to a stream that starts after 1. `read_all()` returns all available records sorted by embedded sequence; `validate_all()` reports gaps for offline inspection. Duplicate IDs and invalid JSON or schema records raise errors naming the offending file. Record files are treated as immutable after a successful read.
+One record directory represents one collector session / sequence namespace. For H0, a restarted collector should start a new output directory rather than reuse sequence IDs in an existing directory. `RecordDirectoryReader(directory).read_all()` returns all available records sorted by embedded sequence, and `validate_all()` reports gaps; pass `start_sequence` when attaching to a stream that starts after 1. Duplicate IDs and invalid JSON or schema records raise errors naming the offending file. Record files are treated as immutable after a successful read.
 
 `reconstruct_intervals()` creates a `SnapshotInterval(before, events, after)` between consecutive snapshots. An interval is **not necessarily one decision**. Trailing events after the last snapshot remain in the raw stream and are not placed in a completed interval. `controlled_action()` checks only ability-use events whose `actor_id` matches the requested entity. Multiple events with the same non-null `story_action_id` are treated as one attempted action; a targeted event is preferred over a position event, which is preferred over a generic event. Distinct IDs, multiple events without an ID, or conflicting target and position events raise `AmbiguousActionError`; no match returns `None`. Raw interval events are preserved. This correlation rule needs live verification. It does not infer rewards, legal actions, or policy labels.
 
@@ -276,7 +276,6 @@ results, not completion or snapshot-timing evidence by itself. A future real
 executor must supply verified completion evidence before reporting `resolved`;
 acceptance or an elapsed timeout is insufficient. Resolution means the attempted
 action completed, not that an attack hit or achieved a desired gameplay effect.
-`confirmed_resolved` is true only for `resolved`.
 
 ### Publication, duplicates, and recovery limits
 
@@ -333,15 +332,16 @@ reports a synthetic `resolved`, `failed`, or `uncertain` outcome. It never mutat
 HP/resources/turns, rolls dice, invokes BG3, or derives rewards. Fixture
 confirmation is clearly labeled and is not evidence of actual game execution.
 
-The [Windows first-session runbook](../bg3/h0/README.md#first-windows-session) connects static preflight, session capture/archival, read-only actor probes, and bounded encounter-trial analysis. These tools preserve this v1 contract and do not establish live legality or execute actions. Real traces should become conformance fixtures for supported simulator mechanics; new invented mechanics and open-ended PPO sweeps are not prerequisites for validating the live interface.
-
 ## Windows verification and future execution path
 
-The sole installation, capture and live-verification checklist is in the
-[H0 runbook](../bg3/h0/README.md#first-windows-session). It includes entity,
-resource, ability, ordering, legality and file-bridge checks. Unknown facts stay
-unknown until those checks establish their meaning; static/offline success does
-not establish game behavior.
+[The H0 runbook](../bg3/h0/README.md#first-windows-session) is the Windows
+procedure: installation, static preflight, session capture and archival,
+read-only actor probes, bounded encounter-trial analysis, and the live checklist
+of entity, resource, ability, ordering, legality and file-bridge checks. These
+tools keep to this v1 contract; they don't establish live legality or execute
+actions. Unknown facts stay unknown until those checks establish their meaning,
+and offline success doesn't establish game behavior. Real traces should become
+conformance fixtures for the simulator mechanics they cover.
 
 Decision (2026-10-09): the first execution experiment uses the normal client
 UI. Script Extender client keyboard injection is used where it reproduces the

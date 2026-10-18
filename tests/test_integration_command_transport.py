@@ -44,7 +44,7 @@ def test_session_separation_and_unchanged_record_reader(session) -> None:
     session.publish_command(selected())
     MockExecutor(session).receive()
     assert {path.name for path in session.directory.iterdir()} == {"records", "commands", "acknowledgements"}
-    records = RecordDirectoryReader(session.records).read_new()
+    records = RecordDirectoryReader(session.records).read_all()
     assert records == (synthetic_observation(),)
     other = CommandSession(session.directory.parent / "session-2")
     assert other.read_commands() == ()
@@ -100,11 +100,10 @@ def test_only_one_pending_or_accepted_command_and_no_reuse_after_completion(sess
     executor = MockExecutor(session)
     accepted, = executor.receive()
     assert accepted.status is Status.ACCEPTED
-    assert not accepted.confirmed_resolved
     with pytest.raises(ValueError, match="one in-flight"):
         session.publish_command(selected("c2"))
     resolved = executor.finish("c1")
-    assert resolved.confirmed_resolved
+    assert resolved.status is Status.RESOLVED
     assert session.in_flight() == ()
     with pytest.raises(ValueError, match="Duplicate command_id"):
         session.publish_command(selected())
@@ -121,7 +120,7 @@ def test_failure_and_uncertainty_are_not_success(session, status, blocked) -> No
     executor = MockExecutor(session)
     executor.receive()
     result = executor.finish("c1", status)
-    assert not result.confirmed_resolved
+    assert result.status is status
     if blocked:
         with pytest.raises(ValueError, match="one in-flight"):
             session.publish_command(selected("c2"))
@@ -317,7 +316,7 @@ def test_mock_all_target_forms(session, kind, entity, position) -> None:
     executor = MockExecutor(session)
     accepted, = executor.receive()
     assert accepted.status is Status.ACCEPTED
-    assert executor.finish(intent.command_id).confirmed_resolved
+    assert executor.finish(intent.command_id).status is Status.RESOLVED
     assert session.latest_snapshot() == observed
 
 

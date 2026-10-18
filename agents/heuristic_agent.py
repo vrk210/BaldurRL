@@ -192,8 +192,8 @@ class M4ThreatAwareAgent:
     Same priorities as `M4HeuristicAgent` (Second Wind at <= threshold HP, Cleave
     while two or more enemies live, Action Surge when out of Actions), but attacks
     the living enemy minimizing expected attacks-to-kill divided by its expected
-    damage per attack against a Fighter. Both expectations come from the exact
-    attack-damage distribution in `combat.mechanics`.
+    damage per attack against a Fighter. Both expectations come from
+    `combat.distributions.attack_damage_distribution`.
     """
 
     def __init__(self, second_wind_threshold: int = 10) -> None:
