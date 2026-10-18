@@ -381,8 +381,13 @@ class Statement:
     runs_at_import: bool
 
 
+def is_string_only(node: ast.AST) -> bool:
+    """A bare string statement, such as a docstring, runs nothing."""
+    return isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)
+
+
 def statements(source: str) -> list[Statement]:
-    """Every executable statement in source; string-only statements such as docstrings run nothing."""
+    """Every executable statement in source."""
     found = []
 
     def visit(node: ast.AST, prefix: str, owner: str, at_import: bool) -> None:
@@ -390,7 +395,7 @@ def statements(source: str) -> list[Statement]:
             if not isinstance(child, ast.stmt):
                 visit(child, prefix, owner, at_import)  # except handlers and match cases hold statements
                 continue
-            if isinstance(child, ast.Expr) and isinstance(child.value, ast.Constant) and isinstance(child.value.value, str):
+            if is_string_only(child):
                 continue
             first = min([child.lineno, *(item.lineno for item in getattr(child, "decorator_list", ()))])
             if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
@@ -409,16 +414,19 @@ def statements(source: str) -> list[Statement]:
 
 
 def changed_statements(source: str, lines: set[int]) -> set[Statement]:
-    """The innermost executable statement around each changed line; blank and comment lines change nothing.
+    """The innermost executable statement around each changed line.
 
-    A compound statement spans its body, so a line in its header resolves to it
-    and a line in its body to the smaller statement there.
+    Blank lines, comments and lines inside string-only statements change
+    nothing. A compound statement spans its body, so a line in its header
+    resolves to it and a line in its body to the smaller statement there.
     """
     text, found, changed = source.splitlines(), statements(source), set()
+    quiet = {line for node in ast.walk(ast.parse(source)) if is_string_only(node)
+             for line in range(node.lineno, node.end_lineno + 1)}
     for line in lines:
         content = text[line - 1].strip() if 0 < line <= len(text) else ""
         enclosing = [statement for statement in found if statement.first <= line <= statement.last]
-        if content and not content.startswith("#") and enclosing:
+        if content and not content.startswith("#") and line not in quiet and enclosing:
             changed.add(max(enclosing, key=lambda statement: (statement.first, -statement.last)))
     return changed
 
