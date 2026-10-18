@@ -25,6 +25,14 @@ class Thing:
         def inner():
             return 3
         return inner()
+
+
+class Documented:
+    \"\"\"First line.
+
+    More text.
+    \"\"\"
+    flag = True
 """
 
 
@@ -41,6 +49,8 @@ class Thing:
     (16, {("Thing.method.<locals>.inner", False)}),  # a nested def runs when its function does
     (17, {("Thing.method.<locals>.inner", False)}),
     (18, {("Thing.method", False)}),
+    (24, set()),  # inside a multi-line docstring
+    (26, {("Documented", True)}),
 ])
 def test_changed_line_maps_to_innermost_statement(line, changed):
     statements = changed_statements(SOURCE, {line})
