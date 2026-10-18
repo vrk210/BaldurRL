@@ -5,7 +5,6 @@ on:
     paths:
       - ".github/workflows/windows-harness.yml"
       - "bg3/h0/**"
-      - "bg3/trials/**"
       - "integration/**"
       - "scripts/windows/**"
       - "tests/test_bg3_h0_lua.py"
@@ -18,7 +17,6 @@ on:
     paths:
       - ".github/workflows/windows-harness.yml"
       - "bg3/h0/**"
-      - "bg3/trials/**"
       - "integration/**"
       - "scripts/windows/**"
       - "tests/test_bg3_h0_lua.py"
