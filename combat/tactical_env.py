@@ -239,7 +239,6 @@ class TacticalCombatEnv(gym.Env[np.ndarray, int]):
             raise ValueError(f"Reward mode {reward_mode!r} is unavailable for {stage}")
         super().__init__()
         self.stage = stage
-        self.reward_mode = reward_mode
         self.rules = STAGE_RULES[stage]
         self.ranks = has_ranks(stage)
         self.decisions = tactical_decisions(stage)

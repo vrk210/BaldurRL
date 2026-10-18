@@ -38,7 +38,6 @@ class _Layout:
         env = make_env(stage)
         env.reset(seed=0)
         fields = list(env.observation_fields)
-        self.stage = stage
         self.high = np.asarray(env.observation_space.high, dtype=np.float64)
         roster = env._roster()
         self.ally = roster.allies[0]

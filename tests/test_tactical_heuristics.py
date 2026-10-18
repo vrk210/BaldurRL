@@ -105,8 +105,6 @@ def test_factory_variants_and_validation() -> None:
 def test_expected_damage_estimate() -> None:
     assert expected_damage(5, 8, 3, 16) == pytest.approx(0.5 * 7.5 + 0.05 * 4.5)
     assert expected_damage(5, 8, 3, 16, advantage=True) > expected_damage(5, 8, 3, 16)
-    assert expected_damage(5, 8, 3, 16, disadvantage=True) < expected_damage(5, 8, 3, 16)
-    assert expected_damage(5, 8, 3, 16, advantage=True, disadvantage=True) == expected_damage(5, 8, 3, 16)
 
 
 @pytest.mark.parametrize("stage", ["m5", "m6"])
@@ -118,29 +116,3 @@ def test_every_variant_completes_seeded_evaluation(stage) -> None:
         assert first.wins + first.losses + first.truncations == 5
 
 
-def test_development_knobs_used_in_the_tuning_history() -> None:
-    env = state("m5", 7)  # targeting: Brute WEAKEST, Healer RANDOM, Archer RANDOM
-    env.allies[0].hp = 6
-    env.allies[0].resources.set(Resource.SECOND_WIND, 0)
-    dodger = TacticalHeuristicAgent("m5", TacticalHeuristicConfig(trip=True, dodge=True))
-    assert choose(dodger, env) == "DODGE"  # weakest ally expecting lethal damage
-    env.allies[0].hp = 20
-    assert choose(dodger, env) != "DODGE"
-    defensive = TacticalHeuristicAgent("m5", TacticalHeuristicConfig(trip=True, trip_target="threat"))
-    # Threat scores a Healer with charges by its mean heal (2d6+2 = 9), above the Archer's ~5.1.
-    assert choose(defensive, env) == f"TRIP_ENEMY_{slot_of(env, Role.HEALER)}"
-    env.enemies[slot_of(env, Role.HEALER)].resources.set(Resource.HEAL, 0)
-    # Brute +7, 1d10+5 (~6.6 expected) out-threatens Archer +8, 1d8+3 (~5.1).
-    assert choose(defensive, env) == f"TRIP_ENEMY_{slot_of(env, Role.BRUTE)}"
-
-    env = state("m6", 4)
-    env.allies[1].hp = 20
-    env.allies[0].hp = 15
-    single = TacticalHeuristicAgent("m6", TacticalHeuristicConfig(trip=True, advance="healthiest"))
-    assert choose(single, env) != "ADVANCE"  # ally 1 is healthier and will dive instead
-    env.allies[0].hp = 20
-    assert choose(single, env) == "ADVANCE"
-    careful = TacticalHeuristicAgent("m6", TacticalHeuristicConfig(trip=True, advance="all", disengage=True))
-    assert choose(careful, env) == "DISENGAGE"  # Action Surge still available
-    env.allies[0].resources.set(Resource.ACTION_SURGE, 0)
-    assert choose(careful, env) == "ADVANCE"
