@@ -20,7 +20,6 @@ DOCS = {
     "README.md", "AGENTS.md", "docs/ARCHITECTURE.md", "docs/BG3_INTEGRATION.md",
     "docs/GAME_KNOWLEDGE.md", "docs/RESULTS.md", "bg3/h0/README.md",
 }
-SOURCE_SUFFIXES = {".py", ".lua", ".ps1"}
 ARTIFACT_SUFFIXES = {".json", ".jsonl", ".npz", ".zip", ".log"}
 ROW = re.compile(r"^\| `([^`]+)` \| (supported|verification-only) \| (.+) \|$", re.M)
 LINK = re.compile(r"\[[^\]]*\]\(([^\s)]+)(?:\s+[^)]*)?\)")
@@ -53,12 +52,13 @@ def check(root: Path, tracked: set[str]) -> list[str]:
     for name in sorted(tracked):
         path = root / name
         row = rows.get(name, UNLISTED)
-        if path.suffix in SOURCE_SUFFIXES and name not in rows:
-            errors.append(f"Module/entry point needs an inventory row: {name}")
+        if path.suffix != ".md" and name not in rows:
+            errors.append(f"Tracked file needs an inventory row: {name}")
         if path.suffix == ".md":
             if name not in DOCS:
                 errors.append(f"Document needs an agreed ongoing purpose: {name}")
-            for target in LINK.findall(path.read_text(encoding="utf-8")):
+            prose = re.sub(r"^(```|~~~).*?^\1", "", path.read_text(encoding="utf-8"), flags=re.M | re.S)
+            for target in LINK.findall(prose):
                 if re.match(r"[a-zA-Z][a-zA-Z0-9+.-]*:", target):
                     continue
                 destination = unquote(target.split("#", 1)[0])
