@@ -67,12 +67,14 @@ def check(root: Path, tracked: set[str]) -> list[str]:
                     errors.append(f"Broken/outside-repository link in {name}: {target}")
         if path.suffix in ARTIFACT_SUFFIXES:
             if row.purpose.startswith("fixture:"):
-                match = re.match(r"fixture: (tests/[^; ]+\.py)", row.purpose)
+                match = re.match(r"fixture: ((?:tests|scripts)/[^; ]+\.py)", row.purpose)
                 if not match or match[1] not in tracked:
-                    errors.append(f"Fixture needs a consuming test in inventory: {name}")
+                    errors.append(f"Fixture needs a reader in tests/ or scripts/ named in inventory: {name}")
+                elif not {path.name, path.parent.name} & set(re.findall(r"[\w.-]+", (root / match[1]).read_text(encoding="utf-8"))):
+                    errors.append(f"Fixture reader {match[1]} never mentions {path.name} or its directory: {name}")
             elif not row.purpose.startswith("config:"):
                 errors.append(
-                    f"Committed {path.suffix} file needs an inventory row starting 'fixture: tests/<test>.py' "
+                    f"Committed {path.suffix} file needs an inventory row starting 'fixture: <reader>.py' "
                     f"or 'config:'; generated output belongs in ignored runs/: {name}"
                 )
         if path.suffix == ".py" and not name.startswith("tests/"):

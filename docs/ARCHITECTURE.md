@@ -9,8 +9,9 @@ ongoing operational or research interface. `verification-only` means a test,
 mock, or independent oracle; it is not evidence of live BG3 behavior. CI checks
 that every tracked file except the agreed documents has exactly one row and that
 every row names a tracked file. It also reads three purpose prefixes: `CLI:`
-names a module's command line, `fixture: tests/<file>.py` names the test that
-reads a committed data file, and `config:` marks committed configuration.
+names a module's command line, `fixture: <reader>.py` names the test or script
+that reads a committed data file (and must mention the file or its directory),
+and `config:` marks committed configuration.
 Tests and the replay oracle remain independent where they catch different errors.
 
 | Path | Status | Entry point / responsibility |
@@ -35,12 +36,6 @@ Tests and the replay oracle remain independent where they catch different errors
 | `bg3/h0/Mods/BaldurRL_H0/ScriptExtender/Lua/Observation.lua` | supported | Best-effort passive BG3 facts; absent fields remain unknown. |
 | `bg3/h0/Mods/BaldurRL_H0/ScriptExtender/Lua/Wire.lua` | supported | Versioned JSON wire representation and ready-marker publication. |
 | `bg3/h0/Mods/BaldurRL_H0/meta.lsx` | supported | config: BG3 module identity. |
-| `bg3/trials/synthetic_human_attack/records/1.json` | verification-only | fixture: tests/test_encounter_trial.py; synthetic evidence only. |
-| `bg3/trials/synthetic_human_attack/records/2.json` | verification-only | fixture: tests/test_encounter_trial.py; synthetic evidence only. |
-| `bg3/trials/synthetic_human_attack/records/3.json` | verification-only | fixture: tests/test_encounter_trial.py; synthetic evidence only. |
-| `bg3/trials/synthetic_human_attack/records/4.json` | verification-only | fixture: tests/test_encounter_trial.py; synthetic evidence only. |
-| `bg3/trials/synthetic_human_attack/records/5.json` | verification-only | fixture: tests/test_encounter_trial.py; synthetic evidence only. |
-| `bg3/trials/synthetic_human_attack/trial.json` | verification-only | fixture: tests/test_encounter_trial.py; synthetic evidence only. |
 | `combat/__init__.py` | supported | Package marker; no entry point. |
 | `combat/abilities.py` | supported | Immutable ability costs and target kinds. |
 | `combat/actions.py` | supported | Semantic action identities; no execution. |
