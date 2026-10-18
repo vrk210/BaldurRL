@@ -1,28 +1,6 @@
 # Architecture
 
-## Long-term abstraction
-
-ML code should eventually work through the same conceptual environment interface against either a Python combat simulator or actual Baldur's Gate 3:
-
-```text
-                    Agent
-                      │
-                   Action
-                      │
-                      ▼
-                 BaldurEnv
-                      │
-          ┌───────────┴───────────┐
-          ▼                       ▼
-   Python Simulator           BG3 Adapter
-          │                       │
-          └───────────┬───────────┘
-                      ▼
-          observation / reward /
-          termination / metadata
-```
-
-The simulator therefore uses **semantic state and semantic actions**, rather than mouse coordinates or UI-specific behavior. This is a direction for later milestones, not an implemented interface. Keep the object graph shallow: characters store stats, resource counts, and known ability IDs; shared ability definitions live outside characters; mechanics remain functions.
+The simulator uses **semantic state and semantic actions**, not mouse coordinates or UI behavior, so a BG3 adapter can later serve policies through the same kind of interface. Keep the object graph shallow: characters store stats, resource counts, and known ability IDs; shared ability definitions live outside characters; mechanics remain functions.
 
 ## Maintained system inventory
 
@@ -30,7 +8,10 @@ This is the single inventory of modules and entry points. `supported` means an
 ongoing operational or research interface. `verification-only` means a test,
 mock, or independent oracle; it is not evidence of live BG3 behavior. `remove`
 means retirement is decided, with the prerequisite stated below. CI checks
-coverage against tracked source files and rejects stale or duplicate rows.
+coverage against tracked source files and rejects stale or duplicate rows. It
+also reads three purpose prefixes: `CLI:` names a module's command line,
+`fixture: tests/<file>.py` names the test that reads a committed data file, and
+`config:` marks committed configuration.
 Tests and the replay oracle remain independent where they catch different errors.
 
 | Path | Status | Entry point / responsibility |
