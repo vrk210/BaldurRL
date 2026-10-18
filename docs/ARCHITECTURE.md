@@ -7,14 +7,15 @@ The simulator uses **semantic state and semantic actions**, not mouse coordinate
 This is the single inventory of modules and entry points. `supported` means an
 ongoing operational or research interface. `verification-only` means a test,
 mock, or independent oracle; it is not evidence of live BG3 behavior. CI checks
-coverage against tracked source files and rejects stale or duplicate rows. It
-also reads three purpose prefixes: `CLI:` names a module's command line,
-`fixture: tests/<file>.py` names the test that reads a committed data file, and
-`config:` marks committed configuration.
+that every tracked file except the agreed documents has exactly one row and that
+every row names a tracked file. It also reads three purpose prefixes: `CLI:`
+names a module's command line, `fixture: tests/<file>.py` names the test that
+reads a committed data file, and `config:` marks committed configuration.
 Tests and the replay oracle remain independent where they catch different errors.
 
 | Path | Status | Entry point / responsibility |
 | --- | --- | --- |
+| `.gitignore` | supported | Keeps generated output, virtual environments and editor settings out of Git. |
 | `.github/workflows/repository.yml` | supported | Inventory/lint checks and the full Windows test suite. |
 | `.github/workflows/windows-harness.yml` | supported | Offline Windows harness verification; no game execution. |
 | `agents/__init__.py` | supported | Public baseline-policy re-exports; no CLI. |
@@ -83,7 +84,9 @@ Tests and the replay oracle remain independent where they catch different errors
 | `integration/trace.py` | supported | Candidate decisions from passive observations; UNKNOWN stays unknown. |
 | `integration/windows_preflight.py` | supported | CLI: python -m integration.windows_preflight; read-only installation checks. |
 | `pyproject.toml` | supported | Pinned-tool lint configuration; no packaging framework. |
+| `pytest.ini` | supported | Puts the repository root on the test import path. |
 | `requirements.txt` | supported | Pinned Python 3.11 simulator/development dependency graph; includes harness and quality manifests. |
+| `requirements-harness-test.txt` | supported | Pinned minimal dependencies for harness capture and its offline tests. |
 | `requirements-quality.txt` | supported | Pinned lint tool used by repository CI. |
 | `scripts/check_repository.py` | supported | CLI: python scripts/check_repository.py; inventory, docs and artifact checks. |
 | `scripts/windows/bootstrap-harness.ps1` | supported | CLI: scripts/windows/bootstrap-harness.ps1; isolated harness environment. |
