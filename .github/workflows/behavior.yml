@@ -1,0 +1,31 @@
+name: Behavior comparison
+
+# Edited is included because the PR body, not the code, declares preservation.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-harness-test.txt
+            requirements-quality.txt
+      - run: python -m pip install -r requirements.txt
+      - name: Compare with the base if the PR body says Behavior preserve
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: python scripts/compare_refactor.py --base "$PR_BASE_SHA" --event "$GITHUB_EVENT_PATH"

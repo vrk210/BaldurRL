@@ -3,7 +3,9 @@
 Usage: python scripts/compare_refactor.py --base COMMIT [--event GITHUB_EVENT_JSON]
 
 With --event, as in CI, it runs only if the PR body has a line that is exactly
-`Behavior: preserve`; a body that merely mentions the marker does not count.
+`Behavior: preserve`, outside code blocks and comments. A body that merely
+mentions the marker does not count; a line that is the marker with other
+spelling or formatting fails, so a mistyped declaration is not silently skipped.
 
 Why: a PR that declares `Behavior: preserve` may rewrite tests that checked
 implementation, so its tests alone cannot show that behavior is unchanged. This
@@ -24,14 +26,22 @@ Timings, temporary paths and generated UUIDs are normalized away. Scenarios use
 smoke seeds 0..99, never research or final-test encounters, and run no trained
 model. This checks regression equivalence, not agreement with BG3.
 
-A comparison covers only the code its scenarios run. On the working tree, the
-script records every called function and checks the functions the diff changed.
-A changed module none of whose changed functions ran fails the check. Other
-changed functions that never ran, and module-level changes (which run at import
-whether or not their effect is observed), are listed so the PR can say how they
-were verified. Prefer adding a scenario to accepting a gap. A refactor that
-renames a function the scenarios import fails on one revision; it cannot use
-this check and must show equivalence another way.
+A comparison covers only what its scenarios run, so each side traces the lines
+it runs in the files the diff touches. Every statement the diff removes must
+have run on the base, and every statement it adds or changes must run on the
+working tree; otherwise the check fails and names the statement. Three kinds of
+change are listed instead, for the PR to say how each was verified:
+- statements that run at import (module and class bodies, def and class lines
+  with their decorators and defaults), which run whether or not their effect
+  is observed;
+- definitions removed entirely, whose removal changes nothing the scenarios
+  run; whether anything else called them is a question for `git grep`;
+- changed files outside the maintained Python code.
+
+Running a line is not testing it: a changed condition that no scenario input
+tells apart still passes. Prefer adding a scenario to accepting a gap. A
+refactor that renames a function the scenarios import fails on one revision; it
+cannot use this check and must show equivalence another way.
 """
 
 from __future__ import annotations
@@ -120,7 +130,7 @@ def decision_states(stage: str) -> list[tuple[Any, Any]]:
     return states
 
 
-def simulator_episodes(scratch: Path, root: Path) -> dict[str, Any]:
+def simulator_episodes(*, scratch: Path, root: Path) -> dict[str, Any]:
     """Hash 100 games per stage and maintained policy, step by step (too large to keep)."""
     from agents.heuristic_agent import make_heuristic_agent
     from agents.random_agent import RandomAgent
@@ -153,7 +163,7 @@ def simulator_episodes(scratch: Path, root: Path) -> dict[str, Any]:
     return results
 
 
-def planner(scratch: Path, root: Path) -> dict[str, Any]:
+def planner(*, scratch: Path, root: Path) -> dict[str, Any]:
     from agents.expectimax_agent import ExpectimaxAgent
     from agents.heuristic_agent import make_heuristic_agent
     from agents.rollout_agent import RolloutAgent
@@ -201,7 +211,7 @@ def planner(scratch: Path, root: Path) -> dict[str, Any]:
     return results
 
 
-def evaluation(scratch: Path, root: Path) -> dict[str, Any]:
+def evaluation(*, scratch: Path, root: Path) -> dict[str, Any]:
     from agents.heuristic_agent import M4ThreatAwareAgent, make_heuristic_agent
     from evaluation.compare import compare_run_cards
     from evaluation.evaluate import evaluate, write_run_card
@@ -251,7 +261,7 @@ def file_tree(directory: Path) -> list[tuple[str, Any]]:
     return tree
 
 
-def integration(scratch: Path, root: Path) -> dict[str, Any]:
+def integration(*, scratch: Path, root: Path) -> dict[str, Any]:
     from integration.encounter_trial import analyze_file
     from integration.inspect_records import inspect_directory
     from integration.intervals import reconstruct_intervals
@@ -299,7 +309,7 @@ def integration(scratch: Path, root: Path) -> dict[str, Any]:
     }
 
 
-SCENARIOS: dict[str, Callable[[Path, Path], Any]] = {
+SCENARIOS: dict[str, Callable[..., Any]] = {
     "simulator_episodes": simulator_episodes,
     "planner": planner,
     "evaluation": evaluation,
@@ -321,108 +331,205 @@ def fingerprints(root: Path) -> tuple[dict[str, str], dict[str, str]]:
             try:
                 # Printed output is observable behavior, so it is fingerprinted with the result.
                 with contextlib.redirect_stdout(io.StringIO()) as printed:
-                    value = scenario(scratch, root)
+                    value = scenario(scratch=scratch, root=root)
                 results[name] = digest({"result": value, "stdout": printed.getvalue()}, scratch=scratch, root=root)
             except (Exception, SystemExit) as error:
                 errors[name] = f"{type(error).__name__}: {error}"
     return results, errors
 
 
-def with_called_functions(root: Path, run: Callable[[], Any]) -> tuple[Any, set[tuple[str, str]]]:
-    """Run and record (relative path, qualified name) of every function called under root."""
-    prefix, called = str(root) + os.sep, set()
+def with_executed_lines(root: Path, paths: set[str], run: Callable[[], Any]) -> tuple[Any, dict[str, set[int]]]:
+    """Run and record which lines execute in the given repository-relative files."""
+    wanted = {os.path.normcase(str(root / path)): path for path in paths}
+    executed: dict[str, set[int]] = {path: set() for path in paths}
+    files: dict[str, str | None] = {}
 
-    def profile(frame: Any, event: str, _: Any) -> None:
-        if event == "call" and frame.f_code.co_filename.startswith(prefix):
-            path = frame.f_code.co_filename[len(prefix):].replace(os.sep, "/")
-            called.add((path, frame.f_code.co_qualname))
+    def trace(frame: Any, event: str, _: Any) -> Any:
+        filename = frame.f_code.co_filename
+        if filename not in files:
+            files[filename] = wanted.get(os.path.normcase(os.path.abspath(filename)))
+        if files[filename] is None:
+            return None
+        lines = executed[files[filename]]
 
-    sys.setprofile(profile)
+        def line(frame: Any, event: str, _: Any) -> Any:
+            if event == "line":
+                lines.add(frame.f_lineno)
+            return line
+
+        return line
+
+    sys.settrace(trace)
     try:
-        return run(), called
+        return run(), executed
     finally:
-        sys.setprofile(None)
+        sys.settrace(None)
 
 
-DEFINITIONS = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+@dataclasses.dataclass(frozen=True)
+class Statement:
+    """One executable statement: its lines, what it belongs to, and whether it runs at import.
 
-
-def changed_definitions(source: str, lines: set[int]) -> set[str]:
-    """Qualified names of the innermost def or class around each line; "<module>" for module statements.
-
-    Blank lines, comments and string-only statements outside definitions run
-    nothing, so they are skipped rather than reported as module-level changes.
-    Line 0 is a deletion before the first line, such as emptying a module.
+    A def or class statement is named after what it defines and runs where it is
+    defined. Any other statement is named after its innermost def or class, or
+    "<module>".
     """
-    tree = ast.parse(source)
-    spans = []
 
-    def visit(node: ast.AST, prefix: str) -> None:
+    first: int
+    last: int
+    owner: str
+    runs_at_import: bool
+
+
+def statements(source: str) -> list[Statement]:
+    """Every executable statement in source; string-only statements such as docstrings run nothing."""
+    found = []
+
+    def visit(node: ast.AST, prefix: str, owner: str, at_import: bool) -> None:
         for child in ast.iter_child_nodes(node):
-            if isinstance(child, DEFINITIONS):
+            if not isinstance(child, ast.stmt):
+                visit(child, prefix, owner, at_import)  # except handlers and match cases hold statements
+                continue
+            if isinstance(child, ast.Expr) and isinstance(child.value, ast.Constant) and isinstance(child.value.value, str):
+                continue
+            first = min([child.lineno, *(item.lineno for item in getattr(child, "decorator_list", ()))])
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                 name = prefix + child.name
-                start = min([child.lineno, *(item.lineno for item in child.decorator_list)])
-                spans.append((start, child.end_lineno, name))
-                visit(child, name + ("." if isinstance(child, ast.ClassDef) else ".<locals>."))
+                found.append(Statement(first, child.end_lineno, name, at_import))
+                if isinstance(child, ast.ClassDef):
+                    visit(child, name + ".", name, at_import)
+                else:
+                    visit(child, name + ".<locals>.", name, False)
             else:
-                visit(child, prefix)
+                found.append(Statement(first, child.end_lineno, owner, at_import))
+                visit(child, prefix, owner, at_import)
 
-    visit(tree, "")
-    statements = [(node.lineno, node.end_lineno) for node in tree.body
-                  if not isinstance(node, DEFINITIONS)
-                  and not (isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant)
-                           and isinstance(node.value.value, str))]
-    names = set()
-    for line in lines:
-        enclosing = [span for span in spans if span[0] <= line <= span[1]]
-        if enclosing:
-            names.add(max(enclosing)[2])
-        elif line == 0 or any(first <= line <= last for first, last in statements):
-            names.add("<module>")
-    return names
+    visit(ast.parse(source), "", "<module>", True)
+    return found
 
 
-def changed_lines(diff: str) -> dict[str, set[int]]:
-    """Working-tree line numbers each Python file's diff hunks touch.
+def changed_statements(source: str, lines: set[int]) -> set[Statement]:
+    """The innermost executable statement around each changed line; blank and comment lines change nothing.
 
-    A pure deletion is attributed to the line before it, which is inside the
-    function that lost the lines unless the deletion follows a function's end.
+    A compound statement spans its body, so a line in its header resolves to it
+    and a line in its body to the smaller statement there.
     """
-    lines: dict[str, set[int]] = {}
-    path = None
+    text, found, changed = source.splitlines(), statements(source), set()
+    for line in lines:
+        content = text[line - 1].strip() if 0 < line <= len(text) else ""
+        enclosing = [statement for statement in found if statement.first <= line <= statement.last]
+        if content and not content.startswith("#") and enclosing:
+            changed.add(max(enclosing, key=lambda statement: (statement.first, -statement.last)))
+    return changed
+
+
+def changed_lines(diff: str) -> tuple[dict[str, set[int]], dict[str, set[int]]]:
+    """Base-side and working-tree-side line numbers each Python file's diff hunks touch."""
+    base: dict[str, set[int]] = {}
+    head: dict[str, set[int]] = {}
+    old = new = None
     for line in diff.splitlines():
-        if line.startswith("+++ "):
-            path = line[6:] if line.startswith("+++ b/") and line.endswith(".py") else None
-        elif line.startswith("@@") and path:
-            hunk = re.match(r"@@ -\S+ \+(\d+)(,(\d+))? @@", line)
+        if line.startswith("--- "):
+            old = line[6:] if line.startswith("--- a/") and line.endswith(".py") else None
+        elif line.startswith("+++ "):
+            new = line[6:] if line.startswith("+++ b/") and line.endswith(".py") else None
+        elif line.startswith("@@"):
+            hunk = re.match(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", line)
             if hunk is None:
                 raise ValueError(f"Unexpected diff hunk header: {line}")
-            first, length = int(hunk[1]), 1 if hunk[3] is None else int(hunk[3])
-            lines.setdefault(path, set()).update(range(first, first + length) if length else {first})
-    return lines
+            for path, start, length, sides in ((old, hunk[1], hunk[2], base), (new, hunk[3], hunk[4], head)):
+                count = 1 if length is None else int(length)
+                if path and count:
+                    sides.setdefault(path, set()).update(range(int(start), int(start) + count))
+    return base, head
 
 
-def changed_functions(root: Path, base: str) -> set[tuple[str, str]]:
-    """(path, enclosing definition) of every line the diff from base touches."""
-    diff = subprocess.check_output(["git", "diff", "--unified=0", "--no-color", "--no-ext-diff",
-                                    "--src-prefix=a/", "--dst-prefix=b/", base, "--", *MAINTAINED_CODE],
-                                   cwd=root, text=True, encoding="utf-8", errors="replace")
-    return {(path, name) for path, numbers in changed_lines(diff).items()
-            for name in changed_definitions((root / path).read_text(encoding="utf-8"), numbers)}
+def git(root: Path, *arguments: str) -> str:
+    return subprocess.check_output(["git", *arguments], cwd=root, text=True, encoding="utf-8", errors="replace")
 
 
 def declares_behavior_preserved(body: str | None) -> bool:
-    """True if the PR body has a line that is exactly `Behavior: preserve`."""
-    return re.search(r"^Behavior: preserve\s*$", body or "", re.M) is not None
+    """True if the PR body has a line that is exactly `Behavior: preserve`, outside code blocks and comments.
+
+    Raises ValueError for a line that is the marker with other spelling or
+    formatting, such as `**Behavior:** preserve`.
+    """
+    text = re.sub(r"<!--.*?-->", "", body or "", flags=re.S)
+    text = re.sub(r"^(```|~~~).*?^\1", "", text, flags=re.M | re.S)
+    declared = False
+    for line in text.splitlines():
+        if re.fullmatch(r"Behavior: preserve\s*", line):
+            declared = True
+        elif re.sub(r"[*_`\s]", "", line).lower() == "behavior:preserve":
+            raise ValueError(f"PR body line {line.strip()!r} is not exactly 'Behavior: preserve'")
+    return declared
 
 
-def run_worker(script: str, tree: Path, *, record_calls: bool) -> dict[str, Any]:
-    """Fingerprint tree in a fresh interpreter; results travel by file, so scenario output can't corrupt them."""
-    with tempfile.TemporaryDirectory(prefix="baldurrl-worker-") as directory:
-        output = Path(directory) / "result.json"
-        command = [sys.executable, script, "--worker", str(tree), "--output", str(output)]
-        subprocess.run([*command, *(["--record-calls"] if record_calls else [])], cwd=tree, check=True)
-        return json.loads(output.read_text(encoding="utf-8"))
+@dataclasses.dataclass(frozen=True)
+class WorkerReport:
+    fingerprints: dict[str, str]
+    errors: dict[str, str]
+    executed: dict[str, set[int]]
+
+
+def run_workers(script: str, trees: dict[str, tuple[Path, set[str]]], directory: Path) -> dict[str, WorkerReport]:
+    """Fingerprint each (tree, traced files) in its own fresh interpreter, all at once.
+
+    Results travel by file, so scenario output can't corrupt them. Every worker
+    is waited for before any failure is raised, so none outlives the directory.
+    """
+    processes = {}
+    for side, (tree, traced) in trees.items():
+        (directory / f"{side}-traced.json").write_text(json.dumps(sorted(traced)), encoding="utf-8")
+        processes[side] = subprocess.Popen([sys.executable, script, "--worker", str(tree),
+                                            "--trace", str(directory / f"{side}-traced.json"),
+                                            "--output", str(directory / f"{side}-result.json")], cwd=tree)
+    failed = [side for side, process in processes.items() if process.wait() != 0]
+    if failed:
+        raise RuntimeError(f"Comparison worker failed: {', '.join(failed)}")
+    reports = {}
+    for side in trees:
+        report = json.loads((directory / f"{side}-result.json").read_text(encoding="utf-8"))
+        reports[side] = WorkerReport(report["fingerprints"], report["errors"],
+                                     {path: set(lines) for path, lines in report["executed"].items()})
+    return reports
+
+
+def verdict(*, before: WorkerReport, after: WorkerReport, removed: dict[str, set[Statement]],
+            added: dict[str, set[Statement]], surviving: dict[str, set[str]], not_compared: list[str]) -> dict[str, Any]:
+    """The comparison report; it fails on a scenario error, a mismatch, or a changed statement that never ran.
+
+    removed holds base-side statements, which must have run on the base unless
+    their whole definition is gone from the working tree; surviving holds the
+    working tree's def, class and module names per path. added holds
+    working-tree statements, which must run there.
+    """
+    errors = {f"{side}/{name}": message for side, worker in (("base", before), ("head", after))
+              for name, message in worker.errors.items()}
+    mismatches = sorted(name for name in before.fingerprints.keys() | after.fingerprints.keys()
+                        if before.fingerprints.get(name) != after.fingerprints.get(name))
+    unexercised: dict[str, list[int]] = {}
+    at_import, removed_definitions = set(), set()
+    for side, changes, worker in (("base", removed, before), ("head", added, after)):
+        for path, changed in sorted(changes.items()):
+            ran = worker.executed.get(path, set())
+            for statement in changed:
+                if side == "base" and statement.owner not in surviving.get(path, set()):
+                    removed_definitions.add(f"{path}::{statement.owner}")
+                elif statement.runs_at_import:
+                    at_import.add(f"{path}::{statement.owner}")
+                elif not any(statement.first <= line <= statement.last for line in ran):
+                    unexercised.setdefault(f"{side} {path}::{statement.owner}", []).append(statement.first)
+    return {
+        "passed": not (errors or mismatches or unexercised),
+        "scenario_errors": errors,
+        "mismatches": mismatches,
+        "unexercised_statements": [f"{name} (line {', '.join(map(str, sorted(lines)))})"
+                                   for name, lines in sorted(unexercised.items())],
+        "import_time_changes": sorted(at_import),
+        "removed_definitions": sorted(removed_definitions),
+        "not_compared": not_compared,
+    }
 
 
 def main() -> int:
@@ -430,56 +537,55 @@ def main() -> int:
     parser.add_argument("--base", help="Git commit whose runtime behavior must be preserved")
     parser.add_argument("--event", type=Path, help="GitHub event JSON; compare only if its PR body declares preservation")
     parser.add_argument("--worker", type=Path, help=argparse.SUPPRESS)
+    parser.add_argument("--trace", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--output", type=Path, help=argparse.SUPPRESS)
-    parser.add_argument("--record-calls", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.worker:
         root = args.worker.resolve()
-        if args.record_calls:
-            (results, errors), called = with_called_functions(root, lambda: fingerprints(root))
-        else:
-            (results, errors), called = fingerprints(root), set()
-        report = {"fingerprints": results, "errors": errors, "called": sorted(called)}
+        traced = set(json.loads(args.trace.read_text(encoding="utf-8")))
+        (results, errors), executed = with_executed_lines(root, traced, lambda: fingerprints(root))
+        report = {"fingerprints": results, "errors": errors,
+                  "executed": {path: sorted(lines) for path, lines in executed.items()}}
         args.output.write_text(json.dumps(report, sort_keys=True), encoding="utf-8")
         return 0
     if not args.base:
         parser.error("--base is required")
     if args.event:
         event = json.loads(args.event.read_text(encoding="utf-8"))
-        if not declares_behavior_preserved(event.get("pull_request", {}).get("body")):
+        try:
+            declared = declares_behavior_preserved(event.get("pull_request", {}).get("body"))
+        except ValueError as error:
+            print(error)
+            return 1
+        if not declared:
             print("The PR body has no 'Behavior: preserve' line; comparison skipped.")
             return 0
     root = Path(__file__).resolve().parents[1]
-    revision = subprocess.check_output(["git", "rev-parse", "--verify", "--end-of-options", f"{args.base}^{{commit}}"],
-                                       cwd=root, text=True).strip()
+    revision = git(root, "rev-parse", "--verify", "--end-of-options", f"{args.base}^{{commit}}").strip()
+    diff_options = ("--no-color", "--no-ext-diff", "--src-prefix=a/", "--dst-prefix=b/", revision)
+    base_lines, head_lines = changed_lines(git(root, "diff", "--unified=0", *diff_options, "--", *MAINTAINED_CODE))
+    not_compared = [path for path in git(root, "diff", "--name-only", *diff_options).splitlines()
+                    if not path.endswith(".md") and not path.startswith("tests/")
+                    and not (path.endswith(".py") and path.startswith(MAINTAINED_CODE))]
     archive = subprocess.check_output(["git", "archive", "--format=zip", revision], cwd=root)
-    script = str(Path(__file__).resolve())
     with tempfile.TemporaryDirectory(prefix="baldurrl-refactor-") as directory:
-        baseline = Path(directory)
+        baseline = Path(directory) / "base"
         with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
             bundle.extractall(baseline)
-        before = run_worker(script, baseline, record_calls=False)
-    after = run_worker(script, root, record_calls=True)
-    errors = {f"{side}/{name}": message for side, worker in (("base", before), ("head", after))
-              for name, message in worker["errors"].items()}
-    mismatches = sorted(name for name in before["fingerprints"].keys() | after["fingerprints"].keys()
-                        if before["fingerprints"].get(name) != after["fingerprints"].get(name))
-    called = {tuple(item) for item in after["called"]}
-    changed = changed_functions(root, revision)
-    # Module-level lines run at import whether or not their effect is observed, so they never count as exercised.
-    in_functions = {item for item in changed if item[1] != "<module>"}
-    exercised_modules = {path for path, _ in in_functions & called}
-    unexercised_modules = sorted({path for path, _ in in_functions} - exercised_modules)
-    print(json.dumps({
-        "base": revision,
-        "fingerprints": after["fingerprints"],
-        "scenario_errors": errors,
-        "mismatches": mismatches,
-        "unexercised_modules": unexercised_modules,
-        "unexecuted_changed_functions": [f"{path}::{name}" for path, name in sorted(in_functions - called)],
-        "module_level_changes": sorted(path for path, name in changed if name == "<module>"),
-    }, indent=2))
-    return int(bool(errors or mismatches or unexercised_modules))
+        workers = run_workers(str(Path(__file__).resolve()),
+                              {"base": (baseline, set(base_lines)), "head": (root, set(head_lines))}, Path(directory))
+        removed = {path: changed_statements((baseline / path).read_text(encoding="utf-8"), lines)
+                   for path, lines in base_lines.items()}
+    added = {path: changed_statements((root / path).read_text(encoding="utf-8"), lines)
+             for path, lines in head_lines.items()}
+    surviving = {path: {"<module>", *(statement.owner for statement in statements((root / path).read_text(encoding="utf-8")))}
+                 for path in base_lines if (root / path).exists()}
+    report = verdict(before=workers["base"], after=workers["head"], removed=removed, added=added,
+                     surviving=surviving, not_compared=not_compared)
+    print(json.dumps({"base": revision, "fingerprints": workers["head"].fingerprints, **report}, indent=2))
+    if not report["passed"]:
+        print("Behavior differs, a scenario errored, or a changed statement never ran; see the report above.")
+    return int(not report["passed"])
 
 
 if __name__ == "__main__":
