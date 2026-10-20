@@ -43,7 +43,7 @@ The supported exact model is RosterTransitionModel for M0–M4 and the table
 model for M5/M6. The replay oracle and tests/m2_oracle.py independently verify
 transition/search behavior. Neither oracle proves the shared simulator rules
 match BG3. Revisit deeper search only when frontier values and decision latency
-justify it; measured outcomes and limitations belong in docs/RESULTS.md.
+justify it. The planner's measured results are cached in docs/RESULTS.md.
 
 """
 

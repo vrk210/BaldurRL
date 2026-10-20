@@ -64,6 +64,8 @@ REGISTRY: tuple[SeedRange, ...] = (
     SeedRange(3000, 4000, _U, "Original held-out evaluation, M0–M4"),
     SeedRange(3000, 8000, _U, "M5/M6 held-out evaluation; also informed the v1→v2 retune, so not an untouched test"),
     SeedRange(4000, 9000, _U, "Fresh 5,000-seed comparisons, M1A/M1B/M2"),
+    SeedRange(4000, 5000, _U, "M4 policy diagnostic: threat-aware rule design"),
+    SeedRange(5000, 10000, _U, "M4 policy diagnostic: paired evaluation"),
     SeedRange(9000, 14000, _U, "M2 exact optimum and fresh PPO comparison"),
     SeedRange(9000, 10000, _U, "M2 regret against the exact optimum"),
     SeedRange(10000, 15000, _U, "M4 expectimax final test"),

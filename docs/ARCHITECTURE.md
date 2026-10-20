@@ -144,7 +144,7 @@ The simulator is frozen at M0–M6. It remains a regression/research test bed an
 stand-in game for integration protocols. Its trained policies do not directly
 transfer to BG3: their vectors/action indices are simulator-specific. Revisit
 simulator scope only when logged BG3 encounters identify missing mechanics that
-matter. Findings and uncertainty live in [RESULTS.md](RESULTS.md).
+matter. The results this rests on are cached in [RESULTS.md](RESULTS.md#simulator-scope).
 
 ## Dependency direction and verification
 
@@ -164,7 +164,15 @@ not an incorrect shared rule or a mismatch with BG3.
 Expectimax depends on the TransitionModel protocol and a pluggable frontier
 value. It contains no combat rules. The sampling planner remains a verification
 reference for independent continuation/reconstruction; completed experiment
-bundles are retained through tags cited in RESULTS.md.
+bundles are retained through tags cited in the experiment history.
+
+Learned-leaf planning on M5/M6 is shelved (history H14, H16). A planner that
+extends a baseline policy deviates from it only on statistical evidence, never a
+fixed margin. Revisit only with one planner configuration for both collection
+and evaluation, pooled training data, significance-gated deviations, and
+breadth-first use of the budget before horizons beyond one decision. For BG3,
+planning needs a transition model of the real game, which needs logged fights
+first.
 
 ## BG3 integration boundary
 
