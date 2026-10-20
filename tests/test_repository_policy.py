@@ -20,9 +20,10 @@ def row(path: str, status: str = "supported", purpose: str = "Behavior contract.
     return f"| `{path}` | {status} | {purpose} |\n"
 
 
-def test_inventory_requires_unique_paths():
-    _, errors = inventory(row("a.py") + row("a.py"))
-    assert errors == ["Duplicate inventory row: a.py"]
+def test_inventory_rejects_duplicate_paths_and_unknown_statuses():
+    _, errors = inventory(row("a.py") + row("a.py") + row("b.py", "remove"))
+    assert errors == ["Duplicate inventory row: a.py",
+                      "Unknown inventory status 'remove' for b.py; use supported or verification-only"]
 
 
 def test_unclassified_file_of_any_type_is_rejected(tmp_path):

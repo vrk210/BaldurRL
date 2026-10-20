@@ -12,7 +12,6 @@ import ast
 from pathlib import Path
 import re
 import subprocess
-from typing import NamedTuple
 from urllib.parse import unquote
 
 
@@ -21,28 +20,24 @@ DOCS = {
     "docs/GAME_KNOWLEDGE.md", "docs/RESULTS.md", "bg3/h0/README.md",
 }
 ARTIFACT_SUFFIXES = {".json", ".jsonl", ".npz", ".zip", ".log"}
-ROW = re.compile(r"^\| `([^`]+)` \| (supported|verification-only) \| (.+) \|$", re.M)
+STATUSES = {"supported", "verification-only"}
+ROW = re.compile(r"^\| `([^`]+)` \| ([\w-]+) \| (.+) \|$", re.M)
 LINK = re.compile(r"\[[^\]]*\]\(([^\s)]+)(?:\s+[^)]*)?\)")
 
 
-class InventoryRow(NamedTuple):
-    status: str
-    purpose: str
-
-
-UNLISTED = InventoryRow("", "")
-
-
-def inventory(text: str) -> tuple[dict[str, InventoryRow], list[str]]:
-    rows: dict[str, InventoryRow] = {}
+def inventory(text: str) -> tuple[dict[str, str], list[str]]:
+    """Each inventory row's purpose by path, and errors for duplicate rows or unknown statuses."""
+    purposes: dict[str, str] = {}
     errors = []
     for path, status, purpose in ROW.findall(text):
-        if path in rows:
+        if path in purposes:
             errors.append(f"Duplicate inventory row: {path}")
-        rows[path] = InventoryRow(status, purpose)
-    if not rows:
+        if status not in STATUSES:
+            errors.append(f"Unknown inventory status {status!r} for {path}; use supported or verification-only")
+        purposes[path] = purpose
+    if not purposes:
         errors.append("ARCHITECTURE.md has no maintained-system inventory")
-    return rows, errors
+    return purposes, errors
 
 
 def check(root: Path, tracked: set[str]) -> list[str]:
@@ -51,7 +46,7 @@ def check(root: Path, tracked: set[str]) -> list[str]:
         errors.append(f"Inventory path is not tracked: {path}")
     for name in sorted(tracked):
         path = root / name
-        row = rows.get(name, UNLISTED)
+        purpose = rows.get(name, "")
         if path.suffix != ".md" and name not in rows:
             errors.append(f"Tracked file needs an inventory row: {name}")
         if path.suffix == ".md":
@@ -66,11 +61,11 @@ def check(root: Path, tracked: set[str]) -> list[str]:
                 if not resolved.is_relative_to(root.resolve()) or not resolved.exists():
                     errors.append(f"Broken/outside-repository link in {name}: {target}")
         if path.suffix in ARTIFACT_SUFFIXES:
-            if row.purpose.startswith("fixture:"):
-                match = re.match(r"fixture: ((?:tests|scripts)/[^; ]+\.py)", row.purpose)
+            if purpose.startswith("fixture:"):
+                match = re.match(r"fixture: ((?:tests|scripts)/[^; ]+\.py)", purpose)
                 if not match or match[1] not in tracked:
                     errors.append(f"Fixture needs a reader in tests/ or scripts/ named in inventory: {name}")
-            elif not row.purpose.startswith("config:"):
+            elif not purpose.startswith("config:"):
                 errors.append(
                     f"Committed {path.suffix} file needs an inventory row starting 'fixture: <reader>.py' "
                     f"or 'config:'; generated output belongs in ignored runs/: {name}"
@@ -80,10 +75,10 @@ def check(root: Path, tracked: set[str]) -> list[str]:
             for node in ast.walk(tree):
                 if isinstance(node, ast.ImportFrom):
                     for alias in node.names:
-                        if alias.name.startswith("_") and f"private:{alias.name}" not in row.purpose:
+                        if alias.name.startswith("_") and f"private:{alias.name}" not in purpose:
                             errors.append(f"Private-name import {alias.name} in {name}:{node.lineno}")
             cli = any(isinstance(node, ast.If) and "__main__" in ast.unparse(node.test) for node in tree.body)
-            if cli and "CLI:" not in row.purpose:
+            if cli and "CLI:" not in purpose:
                 errors.append(f"Inventory must identify the CLI: {name}")
     return errors
 
