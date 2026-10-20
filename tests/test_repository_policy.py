@@ -21,9 +21,9 @@ def row(path: str, status: str = "supported", purpose: str = "Behavior contract.
 
 
 def test_inventory_rejects_duplicate_paths_and_unknown_statuses():
-    _, errors = inventory(row("a.py") + row("a.py") + row("b.py", "remove"))
+    _, errors = inventory(row("a.py") + row("a.py") + row("b.py", "verification only"))
     assert errors == ["Duplicate inventory row: a.py",
-                      "Unknown inventory status 'remove' for b.py; use supported or verification-only"]
+                      "Unknown inventory status 'verification only' for b.py; use supported or verification-only"]
 
 
 def test_unclassified_file_of_any_type_is_rejected(tmp_path):
