@@ -38,9 +38,10 @@ was verified:
 - statements that run at import (module and class bodies, def and class lines
   with their decorators and defaults), which run whether or not their effect
   is observed;
-- definitions and files the diff removes whole, whose removal changes nothing
-  the scenarios run; whether anything else called them is a question for
-  `git grep`;
+- definitions and files the diff removes whole whose code never ran on the base,
+  so their removal changes nothing the scenarios run; whether anything else
+  called them is a question for `git grep`. Removed code that did run, for
+  example a function moved elsewhere, is checked like any other change;
 - changed files other than tests, Markdown and the maintained Python code
   (MAINTAINED_CODE).
 
@@ -288,8 +289,12 @@ def integration(*, scratch: Path, root: Path) -> dict[str, Any]:
     published = publish_ready(staging, scratch / "records")
     reader = RecordDirectoryReader(scratch / "records")
     records = reader.read_all()
+    # A fixed collector tree, so runbook or Lua edits don't change what this scenario observes.
+    collector = scratch / "collector" / "bg3" / "h0" / "BootstrapServer.lua"
+    collector.parent.mkdir(parents=True)
+    collector.write_text("-- fixed collector source\n", encoding="utf-8")
     with SessionRunner(scratch / "capture", scratch / "archive", code_revision="fixed",
-                       repository=root) as runner:
+                       repository=scratch / "collector") as runner:
         sessions = runner.poll()
     with contextlib.redirect_stdout(io.StringIO()) as demo_output:
         command, acknowledgements = run_demo(scratch / "commands")
@@ -444,41 +449,24 @@ def changed_statements(source: str, lines: set[int]) -> set[Statement]:
     return changed
 
 
-def defined_names(source: str) -> set[str]:
-    """"<module>" and the qualified name of every def and class in source."""
-    return {"<module>", *(statement.owner for statement in statements(source) if statement.defines)}
+def split_removed_definitions(source: str, lines: set[int], executed: set[int]) -> tuple[list[str], set[Statement]]:
+    """Base-side definitions the diff removes as dead code, and the changed statements outside them.
 
-
-def surviving_names(base_source: str, head_source: str | None, added_sources: list[str]) -> set[str]:
-    """Names the working tree still defines for one base file.
-
-    For a file that still exists, at its path after any rename, these are the
-    names it defines. For a deleted file, they are its names that reappear in a
-    file the diff adds, a move git didn't detect; then the module survives too,
-    so the moved code is compared rather than treated as removed.
+    A definition that runs at import (the module, a module-level def or class,
+    a method) counts as removed when the diff changes every line of it and none
+    of its runtime statements ran on the base: deleting code the scenarios
+    never ran changes nothing they observe. If any of it ran, it is live code
+    being removed or moved, and each statement the diff takes out of it must
+    have run. executed is the base worker's executed lines for this file.
     """
-    if head_source is not None:
-        return defined_names(head_source)
-    moved = {name for source in added_sources for name in defined_names(source)} - {"<module>"}
-    moved &= defined_names(base_source)
-    return moved | {"<module>"} if moved else moved
-
-
-def split_removed_definitions(source: str, lines: set[int], surviving: set[str]) -> tuple[list[str], set[Statement]]:
-    """Base-side definitions the diff removes, and the changed statements outside them.
-
-    A definition is removed when the diff changes every line of it and the
-    working tree no longer defines its name (see surviving_names); a definition
-    rewritten in place is a change, not a removal. Only definitions that run at
-    import qualify: a def nested in a function is part of that function's
-    behavior. The module counts as a definition, so a deleted file is
-    "<module>". Statements inside a removed definition are part of that
-    removal; every other base-side statement is behavior to compare.
-    """
+    found = statements(source)
+    ran = {line for statement in found if not statement.runs_at_import
+           for line in range(statement.first, statement.last + 1) if line in executed}
     module = Statement(1, len(source.splitlines()), "<module>", True, defines=True)
-    removed = [statement for statement in (module, *statements(source))
-               if statement.defines and statement.runs_at_import and statement.owner not in surviving
-               and all(line in lines for line in range(statement.first, statement.last + 1))]
+    removed = [statement for statement in (module, *found)
+               if statement.defines and statement.runs_at_import
+               and all(line in lines for line in range(statement.first, statement.last + 1))
+               and not any(statement.first <= line <= statement.last for line in ran)]
 
     def within(statement: Statement, outer: Statement) -> bool:
         return outer.first <= statement.first and statement.last <= outer.last
@@ -490,36 +478,26 @@ def split_removed_definitions(source: str, lines: set[int], surviving: set[str])
     return outermost, remaining
 
 
-@dataclasses.dataclass(frozen=True)
-class ChangedLines:
-    """Line numbers a diff touches in Python files on each side, and where base files went."""
+def changed_lines(diff: str) -> tuple[dict[str, set[int]], dict[str, set[int]]]:
+    """Base-side and working-tree-side lines each Python file's `git diff --unified=0` hunks touch.
 
-    base: dict[str, set[int]]
-    head: dict[str, set[int]]
-    moved: dict[str, str | None]  # base path -> renamed path, or None if deleted
-    added: set[str]
-
-
-def changed_lines(diff: str) -> ChangedLines:
-    """Read a `git diff --unified=0` of Python files; file names count only in each file's header."""
+    File names count only in a file's header. A deleted file with no lines, such
+    as an empty __init__.py, has no hunk, so it is recorded with no lines.
+    """
     base: dict[str, set[int]] = {}
     head: dict[str, set[int]] = {}
-    moved: dict[str, str | None] = {}
-    added: set[str] = set()
-    old = new = None
-    in_header = created = False
+    old = new = deleted = None
+    in_header = False
     for line in diff.splitlines():
         if line.startswith("diff --git "):
             in_header, old, new = True, None, None
+            deleted = re.fullmatch(r"diff --git a/(\S+\.py) b/\S+", line)
+        elif in_header and line.startswith("deleted file mode") and deleted:
+            base.setdefault(deleted[1], set())
         elif in_header and line.startswith("--- "):
             old = line[6:] if line.startswith("--- a/") and line.endswith(".py") else None
-            created = line == "--- /dev/null"
         elif in_header and line.startswith("+++ "):
             new = line[6:] if line.startswith("+++ b/") and line.endswith(".py") else None
-            if old and old != new:
-                moved[old] = new
-            if new and created:
-                added.add(new)
             in_header = False
         elif line.startswith("@@") and not in_header:
             hunk = re.match(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", line)
@@ -529,7 +507,7 @@ def changed_lines(diff: str) -> ChangedLines:
                 count = 1 if length is None else int(length)
                 if path and count:
                     sides.setdefault(path, set()).update(range(int(start), int(start) + count))
-    return ChangedLines(base, head, moved, added)
+    return base, head
 
 
 def git(root: Path, *arguments: str) -> str:
@@ -539,9 +517,9 @@ def git(root: Path, *arguments: str) -> str:
 def declares_behavior_preserved(body: str | None) -> bool:
     """True if the PR body has a line that is exactly `Behavior: preserve`, outside code blocks and comments.
 
-    Raises ValueError for a line that is the marker with other spelling,
+    Raises ValueError for a line that is the marker with other capitalization,
     punctuation or formatting, such as `**Behavior:** preserve` or
-    `- Behavior: preserve.`
+    `- Behavior: preserve.`; a misspelled word is not recognized.
     """
     text = re.sub(r"<!--.*?-->", "", body or "", flags=re.S)
     text = re.sub(r"^[ \t]*(```|~~~).*?^[ \t]*\1", "", text, flags=re.M | re.S)
@@ -681,30 +659,29 @@ def main() -> int:
     root = Path(__file__).resolve().parents[1]
     revision = git(root, "rev-parse", "--verify", "--end-of-options", f"{args.base}^{{commit}}").strip()
     # Fixed options, so local git config can't change which lines the diff attributes to which definition.
-    diff_options = ("--no-color", "--no-ext-diff", "--find-renames", "--indent-heuristic",
+    diff_options = ("--no-color", "--no-ext-diff", "--find-renames", "--indent-heuristic", "--diff-algorithm=myers",
                     "--src-prefix=a/", "--dst-prefix=b/", revision)
-    changes = changed_lines(git(root, "diff", "--unified=0", *diff_options, "--", *MAINTAINED_CODE))
+    base_lines, head_lines = changed_lines(git(root, "diff", "--unified=0", *diff_options, "--", *MAINTAINED_CODE))
     not_compared = [path for path in git(root, "diff", "--name-only", *diff_options).splitlines()
                     if not path.endswith(".md") and not path.startswith("tests/")
                     and not (path.endswith(".py") and path.startswith(MAINTAINED_CODE))]
     archive = subprocess.check_output(["git", "archive", "--format=zip", revision], cwd=root)
-    removed, base_changes = [], {}
     with tempfile.TemporaryDirectory(prefix="baldurrl-refactor-") as directory:
         base_tree = Path(directory) / "base"
         with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
             bundle.extractall(base_tree)
-        added_sources = [(root / path).read_text(encoding="utf-8") for path in sorted(changes.added)]
-        for path, lines in sorted(changes.base.items()):
-            source, target = (base_tree / path).read_text(encoding="utf-8"), changes.moved.get(path, path)
-            head_source = (root / target).read_text(encoding="utf-8") if target else None
-            names, base_changes[path] = split_removed_definitions(
-                source, lines, surviving_names(source, head_source, added_sources))
-            removed += [f"{path}::{name}" for name in names]
+        base_sources = {path: (base_tree / path).read_text(encoding="utf-8") for path in base_lines}
         head_changes = {path: changed_statements((root / path).read_text(encoding="utf-8"), lines)
-                        for path, lines in changes.head.items()}
+                        for path, lines in head_lines.items()}
+        traced = {path: changed_statements(base_sources[path], lines) for path, lines in base_lines.items()}
         workers = run_workers(str(Path(__file__).resolve()),
-                              {"base": (base_tree, files_to_trace(base_changes)),
+                              {"base": (base_tree, files_to_trace(traced)),
                                "head": (root, files_to_trace(head_changes))}, Path(directory))
+    removed, base_changes = [], {}
+    for path, lines in sorted(base_lines.items()):
+        names, base_changes[path] = split_removed_definitions(
+            base_sources[path], lines, workers["base"].executed.get(path, set()))
+        removed += [f"{path}::{name}" for name in names]
     result = verdict(base=workers["base"], head=workers["head"], base_changes=base_changes,
                      head_changes=head_changes, removed=removed, not_compared=not_compared)
     print(json.dumps({"base": revision, "fingerprints": workers["head"].fingerprints, **dataclasses.asdict(result)},
