@@ -16,14 +16,12 @@ class SequenceReport:
     gaps: tuple[int, ...]
 
 
-def validate_sequence(records: Iterable[Record], *, start_sequence: int | None = None) -> SequenceReport:
-    """Check input order and duplicates; report missing IDs without using timestamps."""
+def validate_sequence(records: Iterable[Record]) -> SequenceReport:
+    """Check input order and duplicates; report IDs missing from 1 on, without using timestamps."""
     values = tuple(records)
     versions = {record.schema_version for record in values}
     if versions and versions != {SCHEMA_VERSION}:
         raise ValueError(f"Unsupported or inconsistent schema versions: {sorted(versions)}")
-    if start_sequence is not None and start_sequence < 1:
-        raise ValueError("start_sequence must be positive")
     numbers = [record.sequence for record in values]
     if any(number < 1 for number in numbers):
         raise ValueError("sequence must be positive")
@@ -34,10 +32,7 @@ def validate_sequence(records: Iterable[Record], *, start_sequence: int | None =
             raise ValueError(f"Sequence is not increasing: {before} then {after}")
     if not numbers:
         return SequenceReport(None, None, ())
-    first = start_sequence if start_sequence is not None else numbers[0]
-    if numbers[0] < first:
-        raise ValueError(f"Sequence {numbers[0]} precedes expected start {first}")
-    gaps = tuple(sorted(set(range(first, numbers[-1] + 1)) - set(numbers)))
+    gaps = tuple(sorted(set(range(1, numbers[-1] + 1)) - set(numbers)))
     return SequenceReport(numbers[0], numbers[-1], gaps)
 
 
@@ -81,4 +76,4 @@ class RecordDirectoryReader:
         return tuple(self._scan())
 
     def validate_all(self) -> SequenceReport:
-        return validate_sequence(self.read_all(), start_sequence=1)
+        return validate_sequence(self.read_all())

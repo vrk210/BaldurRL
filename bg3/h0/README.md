@@ -1,8 +1,8 @@
 # BaldurRL passive BG3 H0 collector
 
 **Verified offline only; never loaded in BG3.** The
-[integration contract](../../docs/BG3_INTEGRATION.md#python-use) lists what
-still needs live verification. This source mod observes human gameplay on the
+[live-verification checks](#live-verification-acceptance-checks-all-pending)
+below establish what the game actually does. This source mod observes human gameplay on the
 host server. No game-state writes, agent, input injection, training, or model
 calls. The only writes are collector files. It is a source mod, not a tested
 release `.pak`.
@@ -123,8 +123,7 @@ The complete developer environment is documented in the root README.
    continuation of an old sequence. Module --help contains detailed options.
 
 Offline CI checks Lua with stubbed game APIs, Python on Windows 3.11/3.13 and
-fake-converter packaging. Real Divine packaging, game loading, API availability,
-callback timing and filesystem IO still need the live checks below. The ready
+fake-converter packaging; everything else needs the live checks below. The ready
 marker/publication contract is in [BG3_INTEGRATION.md](../../docs/BG3_INTEGRATION.md).
 
 ## Observed facts and limitations
@@ -245,10 +244,8 @@ Lua. No tests emulate engine timing or prove an installed SE version works.
 - [ ] For future command trials, establish capture-after-terminal-result timing,
   excluding queued old snapshots. Acceptance and callback start are insufficient.
 
-Unresolved blockers: untested packaging/loading, installed API/signature support,
-output-root/IO behavior, event ordering and snapshot completeness. Resource,
-ability, participant and legality enrichment remains separate verified work.
-Keep unique live captures under one ignored/external session archive; record its
+Resource, ability, participant and legality enrichment remains separate
+verified work. Keep unique live captures under one ignored/external session archive; record its
 location, game/SE/code versions and retention condition in the results summary.
 Inspect anomalies before summarizing or retiring evidence; preserve unresolved
 examples rather than retaining duplicate raw bundles indefinitely.

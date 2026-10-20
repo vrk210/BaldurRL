@@ -23,9 +23,10 @@ from combat.tactical_env import (
 
 _FIGHTER_AC = 16
 _FIGHTER_ATTACK = 5
-_FIGHTER_DIE = 8
-_FIGHTER_BONUS = 3
 _PRIORITIES = ("lowest_hp", "role")
+# The adaptive variant dives once the sturdiest front-rank enemy's HP divided by
+# our hit chance falls below this.
+_ADAPTIVE_DIVE_DURABILITY = 42.0
 _ADVANCE_MODES = ("never", "all", "adaptive")
 
 
@@ -38,7 +39,6 @@ class TacticalHeuristicConfig:
     cleave_min_targets: int = 2
     count_reachable_for_cleave: bool = False
     advance: str = "never"
-    dive_threshold: float = 42.0
     second_wind_threshold: int = 10
 
     def __post_init__(self) -> None:
@@ -70,7 +70,6 @@ class _Enemy:
     die: int
     bonus: int
     role: str
-    prone: bool
     heal_count: int
     back_rank: bool
 
@@ -79,12 +78,10 @@ class _Enemy:
         return self.hp > 0
 
 
-def expected_damage(attack_bonus: int, die: int, bonus: int, armor_class: int, *, advantage: bool = False) -> float:
+def expected_damage(attack_bonus: int, die: int, bonus: int, armor_class: int) -> float:
     """Policy-side estimate of one attack's mean damage (not used by the simulator)."""
     p_hit = min(0.95, max(0.05, (21 + attack_bonus - armor_class) / 20))
     p_crit = 0.05
-    if advantage:
-        p_hit, p_crit = 1 - (1 - p_hit) ** 2, 1 - 0.95 ** 2
     mean_die = (die + 1) / 2
     return p_hit * (mean_die + bonus) + p_crit * mean_die
 
@@ -122,7 +119,7 @@ class TacticalHeuristicAgent:
         return _Enemy(
             slot=slot, hp=get("hp"), ac=get("ac"), attack=get("attack_bonus"),
             die=get("damage_die_size"), bonus=get("damage_bonus"), role=role,
-            prone=bool(get("prone")), heal_count=get("heal_count"),
+            heal_count=get("heal_count"),
             back_rank=bool(get("back_rank")) if self.ranks else False,
         )
 
@@ -206,7 +203,7 @@ class TacticalHeuristicAgent:
         if (
             config.advance == "adaptive"
             and not any(ally.alive and ally.deep for ally in allies)  # commit once anyone dove
-            and self._front_durability(enemies) < config.dive_threshold
+            and self._front_durability(enemies) < _ADAPTIVE_DIVE_DURABILITY
         ):
             return None
         return self._decision(Action.ADVANCE)

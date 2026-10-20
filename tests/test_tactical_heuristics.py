@@ -104,7 +104,6 @@ def test_factory_variants_and_validation() -> None:
 
 def test_expected_damage_estimate() -> None:
     assert expected_damage(5, 8, 3, 16) == pytest.approx(0.5 * 7.5 + 0.05 * 4.5)
-    assert expected_damage(5, 8, 3, 16, advantage=True) > expected_damage(5, 8, 3, 16)
 
 
 @pytest.mark.parametrize("stage", ["m5", "m6"])

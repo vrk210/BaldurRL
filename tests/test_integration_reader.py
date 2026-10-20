@@ -68,7 +68,7 @@ def test_malformed_file_names_its_path(tmp_path) -> None:
 
 def test_sequence_validation() -> None:
     records = (GameSnapshot(1, 2), GameEvent(1, 4, EventKind.MISS))
-    assert validate_sequence(records, start_sequence=1).gaps == (1, 3)
+    assert validate_sequence(records).gaps == (1, 3)
     with pytest.raises(ValueError, match="not increasing"):
         validate_sequence(records[::-1])
     with pytest.raises(ValueError, match="Duplicate"):

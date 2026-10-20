@@ -16,7 +16,6 @@ _END_TURN = 3
 
 _FIGHTER_HP = 0
 _FIGHTER_ACTION_COUNT = 1
-_FIGHTER_MAX_HP = 20
 _SECOND_WIND_HP = 10  # Second Wind at or below this HP
 
 
@@ -38,7 +37,6 @@ class HeuristicAgent:
         if (
             bool(action_mask[_SECOND_WIND])
             and fighter_hp <= _SECOND_WIND_HP
-            and fighter_hp < _FIGHTER_MAX_HP
         ):
             return _SECOND_WIND
         if bool(action_mask[_ATTACK]):
