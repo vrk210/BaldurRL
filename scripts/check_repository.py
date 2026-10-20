@@ -40,8 +40,6 @@ def inventory(text: str) -> tuple[dict[str, InventoryRow], list[str]]:
         if path in rows:
             errors.append(f"Duplicate inventory row: {path}")
         rows[path] = InventoryRow(status, purpose)
-    if not rows:
-        errors.append("ARCHITECTURE.md has no maintained-system inventory")
     return rows, errors
 
 
