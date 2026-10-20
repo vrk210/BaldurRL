@@ -4,7 +4,7 @@ import pytest
 
 from scripts.compare_refactor import (
     Statement, WorkerReport, changed_lines, changed_statements, declares_behavior_preserved, split_removed_definitions,
-    verdict,
+    surviving_names, verdict,
 )
 
 SOURCE = """\
@@ -75,15 +75,27 @@ def test_except_clause_spans_only_its_handler():
     assert (handler.first, handler.last) == (32, 33)
 
 
-def test_only_definitions_removed_whole_are_removals():
-    names, remaining = split_removed_definitions(SOURCE, set(range(15, 19)))  # all of method, nested def included
-    assert (names, remaining) == (["Thing.method"], set())
-    names, remaining = split_removed_definitions(SOURCE, {17})  # one line of inner
+def test_a_definition_is_removed_only_when_all_of_it_goes_and_its_name_does_not_survive():
+    method = set(range(15, 19))  # all of Thing.method, nested def included
+    assert split_removed_definitions(SOURCE, method, surviving={"<module>"}) == (["Thing.method"], set())
+    names, remaining = split_removed_definitions(SOURCE, method, surviving={"<module>", "Thing.method"})  # rewritten
+    assert names == [] and {statement.owner for statement in remaining} >= {"Thing.method"}
+    names, remaining = split_removed_definitions(SOURCE, {17}, surviving={"<module>"})  # one line of inner
     assert names == [] and {statement.owner for statement in remaining} == {"Thing.method.<locals>.inner"}
-    assert split_removed_definitions(SOURCE, set(range(1, 48))) == (["<module>"], set())  # a deleted file
+    assert split_removed_definitions(SOURCE, set(range(1, 48)), surviving=set()) == (["<module>"], set())  # deleted
 
 
-def test_hunks_map_to_base_and_working_tree_lines():
+@pytest.mark.parametrize("head_source, added, survives", [
+    ("def top():\n    pass\n", [], {"<module>", "top"}),  # the file still exists, maybe renamed
+    (None, [], set()),  # deleted
+    (None, ["def top():\n    return 2\n"], {"<module>", "top"}),  # moved to a file git didn't pair with it
+    (None, ["def other():\n    pass\n"], set()),
+])
+def test_surviving_names_follow_files_and_moves(head_source, added, survives):
+    assert surviving_names("def top():\n    return 1\n", head_source, added) == survives
+
+
+def test_hunks_map_to_lines_on_each_side_with_renames_deletions_and_additions():
     diff = """\
 diff --git a/combat/a.py b/combat/a.py
 --- a/combat/a.py
@@ -103,13 +115,20 @@ rename to combat/new.py
 --- a/combat/old.py
 +++ b/combat/new.py
 @@ -5 +5 @@
+diff --git a/combat/created.py b/combat/created.py
+--- /dev/null
++++ b/combat/created.py
+@@ -0,0 +1,2 @@
 diff --git a/combat/notes.txt b/combat/notes.txt
 --- a/combat/notes.txt
 +++ b/combat/notes.txt
 @@ -1 +1 @@
 """
-    assert changed_lines(diff) == ({"combat/a.py": {3, 10, 11}, "combat/removed.py": {1, 2}, "combat/old.py": {5}},
-                                   {"combat/a.py": {3, 19, 20, 21}, "combat/new.py": {5}})
+    changes = changed_lines(diff)
+    assert changes.base == {"combat/a.py": {3, 10, 11}, "combat/removed.py": {1, 2}, "combat/old.py": {5}}
+    assert changes.head == {"combat/a.py": {3, 19, 20, 21}, "combat/new.py": {5}, "combat/created.py": {1, 2}}
+    assert (changes.moved, changes.added) == ({"combat/removed.py": None, "combat/old.py": "combat/new.py"},
+                                              {"combat/created.py"})
 
 
 @pytest.mark.parametrize("body, declared", [
@@ -128,7 +147,8 @@ def test_only_a_marker_line_declares_preserved_behavior(body, declared):
 
 @pytest.mark.parametrize("line", [
     "**Behavior:** preserve", "behavior: preserve", "  Behavior: preserve", "- Behavior: preserve",
-    "## Behavior: preserve", "> Behavior: preserve", "Behavior: preserve.",
+    "## Behavior: preserve", "> Behavior: preserve", "Behavior: preserve.", "Behavior preserve",
+    "Behavior - preserve",
 ])
 def test_a_misspelled_marker_line_fails_instead_of_skipping(line):
     with pytest.raises(ValueError, match="not exactly"):

@@ -26,7 +26,10 @@ jobs:
         shell: bash
         run: |
           declared=$(python scripts/compare_refactor.py --check-marker "$GITHUB_EVENT_PATH")
-          echo "Behavior: preserve declared: $declared"
+          declared=${declared%$'\r'}  # Windows Python ends the line with CRLF
+          if [ "$declared" != true ]; then
+            echo "::notice::The PR body has no 'Behavior: preserve' line, so the comparison is skipped."
+          fi
           echo "preserve=$declared" >> "$GITHUB_OUTPUT"
       - if: steps.marker.outputs.preserve == 'true'
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
