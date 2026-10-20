@@ -1,125 +1,236 @@
-# BaldurRL: instructions for coding agents
+# BaldurRL: rules for agents
 
-Prefer stable abstractions and implementations expected to survive future milestones when doing so adds little complexity. Do not overengineer speculative future functionality solely to avoid hypothetical rewrites.
+The goal is an agent that plays Baldur's Gate 3. This file says how we work.
+[ARCHITECTURE.md](docs/ARCHITECTURE.md) says what the system is now. If the two
+disagree, stop and ask the owner.
 
-## Project goal and current stages
+## How work starts
 
-BaldurRL's long-term goal is an autonomous agent capable of completing Baldur's Gate 3. **M0** is the fixed 1v1 regression baseline. **M1A** randomizes one opponent, **M1B** adds a second opponent and target choice, **M2** adds the simplified Cleave decision, **M3** controls two allies against two enemies, **M4** is 2v3 with scaled enemies, **M5** adds enemy roles, varied enemy targeting, advantage/disadvantage, Trip/Prone, and Dodge, and **M6** adds a two-rank positioning abstraction to M5. Implement only these stages unless a later task explicitly expands scope.
+Work has one of two motives. Don't write code without one.
 
-## Documentation priority
+- **Outcome work.** The owner confirms the outcome before code is written:
+  - what must be true afterwards;
+  - why it matters;
+  - how we will know;
+  - what the code looks like when it's done.
 
-Before modifying combat code, read in order:
+  When a request is underspecified, propose the outcome and get it confirmed.
+- **Exploration.** Exploration is just as important. It starts from a motive
+  or hypothesis, even an unlikely one, and runs on an `explore/<name>` branch.
+  It ends when the hypothesis is answered or abandoned, and either way it ends
+  with a results entry (see *Evidence*). Its code doesn't merge. Tag the branch
+  `archive/<name>`, then delete it.
 
-1. [docs/M0_SPEC.md](docs/M0_SPEC.md)
-2. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-3. [docs/GAME_KNOWLEDGE.md](docs/GAME_KNOWLEDGE.md)
+## Principles
 
-For M1A through M6, also read the stage specification before editing their rules.
+1. **Optimize for the end state.** Judge a change by the codebase it leaves,
+   not by its diff.
+   - Subtract before adding: delete what the requirement makes unnecessary.
+   - Prefer the smallest result, counted in concepts a reader must hold, not
+     in lines.
+   - If the requirement had been known from the start and the codebase would
+     then be smaller or clearer, redesign rather than bolt it on. Carry the
+     change through every reference: types, docs, comments.
+   - Redesign only for confirmed outcomes, never for exploration. Count the
+     cost of re-verifying what the redesign touches.
+   - Deliver a redesign in steps, but finish every migration. Never leave old
+     and new paths side by side.
+2. **Every line serves a stated purpose.** Each file, class and function states
+   what it is for, through its name and signature and, if those aren't enough,
+   a docstring. Every line inside it serves that purpose. Nothing is there just
+   in case or left over. This applies to tests, comments, flags and fixtures
+   too.
+3. **Be concrete.** Name the file, command, seed range, number and unit.
+4. **Unknown stays unknown.** Never fill in a fact about the game from D&D
+   rules, a simulator or a guess. Simulator results are hypotheses about the
+   game.
+5. **Test in practice.** Check how something behaves when actually used, and
+   check it before the PR, not after.
 
-`docs/M0_SPEC.md` is authoritative for M0 behavior; the stage specification governs M1A, M1B, M2, M3, M4, M5, and M6. If code and documentation disagree, report the inconsistency; do not silently choose one.
+## Where things live
 
-## Scope
+Each fact has one home. Read it before changing what it covers.
 
-M0 has exactly one Fighter and one Goblin at fixed melee range. M1A retains one enemy with randomized stats. M1B and M2 have two enemies at fixed melee range. M3 has two controlled Fighter allies and two enemies at fixed melee range. M4 has two allies and three scaled enemies at fixed melee range. M5 has two allies against a Brute, an Archer, and a Healer with no geometry. M6 adds front/back ranks, a per-turn Movement resource, Advance/Disengage, and opportunity attacks; it is an abstract two-rank model, not movement on a map. All stages omit terrain, elevation, line of sight, distances, inventory, consumables, party members, dialogue, quests, BG3 API integration, computer vision, and LLM calls, and every stage except M6 also omits movement and opportunity attacks. Do not add these systems unless explicitly requested. M5/M6 mechanics are owner-authorized simulator choices documented in the stage specification, not verified BG3 rules.
+- `README.md`: what the project is, setup, and the commands that run it.
+- `docs/ARCHITECTURE.md`: the system as it is now: module boundaries and
+  dependency direction, the file inventory, and simulator-wide decisions with
+  their reasons and revisit conditions. Read it before changing code. Its
+  decisions bind you as much as this file; if one seems wrong, raise it with
+  the owner instead of working around it. The owner approves every inventory
+  status change.
+- `docs/BG3_INTEGRATION.md`: the contracts between the game and the code
+  (records, commands, transport, recovery) and the decisions about them.
+- `docs/GAME_KNOWLEDGE.md`: facts and hypotheses about the game, each with its
+  evidence label.
+- `docs/RESULTS.md`: measured results, with their limits and open questions.
+- `bg3/h0/README.md`: the Windows procedure for installing, capturing with and
+  verifying the in-game collector.
+- A module's docstring: that module's contract.
+- A decision comment: a decision that constrains only the code beside it.
+- PR bodies and Git history: how the code got here.
 
-## Design and module boundaries
+## Writing code
 
-```text
-Agent
-  ↓
-Action
-  ↓
-Environment
-  ↓
-Mechanics
-  ↓
-Character state
+Signatures explain themselves. The name says the action or result, the
+parameter names and types say what goes in, and the return type says what
+comes out.
+
+```python
+def simulation_from_observation(stage: str, observation: np.ndarray, *, seed: int) -> TacticalCombatEnv: ...  # clear
+def run_chunk(stage: str, spec: dict, seeds: list[int]) -> list[dict]: ...  # what is in spec and in the rows?
 ```
 
-The agent chooses actions. The environment coordinates episodes, turns, legality, rewards, and termination. Mechanics implement combat rules. Character classes store stats, `ResourcePool` state, and known `Action` IDs. Shared immutable `AbilitySpec` definitions describe costs and targets, not execution. Agents must never directly modify character state. RL algorithms must not contain combat mechanics.
+- Name the mechanism, not the hoped-for result: `GatedRolloutAgent`, not
+  `ImprovedHeuristicAgent`.
+- Put units in names when the type doesn't carry them: `planning_seconds`,
+  `delta_pp`.
+- Use one name per concept across the repo.
+- Make booleans and same-type neighbours keyword-only.
+- Return dataclasses, not dicts, when callers use the fields.
+- **Docstrings** say why, not what happened. Include only the parts that apply:
+  - the responsibility and the outcome it serves;
+  - the choice a reader would question, and why it was made;
+  - how it is checked;
+  - when to revisit.
 
-| Module | Responsibility | Exclusions |
-| --- | --- | --- |
-| `combat/characters.py` | State representations: `Character`, `Fighter`, `Goblin`, with resources, known ability IDs, and per-turn refresh | Attack resolution, rewards, environment turn loops, RL algorithms |
-| `combat/actions.py` | Semantic ability intent, including `CLEAVE`, and `END_TURN` turn control | Action execution |
-| `combat/resources.py` | Typed `Resource` counts and shared `ResourcePool` affordability/spending | Ability-specific effects |
-| `combat/damage.py` | Immutable damage dice and bonus data | Damage rolls |
-| `combat/abilities.py` | Immutable `AbilitySpec` catalogs for stage abilities and their costs/targets | Executable effects; `END_TURN` remains turn control |
-| `combat/actors.py` | Stable `Side`/`ActorRef` addresses and `CombatRoster` ally/enemy organization | Combat rules, rewards, turn advancement |
-| `combat/turns.py` | Deterministic `TurnManager`: order, current actor, round, wrap detection, dead-actor skipping | Dice, HP mutation, rewards, policies, attacks |
-| `combat/legality.py` | `DecisionSpec` decisions, side-aware targets, turn-agnostic per-actor `legal_mask_for` and M5/M6 `tactical_legal_mask` | Turn order, dice, HP mutation, rewards, policies |
-| `combat/mechanics.py` | d20 and damage rolls, critical hits, attack resolution, Second Wind, Action Surge, Cleave | RL rewards |
-| `combat/rolls.py` | Advantage/disadvantage roll modes and moded attack resolution (M5/M6) | RL rewards, environment loops |
-| `combat/tactics.py` | M5/M6 rules: roles' tuning data, catalog costs, healing, Trip/Prone, Dodge, Healer, enemy targeting, ranks and reach, Advance/opportunity attacks, Disengage, turn-start/turn-end conditions | Environment loops, rewards, policies |
-| `combat/distributions.py` | Exact outcome distributions enumerated through the mechanics rule functions | Sampling, state mutation |
-| `combat/env.py` | Gymnasium M0 environment: one Fighter decision per step, fixed Goblin turn after `END_TURN`, observations, action masks, rewards, termination, truncation | Combat formulas; call `mechanics.py` |
-| `combat/stages.py` | M1A/M1B/M2/M3/M4 environments, shallow target decisions, stage factory (M0–M6) and metadata | Combat formulas; call `mechanics.py` |
-| `combat/tactical_env.py` | M5/M6 Gymnasium environment: sampling, turns, masks, observations, rewards, termination, per-stage `STAGE_RULES` | Combat formulas; call `tactics.py`/`mechanics.py` |
-| `combat/simulation.py` | Restore independent simulators (M0–M6) from live observations | Live RNG access, policies, combat formulas |
-| `combat/transitions.py` | Exact planner transitions: `TransitionModel` protocol, stage registry, M0–M4 roster model | Policies; combat formulas (use `distributions.py`) |
-| `combat/tactical_transitions.py` | Independent M5/M6 replay oracle: exact transitions by enumerating random paths through the real environment code, one draw per attack | Policies; restated combat rules |
-| `combat/table_tactical_transitions.py` | Default M5/M6 planner transitions: table-driven, using the shared `tactics.py` rule functions; must match the replay oracle | Policies; duplicated combat formulas |
-| `agents/` | Random, stage heuristic (including named M5/M6 variants), rollout, trained, and expectimax policies; leaf value functions; action selection only | Direct environment-state mutation; combat formulas |
-| `evaluation/` | Reproducible stage evaluation: win rate, remaining HP, rounds, action and target usage, kill order by role, paired comparisons, M5/M6 behavior summaries, planner timing | Combat rules |
+  One line is fine. Results tables, timings, commit hashes and the history of
+  the work belong in RESULTS.md or the PR, not in code.
+- **Decision comments** have a date and a reason to revisit:
+  `# Decision (YYYY-MM-DD): ... Revisit if ...`. When the decision changes,
+  rewrite the comment; Git keeps the old one.
+- **TODOs** name a checkable condition: `# TODO(first live capture): ...`.
+- **Game facts:** where code relies on one, use the evidence labels from
+  GAME_KNOWLEDGE.md.
+- **Validation** happens at trust boundaries: CLI input, records from the game,
+  and observations from outside the process. Trust internal callers.
+- **Errors:** messages name the bad value and the rule it broke. Never
+  silently catch programming errors; catch broad exceptions only at process
+  boundaries, and record the failure there.
+- **Imports and output:** production code doesn't import `_private` names
+  from other modules; CI checks this outside `tests/`, apart from the
+  exemptions the inventory intro lists. Library code doesn't print.
+- **Determinism:** randomness comes from a caller-supplied
+  `numpy.random.Generator`.
+- **Paths** come from arguments and default to `runs/`.
+- **Dependencies** are pinned.
+- **Abstract only for:**
+  - a boundary that already has two or more implementations, like
+    `TransitionModel` or `Policy`;
+  - logic that must stay in sync showing up a second time;
+  - a domain concept that otherwise travels as loose values, like `ActorRef`.
 
-## Coding rules
+  Never abstract for callers that don't exist yet.
 
-- Use Python type hints; prefer simple dataclasses and functions.
-- Avoid speculative abstractions and unnecessary dependencies.
-- Keep functions small and testable. Write deterministic tests whenever possible.
-- Use caller-supplied `numpy.random.Generator` instances, not global randomness, for combat rules.
-- Check known ability IDs and shared resource costs before applying an effect; keep target and HP restrictions specific to that effect.
-- Keep the four M0 action indices and seven M0 observation fields in `docs/M0_SPEC.md` stable. Stage-specific indices and fields are specified separately. Keep masks separate from observations, and use only the environment's seeded RNG for combat transitions.
-- Before collecting data or evaluating policies, reserve encounter seed ranges in `evaluation/seeds.py` (check with `python -m evaluation.seeds --check START COUNT`); never reuse a range that has already informed a decision. Evaluation CLIs refuse frozen final-test ranges unless `--final-test` is passed.
-- Compare policies on the same encounter seeds (`evaluation.paired`), with enough fights to resolve the effect: about 5,000 per policy for 1–2 point differences. Select configurations on play, not validation loss. Report a failed pilot as "this configuration loses", together with its configuration.
-- Do not print inside reusable mechanics functions.
-- Do not silently catch programming errors or prematurely optimize.
+## Tests
 
-## Missing-mechanic rule
+Test behavior in practice, not implementation:
 
-> If a mechanic required for implementation is absent from the relevant stage specification, do not infer it from general D&D or BG3 knowledge.
+- **Integration:** replay captured game sessions through the pipeline. Real
+  captures become the fixtures, trimmed to the records the test reads.
+- **Policies:** play them, and compare policies on matched encounters.
+- **Unit tests:** only for logic with more cases than practice reaches, such as
+  exact transition enumeration. Use an independent oracle where one exists.
+- **Bugs:** each real bug gets one regression test, named after the behavior.
 
-Identify the missing specification, do not guess, and propose or request clarification before implementing it. M0 deliberately simplifies real BG3.
+For each behavior, keep the fewest tests that would catch a plausible
+regression. Don't test structure, mocks, constants or argument wiring. A
+behavior-preserving refactor leaves the tests unchanged.
 
-## Implementation order
+## Evidence
 
-```text
-combat mechanics
-→ environment
-→ deterministic tests
-→ random baseline
-→ heuristic baseline
-→ evaluation harness
-→ MaskablePPO
-```
+**Explain differences; don't just measure them.**
+1. Find where two policies diverge.
+2. Form a hypothesis about which decision causes the gap.
+3. Change only that decision.
+4. Measure the effect.
 
-Do not jump ahead unless explicitly requested.
+Size each run from a pilot's noise, so you can see the smallest effect that
+would change the decision. Before running, write down what an inconclusive
+result means. Check the method by running a policy against itself: it should
+find no difference. Select policies and configurations by play, not by
+proxies such as validation loss. Reserve encounter seeds in
+`evaluation/seeds.py` before running; a PR that only reserves seeds skips
+review. Never use held-out final-test ranges for development.
 
-## Documentation maintenance
+| What | Where |
+| --- | --- |
+| Raw output, traces, result JSON, trained models | `runs/` (git-ignored); never committed |
+| Live game captures | An archive root outside the repo, with location and retention recorded; deleted only by the owner |
+| Experiment results | `docs/RESULTS.md` |
+| Hypotheses about the game | `docs/GAME_KNOWLEDGE.md`, labeled unverified |
 
-Changes to combat mechanics, actions, observations, legal-action rules, rewards, termination, or architecture boundaries must update the appropriate documentation in the same change.
+**Results.** Every exploration and experiment gets one entry in RESULTS.md,
+with:
+- the motive or hypothesis;
+- what was run (tag, commit, seeds);
+- the outcome;
+- what we learned;
+- irregularities;
+- open leads.
 
-Prefer self-documenting code and tests, with local rationale and the conditions
-for revisiting a decision beside the implementation. Keep cross-cutting
-architecture and contracts in a few maintained documents. Put completed task
-plans and implementation history in PRs or Git history rather than new docs.
-Add a standalone document when it serves an ongoing purpose; necessary temporary
-handoffs must state when they should be removed.
+For other outcome work, the PR is the record. Entries carry no narrative.
 
-Experiment artifacts are temporary by default. Write raw logs, transcripts,
-research bundles and result JSON under an ignored location such as `runs/`,
-with one canonical location per experiment; do not commit them by default.
+## Documentation
 
-Before summarizing or retiring artifacts, inspect them for missing/non-finite
-data, inconsistent configurations or provenance, failures, and unexpected or
-promising results. Alert the user to anything worth investigating. Preserve
-the smallest relevant evidence and its provenance until the question is resolved.
+- Adding a document is the owner's decision.
+- This file holds only how we work and where things live. Everything else
+  goes in its home under *Where things live*.
+- Update documents in the same PR as the code.
+- State each fact and caveat once, in its home, and link to it elsewhere.
+- Describe only the current system.
 
-Keep concise findings in an existing results or knowledge document: what was
-tested and why, configuration/code revision, seeds/sample size, uncertainty,
-limitations, and unresolved questions. Raw output is not a substitute for this
-summary. Retire summarized, regenerable output once no active investigation
-needs it. Retain artifacts only for a concrete ongoing purpose, such as unique
-live captures, active training data, or small regression fixtures; record their
-location and retention/removal condition. Do not routinely discard irreplaceable
-data or evidence for an unresolved issue.
+## Review, then PR
+
+The PR is the final step. Live testing and review happen before it.
+
+**Live testing.** A change that touches the game is tested in the game first.
+Code that can't be tested in the game yet stays on its branch, unless that test
+needs it (setup, capture). A setup change is shown working in a fresh
+environment. Never report a synthetic or offline check as live verification.
+
+**Review.** Fresh reviewer agents get the outcome, the diff and the repository,
+but not the author's conversation. Review should take more effort than writing
+the code. One reviewer per focus, in priority order:
+1. **Outcome.** Is it met, and does every part of the diff serve it?
+2. **Correctness.** Break it with inputs inside the contract. Rerun every cited
+   command.
+3. **Alternatives.** Is there a materially different approach that leaves a
+   smaller codebase?
+4. **Tests.** Mutate the code and look for a stronger test.
+5. **Performance.** Measure where cost matters.
+6. **Readability** (weighed least).
+
+A reviewer may mark its focus "not applicable", with a one-sentence reason.
+
+**Findings.** A finding needs a reproduction: the failing input, the surviving
+mutation, the measurement or the alternative's result. Without one it is a
+question.
+- **Blocking:** only a reproduced failure to meet the outcome, or a reproduced
+  contract violation.
+- **Advisory:** everything else. The author fixes it or declines it in one
+  line.
+- **To the owner:** doubts about the outcome itself, and better alternatives.
+
+After fixes, rerun only the reviewers whose focus the fix touched. Review ends
+when a round finds no new blocking finding. A disagreement that comes up twice
+goes to the owner. Before an exploration's conclusion changes a decision, its
+analysis gets the correctness review.
+
+**PR.**
+- **Scope:** one outcome per PR. Split off anything that could merge alone for
+  a separate outcome.
+- **Deletions** that the change makes unnecessary go in the same PR. Unrelated
+  cleanup gets its own PR.
+- **Contents:** no experiment code, and nothing without a current caller.
+- **Body**, in four parts:
+  - **Outcome:** what is true after this merges.
+  - **Why it matters:** the goal or decision it serves.
+  - **Evidence:** live or practice results with exact commands, and the review
+    findings with their resolutions.
+  - **Not done:** what remains or didn't work.
+- **Checks:** before opening it, run what CI runs:
+  `python scripts/check_repository.py`, `python -m ruff check .` and
+  `python -m pytest -q`.
+- **Merging and branches:** the owner merges, or an agent the owner explicitly
+  asks to. Agents never force-push. They don't bypass branch rules or push to
+  another agent's branch without the owner's agreement.

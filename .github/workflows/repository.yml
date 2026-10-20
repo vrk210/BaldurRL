@@ -1,0 +1,28 @@
+name: Repository contract
+
+# Pull requests run on their own events; pushes run only for main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer event for the same PR supersedes its running check; each main commit is its own group.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  repository:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements-quality.txt
+      - run: python scripts/check_repository.py
+      - run: python -m ruff check .
+      - run: python -m pytest -q tests/test_repository_policy.py

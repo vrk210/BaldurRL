@@ -1,11 +1,12 @@
 name: Windows harness
 
+# Pull requests run on their own events; pushes run only for main.
 on:
   push:
+    branches: [main]
     paths:
       - ".github/workflows/windows-harness.yml"
       - "bg3/h0/**"
-      - "bg3/trials/**"
       - "integration/**"
       - "scripts/windows/**"
       - "tests/test_bg3_h0_lua.py"
@@ -18,7 +19,6 @@ on:
     paths:
       - ".github/workflows/windows-harness.yml"
       - "bg3/h0/**"
-      - "bg3/trials/**"
       - "integration/**"
       - "scripts/windows/**"
       - "tests/test_bg3_h0_lua.py"
@@ -27,6 +27,11 @@ on:
       - "tests/test_encounter_trial.py"
       - "tests/test_integration_*.py"
       - "requirements-harness-test.txt"
+
+# A newer event for the same PR supersedes its running check; each main commit is its own group.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
