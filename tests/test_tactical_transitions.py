@@ -82,7 +82,7 @@ def test_moded_distributions_sum_to_one_and_order_modes(mode):
 def test_collapsed_draws_are_restored_after_enumeration():
     env = make_env("m5")
     obs, _ = env.reset(seed=4)
-    model = transition_model("m5", obs)
+    model = TacticalTransitionModel.from_observation("m5", obs)
     state = model.state_from_observation(obs)
     model.outcomes(state, model.legal_actions(state)[0])
     assert tactics.resolve_attack_with_mode is resolve_attack_with_mode

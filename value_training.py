@@ -29,14 +29,20 @@ class EpsilonPolicy:
     """With probability epsilon, a uniformly random legal action (coverage only)."""
 
     def __init__(self, base: Policy, epsilon: float, seed: int) -> None:
+        if not 0 <= epsilon <= 1:
+            raise ValueError("epsilon must be in [0, 1]")
         self.base = base
         self.epsilon = epsilon
         self.rng = np.random.default_rng(seed)
+        self.last_diagnostics = None
 
     def choose_action(self, observation: np.ndarray, action_mask: np.ndarray) -> int:
         if self.rng.random() < self.epsilon:
+            self.last_diagnostics = None
             return int(self.rng.choice(np.flatnonzero(action_mask)))
-        return self.base.choose_action(observation, action_mask)
+        action = self.base.choose_action(observation, action_mask)
+        self.last_diagnostics = getattr(self.base, "last_diagnostics", None)
+        return action
 
 
 def collect(stage: str, policy: Policy, seeds: range) -> dict[str, np.ndarray]:
@@ -103,16 +109,43 @@ def targets_for(data: dict[str, np.ndarray], mode: str) -> np.ndarray:
     outcome = data["win"].astype(np.float64)
     if mode == "outcome":
         return outcome
+    if mode.startswith("td:"):
+        lam = _unit_weight(mode)
+        next_value = np.asarray(data["next_value"], dtype=float)
+        done = np.asarray(data["done"], dtype=bool)
+        if not np.all(np.isfinite(next_value)) or np.any((next_value < 0) | (next_value > 1)):
+            raise ValueError("TD targets need finite successor win probabilities")
+        result = np.empty_like(next_value)
+        following = 0.0
+        for i in range(len(result) - 1, -1, -1):
+            boundary = i == len(result) - 1 or data["seed"][i] != data["seed"][i + 1]
+            if boundary != bool(done[i]):
+                raise ValueError("TD data must contain complete contiguous episodes")
+            if done[i]:
+                following = outcome[i]
+            else:
+                if data["step"][i + 1] != data["step"][i] + 1:
+                    raise ValueError("TD data has a missing or reordered decision")
+                following = (1 - lam) * next_value[i] + lam * following
+            result[i] = following
+        return result
     raw = data["search_value"].astype(np.float64)
     search = np.where(np.isfinite(raw), raw, outcome)
     if mode == "search":
         return search
     if mode.startswith("mix:"):
-        weight = float(mode.split(":", 1)[1])
+        weight = _unit_weight(mode)
         return weight * search + (1 - weight) * outcome
     if mode.startswith("lambda:"):
-        return lambda_returns(raw, outcome, data["seed"], float(mode.split(":", 1)[1]))
+        return lambda_returns(raw, outcome, data["seed"], _unit_weight(mode))
     raise ValueError(f"Unknown target mode {mode!r}")
+
+
+def _unit_weight(mode: str) -> float:
+    weight = float(mode.split(":", 1)[1])
+    if not np.isfinite(weight) or not 0 <= weight <= 1:
+        raise ValueError("Target weight must be in [0, 1]")
+    return weight
 
 
 def end_turn_rows(stage: str, data: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
@@ -162,7 +195,7 @@ def fit(stage: str, train: dict, val: dict, *, target: str, hidden: list[int], e
             loss = loss_fn(net(x_train[batch]).squeeze(1), y_train[batch])
             loss.backward()
             optimizer.step()
-            total += float(loss) * len(batch)
+            total += float(loss.detach()) * len(batch)
         scheduler.step()
         net.eval()
         with torch.no_grad():

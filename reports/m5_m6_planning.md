@@ -1,8 +1,10 @@
 # M5/M6 exact transitions and planner pilots
 
-The exact M5/M6 transition model works and is verified. No planner built on it
-beat the best hand heuristic on configuration-selection seeds, so none was run on
-the frozen test range (130000–132999), which remains unused.
+The original exact M5/M6 transition model works and is verified. The follow-up
+implements a faster table model, bounded policy-guided search, and explored
+expert iteration. Neither the original planners nor the follow-up pilot beat
+the best hand heuristic on configuration-selection seeds. The frozen test range
+(130000–132999) remains unused.
 
 ## Transition model
 
@@ -72,3 +74,91 @@ on a heuristic that already wins about 80%.
 
 Scripts and raw outputs for these pilots are in `runs/m5m6_planner_prototypes/`
 and `runs/eval_m5/sel/`. Those folders are git-ignored.
+
+## Implemented follow-up (2026-10-10)
+
+Implemented on branch `m5-m6-planning`, based on integration commit `e146d0d`,
+in a separate worktree because the integration worktree has an unfinished merge.
+The original pilot findings above remain historical.
+
+### Faster exact transitions
+
+`combat/table_tactical_transitions.py` is now the default M5/M6 transition model.
+The original `TacticalTransitionModel` remains an independent replay oracle.
+The table model convolves attack/heal outcomes and merges HP caps before expanding
+states. It uses shared costs, targeting, heal eligibility, roll modes, reach,
+opportunity-attack eligibility, lifecycle functions and turn order; no combat
+mechanics, observations, action indices, or rewards changed.
+
+A seeded random-play comparison on seeds 210000–210009 checked every legal
+action at every fifth decision (including complete enemy phases):
+
+| Stage | State/action cases | Largest probability difference | Oracle total | Table total | Speedup |
+|---|---:|---:|---:|---:|---:|
+| M5 | 345 | 9.7e-15 | 2.764 s | 0.172 s | 16.1× |
+| M6 | 346 | 1.0e-14 | 12.165 s | 0.232 s | 52.5× |
+
+All successor sets matched, and all probability sums were within 1e-12 of one.
+These are one-process pass timings, including distribution initialization and
+normal per-encounter caching; speedup varies by action and state. Additional
+unit tests cover death during Advance (including terminal defeat), Disengaged
+and spent Reactions, Healer charges/HP caps, retaliation against dead allies,
+Prone/Dodge lifecycle, dead-actor skipping, round-50 truncation, terminal
+observations, and Cleave's fixed pre-roll reach set.
+
+### Search and learning
+
+- `agents/guided_planner.py` adds bounded decision search. END_TURN includes the
+  exact enemy phase. Policy top-k proposals retain the tuned/adaptive heuristic
+  anchor; each root candidate gets an equal decision-node budget. Chance outcomes
+  are never capped or sampled. Horizon/budget cutoffs use batched leaf values.
+- `agents/policy_prior.py` adds heuristic and learned masked priors.
+- `expert_iteration.py` collects a teacher label/Q-values before random exploration,
+  separating behavior and expert actions. It fits a masked policy prior and a
+  value network on outcome, conservative search-value, or successor TD(lambda)
+  targets. Subsequent collect/fit rounds load the previous value/prior checkpoints.
+- The deviation rule retains the heuristic unless the proposal's estimated gain
+  exceeds a configurable margin (3 points in this pilot). This rule does **not**
+  guarantee improved play when value errors are large.
+- The existing epsilon wrapper now forwards only current search diagnostics and
+  clears them on random actions, preventing missing/stale search labels.
+
+Training and validation must use disjoint seeds; the expert CLI rejects the
+frozen test range for collection and fitting. Command examples and target
+semantics are in [EXPECTIMAX_PLANNING.md](../docs/EXPECTIMAX_PLANNING.md#m5m6-table-model-and-guided-expert-iteration).
+
+### End-to-end pilot
+
+For each stage, a 64×64 value/prior pair was bootstrapped from 600 explored
+heuristic fights (seeds 180000–180599, epsilon .15), with validation loss on 100
+separate fights (120000–120099). One expert iteration used 60 explored teacher
+fights (180600–180659, epsilon .10), 20 validation fights (120100–120119), and
+TD(lambda=.5) value targets; the policy distilled the conservative teacher.
+This is a small pipeline pilot, not a scaled training study.
+
+The teacher scored all legal root actions. Selection evaluated three highest
+learned-prior proposals plus the heuristic anchor, one decision of lookahead,
+a 64-node budget per candidate, and a 3-point deviation margin. All policies
+used the same 100 configuration-selection seeds 122000–122099 (already used
+for selection in the original study). Validation win rates were not used to
+select epochs; validation target loss was.
+
+| Stage | Anchor | Bootstrap planner v0 | After one iteration v1 | v1 − anchor, paired approximate 95% CI | v1 mean time/decision |
+|---|---:|---:|---:|---:|---:|
+| M5 | tuned 81/100 | 62/100 | 66/100 | −15 points [−25.92, −4.08] | 0.74 ms |
+| M6 | adaptive 83/100 | 68/100 | 64/100 | −19 points [−29.68, −8.32] | 2.43 ms |
+
+The transition-speed problem is substantially reduced. The learned-value problem
+remains: this pilot does not improve on the anchor, and one expert iteration does
+not reliably improve even the bootstrap planner. The sample sizes and training
+coverage are too small to conclude that the approach cannot improve with better
+training. Unlimited full-turn search also remains combinatorial; node budgets
+bound expanded decision states, not wall-clock time or chance-successor count.
+No candidate advanced to frozen-test evaluation, and no PPO checkpoint was trained
+or changed. PPO's previously reported overall gaps therefore remain unchanged.
+
+Full-suite verification: 385 passed, 1 skipped. Artifact checks confirm expert
+search labels equal Q(expert action), all legal actions are scored in teacher
+data, terminal TD targets are exact, and no frozen-test seeds appear. Raw
+outputs, networks, datasets, fit histories, and paired comparisons live under
+`runs/planning_followup/` (git-ignored); source and reproducible commands are retained in the repository.

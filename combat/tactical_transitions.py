@@ -1,4 +1,7 @@
-"""Exact chance-node transitions for the M5/M6 tactical stages.
+"""Independent replay oracle for exact M5/M6 chance-node transitions.
+
+The planner registry selects the faster table model; this implementation is
+retained for distribution verification against the real environment.
 
 The M0–M4 `RosterTransitionModel` enumerates outcomes from distribution tables.
 M5/M6 rules (roles, Trip/Prone, Dodge, healing, targeting policies, ranks and
@@ -361,5 +364,11 @@ class TacticalTransitionModel:
         return result
 
 
+def _table_factory(stage: str, observation: np.ndarray) -> TacticalTransitionModel:
+    from .table_tactical_transitions import TableTacticalTransitionModel
+
+    return TableTacticalTransitionModel.from_observation(stage, observation)
+
+
 for _stage in TACTICAL_STAGES:
-    register_transition_model(_stage, TacticalTransitionModel.from_observation)
+    register_transition_model(_stage, _table_factory)

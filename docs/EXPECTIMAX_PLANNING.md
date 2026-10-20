@@ -102,8 +102,9 @@ distribution helpers added next to its mechanics.
 
 ### M5/M6 transition model
 
-`combat/tactical_transitions.py` registers `TacticalTransitionModel` for M5 and
-M6. Their rules (roles, Trip/Prone, Dodge, healing, three targeting policies,
+`combat/tactical_transitions.py` retains `TacticalTransitionModel` as an independent
+M5/M6 test oracle. The registry now selects `TableTacticalTransitionModel` from
+`combat/table_tactical_transitions.py` by default. The oracle works as follows. Their rules (roles, Trip/Prone, Dodge, healing, three targeting policies,
 ranks, opportunity attacks) are not restated. Instead the model drives the real
 environment code with an enumerating random source (`_PathRng`): every sequence
 of draws is replayed in odometer order, and identical successor states are
@@ -203,3 +204,90 @@ outcomes and per-decision wall time, and provides paired win-rate differences.
 
 See [the M4 report](../reports/m4_expectimax.md) for results, cost, and failure
 modes.
+
+## M5/M6 table model and guided expert iteration
+
+The table model has the oracle's state layout and planner interface. It enumerates
+d20 paths through `rolls.roll_attack`, convolves damage sums through the shared
+mechanics functions, and merges damage/healing after HP caps before making tuple
+successors. Costs, target selection, heal eligibility, reach, opportunity attackers,
+and roll modes use the same rule functions as the environment. Lifecycle resets
+are obtained from `begin_tactical_turn` / `end_tactical_turn` and actor refresh
+mappings; turn order/dead skipping use `TurnManager`. Enemy phases merge after
+each actor. Advance death, reaction refresh, Prone clearing, Healer charges, and
+round-50 truncation are checked against the independent replay oracle.
+
+`GuidedPlannerAgent` provides tractable approximate **decision** search with exact
+chance distributions. `horizon` counts decisions, not turns. `END_TURN` always
+includes the real automatic phase; there is no afterstate estimate. Every root
+candidate gets its own `node_budget`; exhausted or horizon-zero ongoing states
+use the leaf network. Leaf calls are batched. `root_top_k=0` scores all legal root
+actions; positive values take the highest prior proposals plus the heuristic
+anchor. Interior states similarly use `interior_top_k` plus the anchor. Budget
+cutoffs and candidate Q-values are recorded in diagnostics. The node budget
+limits expanded decision states, not wall time or the number of chance successors.
+Even the table model does not make unlimited full-turn search cheap.
+
+The conservative rule executes a proposal only when its estimated Q exceeds the
+anchor's Q by `deviation_margin` (default 0.03); ties retain the anchor. Keep this
+guard while fitting values. It does not bound actual performance loss. Priors
+mask illegal logits in both fitting and inference and have no combat rules.
+
+Expert collection runs the teacher on **every** recorded state before epsilon
+exploration. It saves the behavior action separately from the conservative expert
+action, all scored Q-values, the selected expert's search value, masks, successor
+value, and episode outcome. Exploration uses a separate per-episode RNG, so
+chunking does not change collected decisions. `search` targets fit the selected
+expert value (not the optimistic unconstrained maximum). `td:<lambda>` fits
+undiscounted successor-value TD returns for the explored behavior:
+
+```text
+G_t = terminal win indicator                         if done after action t
+    = (1-lambda) V_old(s_{t+1}) + lambda G_{t+1}      otherwise
+```
+
+Losses and truncations score zero. Complete episode boundaries and contiguous
+steps are required. The older `lambda:<lambda>` target mixes **current search
+roots** and later outcomes; it is distinct from the new successor-based TD return.
+Policy fitting distills the conservative expert action with masked cross-entropy.
+Training and validation seeds must be disjoint, and fitting/collection reject the
+frozen M5/M6 range 130000–132999. Validation loss selects network epochs; selection
+win rates select configurations. Repeat collect/fit with previous value/prior
+checkpoints for further iterations.
+
+Example (use the Python environment configured for this repository):
+
+```bash
+python expert_iteration.py collect --stage m5 --epsilon .15 --seed-start 180000 \
+  --episodes 600 --out runs/planning_followup/m5/bootstrap_train.npz
+python expert_iteration.py collect --stage m5 --epsilon .15 --seed-start 120000 \
+  --episodes 100 --out runs/planning_followup/m5/bootstrap_val.npz
+python expert_iteration.py fit --stage m5 --target outcome \
+  --train runs/planning_followup/m5/bootstrap_train.npz \
+  --val runs/planning_followup/m5/bootstrap_val.npz --epochs 25 \
+  --out runs/planning_followup/m5/v0
+python expert_iteration.py collect --stage m5 --epsilon .1 --seed-start 180600 \
+  --episodes 60 --leaf mlp:runs/planning_followup/m5/v0/value.npz \
+  --prior runs/planning_followup/m5/v0/prior.npz \
+  --out runs/planning_followup/m5/expert_train.npz
+python expert_iteration.py collect --stage m5 --epsilon .1 --seed-start 120100 \
+  --episodes 20 --leaf mlp:runs/planning_followup/m5/v0/value.npz \
+  --prior runs/planning_followup/m5/v0/prior.npz \
+  --out runs/planning_followup/m5/expert_val.npz
+python expert_iteration.py fit --stage m5 --target td:0.5 \
+  --train runs/planning_followup/m5/expert_train.npz \
+  --val runs/planning_followup/m5/expert_val.npz --epochs 20 \
+  --out runs/planning_followup/m5/v1
+python -m evaluation.planning_eval --stage m5 --name guided_v1 --policy guided \
+  --leaf mlp:runs/planning_followup/m5/v1/value.npz \
+  --prior runs/planning_followup/m5/v1/prior.npz --root-top-k 3 --horizon 1 \
+  --deviation-margin .03 --seed-start 122000 --episodes 100 \
+  --out runs/planning_followup/m5/selection_v1.json
+python -m evaluation.tactical_transition_benchmark --episodes 10 \
+  --out runs/planning_followup/transitions.json
+```
+
+Replace `m5` with `m6` for the other stage. Bootstrap uses tuned/adaptive anchors,
+not the naive default heuristic. `--policy prior --prior <checkpoint>` evaluates
+the distilled policy without search. Pilot results and limitations are recorded
+in [the M5/M6 planning report](../reports/m5_m6_planning.md).

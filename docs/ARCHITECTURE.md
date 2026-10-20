@@ -43,7 +43,8 @@ The simulator therefore uses **semantic state and semantic actions**, rather tha
 | `combat/distributions.py` | Exact attack-damage and Second Wind outcome distributions enumerated through the mechanics rule functions | Sampling, state mutation, policies |
 | `combat/env.py` | Gymnasium coordinator: reset, flat observation encoding, action-index mapping and masks, one Fighter decision per step, fixed Goblin turn, reward call, termination, truncation | Duplicated combat formulas; call mechanics |
 | `combat/simulation.py` | Independent M0–M6 simulator reconstruction from live observations and caller-supplied seeds | Live RNG access, policies, duplicated combat formulas |
-| `combat/tactical_transitions.py` | Exact M5/M6 transitions: enumerating random source over the real environment step, attack draws collapsed to exact cached distributions, enemy phase stepped one actor at a time | Policies, value estimates, restated combat rules |
+| `combat/tactical_transitions.py` | Independent M5/M6 replay oracle: enumerate paths through the real environment | Policies, restated combat rules |
+| `combat/table_tactical_transitions.py` | Default exact M5/M6 planner dynamics: cached HP tables, shared costs/targeting/reach/lifecycle, turn coordination | Policies, value estimates, duplicated combat formulas |
 | `combat/transitions.py` | Exact planner-facing transitions: `TransitionModel` protocol, stage registry, M0–M4 `RosterTransitionModel` (merged successor distributions including the automatic phase after `END_TURN`) | Policies, value estimates, duplicated combat formulas |
 | `agents/` | Action-selection policies (random, heuristics, rollout and expectimax planners) and leaf value functions | Direct state mutation or combat formulas |
 | `evaluation/` | Reproducible seeded episodes and external metrics: win rate, final HP, rounds, action usage | Combat rules |
@@ -95,3 +96,16 @@ BG3 collection → integration snapshots/events → observation adapter → poli
 ```
 
 The collection harness preserves BG3 entity, ability, and resource IDs. The adapter later chooses fields and maps IDs for M0, M1, M2, or richer policies. The harness must not emit the current PPO vector directly. The `integration/` package is independent of `combat/`, Gymnasium, and training code; `combat/` does not import it. The current simulator evaluation JSONL traces remain a separate format containing already encoded observations and masks. BG3 collection, observation adaptation, and action execution are not implemented yet.
+
+M5/M6 guided planning (`agents/guided_planner.py`) uses exact chance transitions
+including enemy phases, a decision horizon, top-k policy proposals, and equal
+node budgets per root action. Its decision search is approximate; chance outcomes
+are never sampled or capped. The best named stage heuristic is always a candidate
+and is retained unless the estimated gain exceeds the configured margin. That
+margin is a guard against small value errors, not a guarantee of improvement.
+
+`agents/policy_prior.py` contains masked heuristic/learned priors.
+`expert_iteration.py` collects teacher labels before optional random exploration,
+then fits a value and a masked policy network. Search values label the conservative
+teacher; episode outcomes and TD targets describe the explored behavior policy.
+No environment transition, reward, observation, or action index changes.
