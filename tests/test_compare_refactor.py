@@ -5,7 +5,7 @@ import textwrap
 import pytest
 
 from scripts.compare_refactor import (
-    Statement, WorkerReport, changed_lines, changed_statements, declares_behavior_preserved, outcome_message,
+    Statement, WorkerReport, base_side_changes, changed_lines, changed_statements, declares_behavior_preserved, outcome_message,
     run_workers, split_removed_definitions, verdict, with_executed_lines,
 )
 
@@ -107,6 +107,14 @@ def test_a_deleted_file_is_removed_whole_only_if_none_of_it_ran():
     assert split_removed_definitions(SOURCE, every_line, executed=set()) == (["<module>"], set())
     names, _ = split_removed_definitions(SOURCE, every_line, executed={7})  # top ran: only dead code is removed
     assert names == ["Documented", "Thing", "guarded"]
+
+
+def test_each_file_is_judged_by_the_lines_its_base_worker_ran():
+    lines = {"a.py": set(range(15, 19)), "b.py": set(range(15, 19))}  # Thing.method removed from both
+    base = WorkerReport({}, {}, {"a.py": {18}})  # it ran in a.py only
+    removed, changes = base_side_changes({"a.py": SOURCE, "b.py": SOURCE}, lines, base)
+    assert removed == ["b.py::Thing.method"]
+    assert changes["b.py"] == set() and {statement.owner for statement in changes["a.py"]} >= {"Thing.method"}
 
 
 def test_hunks_map_to_lines_on_each_side_with_renames_deletions_and_additions():
