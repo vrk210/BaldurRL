@@ -65,8 +65,8 @@ def check(root: Path, tracked: set[str]) -> list[str]:
                     errors.append(f"Fixture needs a reader in tests/ or scripts/ named in inventory: {name}")
             elif not purpose.startswith("config:"):
                 errors.append(
-                    f"Committed {path.suffix} file needs an inventory row starting 'fixture: <reader>.py' "
-                    f"or 'config:'; generated output belongs in ignored runs/: {name}"
+                    f"Committed {path.suffix} file needs an inventory row starting 'fixture: tests/<reader>.py', "
+                    f"'fixture: scripts/<reader>.py' or 'config:'; generated output belongs in ignored runs/: {name}"
                 )
         if path.suffix == ".py" and not name.startswith("tests/"):
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=name)
