@@ -446,16 +446,41 @@ def changed_statements(source: str, lines: set[int]) -> set[Statement]:
     return changed
 
 
-def split_removed_definitions(source: str, lines: set[int]) -> tuple[list[str], set[Statement]]:
-    """Base-side definitions the diff removes whole, and the changed statements outside them.
+def defined_names(source: str) -> set[str]:
+    """"<module>" and the qualified name of every def and class in source."""
+    return {"<module>", *(statement.owner for statement in statements(source) if statement.defines)}
 
-    The module counts as a definition, so a deleted file is "<module>".
-    Statements inside a definition removed whole are part of that removal, not
-    behavior to compare; every other base-side statement is.
+
+def surviving_names(base_source: str, head_source: str | None, added_sources: list[str]) -> set[str]:
+    """Names the working tree still defines for one base file.
+
+    For a file that still exists, at its path after any rename, these are the
+    names it defines. For a deleted file, they are its names that reappear in a
+    file the diff adds, a move git didn't detect; then the module survives too,
+    so the moved code is compared rather than treated as removed.
+    """
+    if head_source is not None:
+        return defined_names(head_source)
+    moved = {name for source in added_sources for name in defined_names(source)} - {"<module>"}
+    moved &= defined_names(base_source)
+    return moved | {"<module>"} if moved else moved
+
+
+def split_removed_definitions(source: str, lines: set[int], surviving: set[str]) -> tuple[list[str], set[Statement]]:
+    """Base-side definitions the diff removes, and the changed statements outside them.
+
+    A definition is removed when the diff changes every line of it and the
+    working tree no longer defines its name (see surviving_names); a definition
+    rewritten in place is a change, not a removal. Only definitions that run at
+    import qualify: a def nested in a function is part of that function's
+    behavior. The module counts as a definition, so a deleted file is
+    "<module>". Statements inside a removed definition are part of that
+    removal; every other base-side statement is behavior to compare.
     """
     module = Statement(1, len(source.splitlines()), "<module>", True, defines=True)
     removed = [statement for statement in (module, *statements(source))
-               if statement.defines and all(line in lines for line in range(statement.first, statement.last + 1))]
+               if statement.defines and statement.runs_at_import and statement.owner not in surviving
+               and all(line in lines for line in range(statement.first, statement.last + 1))]
 
     def inside(statement: Statement, others: list[Statement]) -> bool:
         return any(other is not statement and other.first <= statement.first and statement.last <= other.last
@@ -467,19 +492,36 @@ def split_removed_definitions(source: str, lines: set[int]) -> tuple[list[str], 
     return outermost, remaining
 
 
-def changed_lines(diff: str) -> tuple[dict[str, set[int]], dict[str, set[int]]]:
+@dataclasses.dataclass(frozen=True)
+class ChangedLines:
+    """Line numbers a diff touches in Python files on each side, and where base files went."""
+
+    base: dict[str, set[int]]
+    head: dict[str, set[int]]
+    moved: dict[str, str | None]  # base path -> renamed path, or None if deleted
+    added: set[str]
+
+
+def changed_lines(diff: str) -> ChangedLines:
     """Read a `git diff --unified=0` of Python files; file names count only in each file's header."""
     base: dict[str, set[int]] = {}
     head: dict[str, set[int]] = {}
+    moved: dict[str, str | None] = {}
+    added: set[str] = set()
     old = new = None
-    in_header = False
+    in_header = created = False
     for line in diff.splitlines():
         if line.startswith("diff --git "):
             in_header, old, new = True, None, None
         elif in_header and line.startswith("--- "):
             old = line[6:] if line.startswith("--- a/") and line.endswith(".py") else None
+            created = line == "--- /dev/null"
         elif in_header and line.startswith("+++ "):
             new = line[6:] if line.startswith("+++ b/") and line.endswith(".py") else None
+            if old and old != new:
+                moved[old] = new
+            if new and created:
+                added.add(new)
             in_header = False
         elif line.startswith("@@") and not in_header:
             hunk = re.match(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", line)
@@ -489,7 +531,7 @@ def changed_lines(diff: str) -> tuple[dict[str, set[int]], dict[str, set[int]]]:
                 count = 1 if length is None else int(length)
                 if path and count:
                     sides.setdefault(path, set()).update(range(int(start), int(start) + count))
-    return base, head
+    return ChangedLines(base, head, moved, added)
 
 
 def git(root: Path, *arguments: str) -> str:
@@ -511,7 +553,7 @@ def declares_behavior_preserved(body: str | None) -> bool:
             continue  # indented code block
         if re.fullmatch(r"Behavior: preserve\s*", line):
             declared = True
-        elif re.sub(r"[^a-z:]", "", line.lower()) == "behavior:preserve":
+        elif re.sub(r"[^a-z]", "", line.lower()) == "behaviorpreserve":
             raise ValueError(f"PR body line {line!r} is not exactly 'Behavior: preserve'")
     return declared
 
@@ -640,8 +682,10 @@ def main() -> int:
         parser.error("--base or --check-marker is required")
     root = Path(__file__).resolve().parents[1]
     revision = git(root, "rev-parse", "--verify", "--end-of-options", f"{args.base}^{{commit}}").strip()
-    diff_options = ("--no-color", "--no-ext-diff", "--find-renames", "--src-prefix=a/", "--dst-prefix=b/", revision)
-    base_lines, head_lines = changed_lines(git(root, "diff", "--unified=0", *diff_options, "--", *MAINTAINED_CODE))
+    # Fixed options, so local git config can't change which lines the diff attributes to which definition.
+    diff_options = ("--no-color", "--no-ext-diff", "--find-renames", "--indent-heuristic",
+                    "--src-prefix=a/", "--dst-prefix=b/", revision)
+    changes = changed_lines(git(root, "diff", "--unified=0", *diff_options, "--", *MAINTAINED_CODE))
     not_compared = [path for path in git(root, "diff", "--name-only", *diff_options).splitlines()
                     if not path.endswith(".md") and not path.startswith("tests/")
                     and not (path.endswith(".py") and path.startswith(MAINTAINED_CODE))]
@@ -651,11 +695,15 @@ def main() -> int:
         base_tree = Path(directory) / "base"
         with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
             bundle.extractall(base_tree)
-        for path, lines in sorted(base_lines.items()):
-            names, base_changes[path] = split_removed_definitions((base_tree / path).read_text(encoding="utf-8"), lines)
+        added_sources = [(root / path).read_text(encoding="utf-8") for path in sorted(changes.added)]
+        for path, lines in sorted(changes.base.items()):
+            source, target = (base_tree / path).read_text(encoding="utf-8"), changes.moved.get(path, path)
+            head_source = (root / target).read_text(encoding="utf-8") if target else None
+            names, base_changes[path] = split_removed_definitions(
+                source, lines, surviving_names(source, head_source, added_sources))
             removed += [f"{path}::{name}" for name in names]
         head_changes = {path: changed_statements((root / path).read_text(encoding="utf-8"), lines)
-                        for path, lines in head_lines.items()}
+                        for path, lines in changes.head.items()}
         workers = run_workers(str(Path(__file__).resolve()),
                               {"base": (base_tree, files_to_trace(base_changes)),
                                "head": (root, files_to_trace(head_changes))}, Path(directory))
