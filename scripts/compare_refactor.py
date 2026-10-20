@@ -7,8 +7,8 @@ CI compares only when the PR body has a line that is exactly
 `Behavior: preserve`, outside code blocks and comments; --check-marker prints
 true or false for that, using only the standard library. A body that merely
 mentions the marker does not count; a line that is the marker with other
-spelling, punctuation or formatting fails, so a mistyped declaration is not
-silently skipped.
+capitalization, punctuation or formatting fails, so a mangled declaration is not
+silently skipped. A misspelled word (Behaviour, preserved) is not recognized.
 
 Why: a PR that declares `Behavior: preserve` may rewrite tests that checked
 implementation, so its tests alone cannot show that behavior is unchanged. This
@@ -446,13 +446,15 @@ def changed_statements(source: str, lines: set[int]) -> set[Statement]:
     return changed
 
 
-def removed_definitions(source: str, lines: set[int]) -> tuple[list[str], set[Statement]]:
+def split_removed_definitions(source: str, lines: set[int]) -> tuple[list[str], set[Statement]]:
     """Base-side definitions the diff removes whole, and the changed statements outside them.
 
+    The module counts as a definition, so a deleted file is "<module>".
     Statements inside a definition removed whole are part of that removal, not
     behavior to compare; every other base-side statement is.
     """
-    removed = [statement for statement in statements(source)
+    module = Statement(1, len(source.splitlines()), "<module>", True, defines=True)
+    removed = [statement for statement in (module, *statements(source))
                if statement.defines and all(line in lines for line in range(statement.first, statement.last + 1))]
 
     def inside(statement: Statement, others: list[Statement]) -> bool:
@@ -465,20 +467,10 @@ def removed_definitions(source: str, lines: set[int]) -> tuple[list[str], set[St
     return outermost, remaining
 
 
-@dataclasses.dataclass(frozen=True)
-class ChangedLines:
-    """Line numbers a diff touches in Python files, per path on each side, and the files it deletes."""
-
-    base: dict[str, set[int]]
-    head: dict[str, set[int]]
-    deleted: set[str]
-
-
-def changed_lines(diff: str) -> ChangedLines:
+def changed_lines(diff: str) -> tuple[dict[str, set[int]], dict[str, set[int]]]:
     """Read a `git diff --unified=0` of Python files; file names count only in each file's header."""
     base: dict[str, set[int]] = {}
     head: dict[str, set[int]] = {}
-    deleted: set[str] = set()
     old = new = None
     in_header = False
     for line in diff.splitlines():
@@ -488,8 +480,6 @@ def changed_lines(diff: str) -> ChangedLines:
             old = line[6:] if line.startswith("--- a/") and line.endswith(".py") else None
         elif in_header and line.startswith("+++ "):
             new = line[6:] if line.startswith("+++ b/") and line.endswith(".py") else None
-            if line == "+++ /dev/null" and old:
-                deleted.add(old)
             in_header = False
         elif line.startswith("@@") and not in_header:
             hunk = re.match(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", line)
@@ -499,7 +489,7 @@ def changed_lines(diff: str) -> ChangedLines:
                 count = 1 if length is None else int(length)
                 if path and count:
                     sides.setdefault(path, set()).update(range(int(start), int(start) + count))
-    return ChangedLines(base, head, deleted)
+    return base, head
 
 
 def git(root: Path, *arguments: str) -> str:
@@ -609,8 +599,9 @@ def outcome_message(result: Verdict) -> str:
             ("scenario errors", result.scenario_errors), ("fingerprint mismatches", result.mismatches),
             ("changed statements that never ran", result.unexecuted_statements)) if items]
         return f"Comparison failed ({'; '.join(reasons)}); see the report above."
-    if result.import_time_changes or result.removed_definitions or result.not_compared:
-        return "Comparison passed. Say in the PR how each listed import-time change, removed definition and file was verified."
+    listed = [key for key in ("import_time_changes", "removed_definitions", "not_compared") if getattr(result, key)]
+    if listed:
+        return f"Comparison passed. Say in the PR how each entry in {', '.join(listed)} was verified."
     return "Comparison passed."
 
 
@@ -618,7 +609,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--base", help="Git commit whose runtime behavior must be preserved")
     parser.add_argument("--check-marker", type=Path, metavar="GITHUB_EVENT_JSON",
-                        help="print true if the event's PR body declares Behavior: preserve, else false")
+                        help="print true if the event's PR body declares Behavior: preserve, else false; "
+                             "exit 1 on a line that is the marker in other capitalization or formatting")
     parser.add_argument("--worker", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--trace", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--output", type=Path, help=argparse.SUPPRESS)
@@ -644,25 +636,24 @@ def main() -> int:
     root = Path(__file__).resolve().parents[1]
     revision = git(root, "rev-parse", "--verify", "--end-of-options", f"{args.base}^{{commit}}").strip()
     diff_options = ("--no-color", "--no-ext-diff", "--find-renames", "--src-prefix=a/", "--dst-prefix=b/", revision)
-    changes = changed_lines(git(root, "diff", "--unified=0", *diff_options, "--", *MAINTAINED_CODE))
+    base_lines, head_lines = changed_lines(git(root, "diff", "--unified=0", *diff_options, "--", *MAINTAINED_CODE))
     not_compared = [path for path in git(root, "diff", "--name-only", *diff_options).splitlines()
                     if not path.endswith(".md") and not path.startswith("tests/")
                     and not (path.endswith(".py") and path.startswith(MAINTAINED_CODE))]
     archive = subprocess.check_output(["git", "archive", "--format=zip", revision], cwd=root)
-    removed, base_changes = [f"{path}::<module>" for path in sorted(changes.deleted)], {}
+    removed, base_changes = [], {}
     with tempfile.TemporaryDirectory(prefix="baldurrl-refactor-") as directory:
         base_tree = Path(directory) / "base"
         with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
             bundle.extractall(base_tree)
-        for path, lines in changes.base.items():
-            if path not in changes.deleted:
-                names, base_changes[path] = removed_definitions((base_tree / path).read_text(encoding="utf-8"), lines)
-                removed += [f"{path}::{name}" for name in names]
+        for path, lines in sorted(base_lines.items()):
+            names, base_changes[path] = split_removed_definitions((base_tree / path).read_text(encoding="utf-8"), lines)
+            removed += [f"{path}::{name}" for name in names]
+        traced = {path for path, changed in base_changes.items() if changed}
         workers = run_workers(str(Path(__file__).resolve()),
-                              {"base": (base_tree, set(base_changes)), "head": (root, set(changes.head))},
-                              Path(directory))
+                              {"base": (base_tree, traced), "head": (root, set(head_lines))}, Path(directory))
     head_changes = {path: changed_statements((root / path).read_text(encoding="utf-8"), lines)
-                    for path, lines in changes.head.items()}
+                    for path, lines in head_lines.items()}
     result = verdict(base=workers["base"], head=workers["head"], base_changes=base_changes,
                      head_changes=head_changes, removed=removed, not_compared=not_compared)
     print(json.dumps({"base": revision, "fingerprints": workers["head"].fingerprints, **dataclasses.asdict(result)},
