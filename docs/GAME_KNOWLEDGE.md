@@ -35,7 +35,7 @@ These are M0 implementation rules; this section does not claim they have been in
 - Fighter resources: Action, Bonus Action, Second Wind, Action Surge.
 - `ATTACK` consumes Action. `SECOND_WIND` consumes Bonus Action and heals `1d10 + 2` in M0.
 - `ACTION_SURGE` grants an additional Action and becomes unavailable afterward.
-- The Fighter knows `ATTACK`, `SECOND_WIND`, and `ACTION_SURGE`; the Goblin knows `ATTACK`. Shared immutable ability definitions describe costs and targets. Resource affordability alone does not establish living-target or missing-HP legality.
+- The Fighter knows `ATTACK`, `SECOND_WIND`, and `ACTION_SURGE`; the Goblin knows `ATTACK`. Shared immutable ability cost tables give each ability's resource costs. Resource affordability alone does not establish living-target or missing-HP legality.
 
 ## BG3 observation APIs: VERIFIED_API
 
@@ -198,6 +198,6 @@ Resource effects assume fresh encounter-start pools.
 
 Sources, per-policy audits, full kill orders, inventory and provenance:
 tag `archive/simulator-research-2026-10-15`, paths `evaluation/sim_mining.py`
-and `evaluation/sim_mining_summary.json`. The study's full record, with its
-unresolved questions, is history entry H17
+and `evaluation/sim_mining_summary.json`. The study's method, contrast table,
+irregularities and unresolved questions are history entry H17
 (`git show origin/history:HISTORY.md`).

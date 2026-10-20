@@ -18,7 +18,7 @@ Work has one of two motives. Don't write code without one.
 - **Exploration.** Exploration is just as important. It starts from a motive
   or hypothesis, even an unlikely one, and runs on an `explore/<name>` branch.
   It ends when the hypothesis is answered or abandoned, and either way it ends
-  with a results entry (see *Evidence*). Its code doesn't merge. Tag the branch
+  with a history entry (see *Evidence*). Its code doesn't merge. Tag the branch
   `archive/<name>`, then delete it.
 
 ## Principles
@@ -62,11 +62,12 @@ Each fact has one home. Read it before changing what it covers.
   (records, commands, transport, recovery) and the decisions about them.
 - `docs/GAME_KNOWLEDGE.md`: facts and hypotheses about the game, each with its
   evidence label.
-- `docs/RESULTS.md`: the cache. It holds the numbers current decisions rest on,
-  each citing its history entry.
-- `HISTORY.md` on the orphan `history` branch: one entry per experiment or
-  exploration. It never appears in a checkout of `main`: read it with
-  `git show origin/history:HISTORY.md`.
+- `docs/RESULTS.md`: the cache. It holds the numbers that current decisions
+  rest on, each citing its history entry.
+- `HISTORY.md` on the orphan `history` branch: the experiment history, one entry
+  per experiment or exploration. It never appears in a checkout of `main`:
+  read it with `git fetch origin history && git show origin/history:HISTORY.md`.
+  How to append is at its top.
 - `bg3/h0/README.md`: the Windows procedure for installing, capturing with and
   verifying the in-game collector.
 - A module's docstring: that module's contract.
@@ -170,7 +171,7 @@ review. Never use held-out final-test ranges for development.
 | Raw output, traces, result JSON, trained models | `runs/` (git-ignored); never committed |
 | Live game captures | An archive root outside the repo, with location and retention recorded; deleted only by the owner |
 | Experiment history | `HISTORY.md` on the orphan `history` branch |
-| Results current decisions rest on | `docs/RESULTS.md` (the cache) |
+| Results that current decisions rest on | `docs/RESULTS.md` (the cache) |
 | Hypotheses about the game | `docs/GAME_KNOWLEDGE.md`, labeled unverified |
 
 **History.** Every exploration and experiment gets one entry in `HISTORY.md`,
@@ -185,16 +186,18 @@ with:
 
 Entries carry no narrative. A superseded entry gains a pointer to its successor
 and is otherwise left as written. The agent that did the work appends the entry
-and pushes the `history` branch. Read the history only to append, or when the
-owner points you to an entry. For other outcome work, the PR is the record.
+and pushes the `history` branch. Read the experiment history only to append,
+or when the owner points you to an entry. For other outcome work, the PR is the
+record.
 
 **Cache.** RESULTS.md holds one short entry per current decision:
 - the numbers it rests on;
 - the history entries it cites;
 - the code area concerned.
 
-An entry leaves when its decision changes or its code is retired. It returns
-when the owner hands an archived entry to a task.
+The PR that makes or changes a decision adds or rewrites its entry. An entry
+leaves when its decision changes or its code is retired, and comes back when
+the owner hands a task the history entry it rests on.
 
 ## Documentation
 

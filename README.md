@@ -9,7 +9,7 @@ lists what is implemented and what still needs live verification.
 [Architecture and module inventory](docs/ARCHITECTURE.md) explain ownership and
 supported entry points. Simulator contracts live in the owning modules' docstrings
 and field/action metadata. [RESULTS.md](docs/RESULTS.md) caches the measured
-results current decisions rest on, and the full experiment history is on the
+results that current decisions rest on, and the full experiment history is on the
 `history` branch;
 [GAME_KNOWLEDGE.md](docs/GAME_KNOWLEDGE.md) separates simulator hypotheses from
 verified game facts. Agent working rules are in [AGENTS.md](AGENTS.md).
