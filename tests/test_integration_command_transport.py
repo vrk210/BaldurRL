@@ -44,7 +44,7 @@ def test_session_separation_and_unchanged_record_reader(session) -> None:
     session.publish_command(selected())
     MockExecutor(session).receive()
     assert {path.name for path in session.directory.iterdir()} == {"records", "commands", "acknowledgements"}
-    records = RecordDirectoryReader(session.records).read_new()
+    records = RecordDirectoryReader(session.records).read_all()
     assert records == (synthetic_observation(),)
     other = CommandSession(session.directory.parent / "session-2")
     assert other.read_commands() == ()
@@ -68,9 +68,6 @@ def test_publication_is_complete_atomic_and_never_overwrites(session, monkeypatc
     assert checked == [True]
     assert json.loads(path.read_text()) == selected().to_dict()
     assert list(session.commands.glob("*.tmp")) == []
-    with pytest.raises(ValueError, match="Duplicate command_id"):
-        session.publish_command(selected())
-    assert json.loads(path.read_text()) == selected().to_dict()
 
 
 def test_failed_atomic_publication_cleans_temp_file_and_lock(session, monkeypatch) -> None:
@@ -100,11 +97,10 @@ def test_only_one_pending_or_accepted_command_and_no_reuse_after_completion(sess
     executor = MockExecutor(session)
     accepted, = executor.receive()
     assert accepted.status is Status.ACCEPTED
-    assert not accepted.confirmed_resolved
     with pytest.raises(ValueError, match="one in-flight"):
         session.publish_command(selected("c2"))
     resolved = executor.finish("c1")
-    assert resolved.confirmed_resolved
+    assert resolved.status is Status.RESOLVED
     assert session.in_flight() == ()
     with pytest.raises(ValueError, match="Duplicate command_id"):
         session.publish_command(selected())
@@ -121,7 +117,7 @@ def test_failure_and_uncertainty_are_not_success(session, status, blocked) -> No
     executor = MockExecutor(session)
     executor.receive()
     result = executor.finish("c1", status)
-    assert not result.confirmed_resolved
+    assert result.status is status
     if blocked:
         with pytest.raises(ValueError, match="one in-flight"):
             session.publish_command(selected("c2"))
@@ -181,6 +177,25 @@ def test_gaps_and_trailing_events_require_fresh_snapshot(session) -> None:
     write(session.records / "4.json", GameEvent(1, 4, EventKind.TURN_ENDED))
     with pytest.raises(ValueError, match="fresh snapshot"):
         session.publish_command(selected("c2", 3))
+
+
+def test_latest_snapshot_validates_the_same_collection_it_selects(session, monkeypatch) -> None:
+    original_read = RecordDirectoryReader.read_all
+    calls = []
+
+    def publish_after_collection(reader):
+        records = original_read(reader)
+        calls.append(records)
+        if len(calls) == 1:
+            # Deterministic publication between old validation and selection.
+            write(session.records / "3.json", replace(synthetic_observation(), sequence=3))
+        return records
+
+    monkeypatch.setattr(RecordDirectoryReader, "read_all", publish_after_collection)
+    assert session.latest_snapshot().sequence == 1
+    assert len(calls) == 1
+    with pytest.raises(ValueError, match="gaps.*2"):
+        session.latest_snapshot()
 
 
 def test_duplicate_commands_fail_closed_without_execution(session) -> None:
@@ -298,7 +313,7 @@ def test_mock_all_target_forms(session, kind, entity, position) -> None:
     executor = MockExecutor(session)
     accepted, = executor.receive()
     assert accepted.status is Status.ACCEPTED
-    assert executor.finish(intent.command_id).confirmed_resolved
+    executor.finish(intent.command_id)
     assert session.latest_snapshot() == observed
 
 

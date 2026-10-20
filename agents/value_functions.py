@@ -38,7 +38,6 @@ class _Layout:
         env = make_env(stage)
         env.reset(seed=0)
         fields = list(env.observation_fields)
-        self.stage = stage
         self.high = np.asarray(env.observation_space.high, dtype=np.float64)
         roster = env._roster()
         self.ally = roster.allies[0]
@@ -68,7 +67,6 @@ class _Layout:
             and name.endswith(("action_count", "bonus_action_count", "movement_count", "disengaged"))
             and not name.endswith("surge_count")
         ], dtype=np.intp)
-        self.round_col = column("round_number")
 
     def allies(self, obs: np.ndarray) -> np.ndarray:
         """(n, allies, 6) array; absent fields (e.g. Cleave before M2) read as 0."""

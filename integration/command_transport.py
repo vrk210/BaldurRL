@@ -97,7 +97,7 @@ class CommandSession:
         # issuing decisions based on facts that may already have changed.
         reader = RecordDirectoryReader(self.records)
         records = reader.read_all()
-        report = validate_sequence(records, start_sequence=reader.start_sequence)
+        report = validate_sequence(records)
         if report.gaps:
             raise ValueError(f"Observation sequence gaps: {report.gaps}")
         return records

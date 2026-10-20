@@ -563,7 +563,7 @@ def analyze_trial(trial: Trial, records_dir: str | Path,
     """Analyze an exact record collection without mutating or normalizing it."""
     records_path = Path(records_dir)
     records = RecordDirectoryReader(records_path).read_all()
-    sequence_report = validate_sequence(records, start_sequence=1)
+    sequence_report = validate_sequence(records)
     checks: list[Check] = []
     if trial.capture_origin is CaptureOrigin.UNKNOWN:
         checks.append(Check("capture_origin", Status.INCONCLUSIVE,

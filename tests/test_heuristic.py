@@ -24,18 +24,6 @@ def _mask(flags: tuple[bool, bool, bool, bool]) -> np.ndarray:
     return np.array(flags, dtype=bool)
 
 
-@pytest.mark.parametrize(
-    ("fighter_hp", "expected"),
-    [(1.0, 1), (5.0, 1), (10.0, 1)],
-)
-def test_heuristic_uses_second_wind_when_hurt_and_legal(
-    fighter_hp: float, expected: int
-) -> None:
-    agent = HeuristicAgent()
-    action = agent.choose_action(_obs(fighter_hp=fighter_hp), _mask((True, True, True, True)))
-    assert action == expected
-
-
 def test_heuristic_prefers_attack_when_hp_high() -> None:
     agent = HeuristicAgent()
     action = agent.choose_action(_obs(fighter_hp=20.0), _mask((True, True, True, True)))
@@ -49,13 +37,14 @@ def test_heuristic_skips_second_wind_at_full_hp() -> None:
 
 
 def test_heuristic_second_wind_threshold_boundary() -> None:
-    agent = HeuristicAgent(second_wind_threshold=10)
+    agent = HeuristicAgent()
     assert (
         agent.choose_action(_obs(fighter_hp=10.0), _mask((True, True, False, True))) == 1
     )
     assert (
         agent.choose_action(_obs(fighter_hp=11.0), _mask((True, True, False, True))) == 0
     )
+    assert agent.choose_action(_obs(fighter_hp=1.0), _mask((True, True, False, True))) == 1
 
 
 def test_heuristic_uses_action_surge_without_actions_when_attack_illegal() -> None:

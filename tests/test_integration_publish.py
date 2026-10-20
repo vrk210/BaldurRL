@@ -42,7 +42,7 @@ def test_atomic_publication_and_idempotence(tmp_path, monkeypatch):
     monkeypatch.setattr(publisher.os, "replace", checked_replace)
     assert len(publish_ready(source, destination)) == 1
     assert publish_ready(source, destination) == ()
-    assert [r.sequence for r in RecordDirectoryReader(destination).read_new()] == [1]
+    assert [r.sequence for r in RecordDirectoryReader(destination).read_all()] == [1]
     assert len(list(destination.iterdir())) == 1
 
 

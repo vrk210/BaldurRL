@@ -185,7 +185,6 @@ class TacticalTransitionModel:
         self.stage = env.stage
         self.env = env
         self.decisions = tuple(env.decisions)
-        self.action_count = len(self.decisions)
         self._end_turn = next(i for i, d in enumerate(self.decisions) if d.action is Action.END_TURN)
         self._order = env._turns().order
         self._ally_resources = [tuple(sorted(a.resources._amounts, key=lambda r: r.value)) for a in env.allies]
@@ -275,9 +274,6 @@ class TacticalTransitionModel:
             (0,) + self._template.shape, dtype=np.float32
         )
 
-    def observation(self, state: State) -> np.ndarray:
-        return self.observations([state])[0]
-
     # ------------------------------------------------------------------ queries
     def status(self, state: State) -> Status:
         return _STATUSES[state[0]]
@@ -298,11 +294,6 @@ class TacticalTransitionModel:
             legal = tuple(int(i) for i in np.flatnonzero(self.load(state).action_masks()))
             self._legal_cache[state] = legal
         return legal
-
-    def legal_mask(self, state: State) -> np.ndarray:
-        mask = np.zeros(self.action_count, dtype=np.bool_)
-        mask[list(self.legal_actions(state))] = True
-        return mask
 
     # ------------------------------------------------------------------ transitions
     def outcomes(self, state: State, action: int) -> tuple[Outcome, ...]:

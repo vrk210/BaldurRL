@@ -1,16 +1,13 @@
 """Independent replay-oracle checks for tactical table dynamics and edge cases."""
-from collections import defaultdict
 
 import numpy as np
 import pytest
 
 from agents.random_agent import RandomAgent
-from combat.actions import Action
 from combat.resources import Resource
 from combat.stages import make_env
 from combat.tactical_transitions import TacticalTransitionModel
 from combat.table_tactical_transitions import TableTacticalTransitionModel
-from combat.transitions import Status
 
 
 def compare(stage, obs):
@@ -155,7 +152,7 @@ def test_cleave_keeps_original_reach_and_terminal_canonicalization():
 
 
 def test_planner_reusing_its_model_rejects_fractional_hp():
-    """The review's reproduction: a planner reuses its model for a later observation of the same encounter."""
+    """A planner reusing its model for a later observation of the encounter still rejects fractional HP."""
     from agents.expectimax_agent import ExpectimaxAgent
 
     env = make_env('m5')

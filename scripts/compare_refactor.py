@@ -270,14 +270,14 @@ def file_tree(directory: Path) -> list[tuple[str, Any]]:
 
 
 def integration(*, scratch: Path, root: Path) -> dict[str, Any]:
-    from integration.inspect import inspect_directory
+    from integration.inspect_records import inspect_directory
+    from integration.intervals import reconstruct_intervals
     from integration.mock_executor import run_demo
     from integration.mock_h0 import mock_records, write_mock_trace
     from integration.publish import publish_ready
     from integration.reader import RecordDirectoryReader
     from integration.serialization import record_to_dict
     from integration.session_runner import SessionRunner
-    from integration.trace import reconstruct_intervals
     from integration.windows_preflight import run_preflight
 
     staging = scratch / "capture" / "session-a" / "staging"

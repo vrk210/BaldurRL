@@ -1,10 +1,10 @@
 import pytest
 
-from integration.inspect import inspect_directory
+from integration.inspect_records import inspect_directory
+from integration.intervals import AmbiguousActionError, controlled_action, reconstruct_intervals
 from integration.mock_h0 import write_mock_trace
 from integration.reader import RecordDirectoryReader, validate_sequence
 from integration.schema import EventKind, GameEvent, GameSnapshot
-from integration.trace import AmbiguousActionError, controlled_action, reconstruct_intervals
 
 
 def test_intervals_and_controlled_action() -> None:
@@ -80,7 +80,7 @@ def test_unclosed_events_and_gaps() -> None:
 
 def test_mock_h0_end_to_end(tmp_path) -> None:
     write_mock_trace(tmp_path)
-    records = RecordDirectoryReader(tmp_path).read_new()
+    records = RecordDirectoryReader(tmp_path).read_all()
     assert len(records) == 10
     assert validate_sequence(records).gaps == ()
     intervals = reconstruct_intervals(records)

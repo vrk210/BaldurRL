@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from integration.inspect import inspect_directory
+from integration.inspect_records import inspect_directory
 from integration.publish import publish_ready
 from integration.reader import RecordDirectoryReader
 from integration.schema import EventKind, GameEvent, GameSnapshot
@@ -146,7 +146,7 @@ def test_real_lua_h0_trace_parses_and_inspects(harness):
                 assert entity.armor_class is entity.alive is entity.position is None
                 assert not entity.resources and not entity.abilities
     assert "gaps: none" in inspect_directory(session / "records")
-    inspected = subprocess.run([sys.executable, "-m", "integration.inspect", str(session / "records")],
+    inspected = subprocess.run([sys.executable, "-m", "integration.inspect_records", str(session / "records")],
                                capture_output=True, text=True, check=True)
     assert "gaps: none" in inspected.stdout
     assert not any("HALTED" in message or "UNAVAILABLE" in message for message in harness.messages)

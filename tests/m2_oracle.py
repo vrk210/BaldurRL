@@ -1,8 +1,7 @@
 """Independent M2 value-iteration oracle (round limit ignored).
 
-Condensed from the supervisor's exact solver
-(runs/m2_exact_optimum_9000_13999/m2_dp.py): it shares no code with
-`combat/`, so agreement with the exact transition model is a real check.
+It shares no code with `combat/`, so agreement with the exact transition
+model is a real check.
 State V[f, e0, e1, sw, su, cl, a, b].
 """
 

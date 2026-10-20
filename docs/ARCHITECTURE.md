@@ -20,7 +20,7 @@ evidence of live BG3 behavior. The checker reads three purpose prefixes:
 | `.github/workflows/behavior.yml` | supported | The behavior comparison for PRs whose body says `Behavior: preserve`. |
 | `.github/workflows/repository.yml` | supported | Inventory/lint checks and the full Windows test suite. |
 | `.github/workflows/windows-harness.yml` | supported | Offline Windows harness verification; no game execution. |
-| `agents/__init__.py` | supported | Public baseline-policy re-exports; no CLI. |
+| `agents/__init__.py` | supported | Package marker; no entry point. |
 | `agents/expectimax_agent.py` | supported | Exact chance search with bounded turn/decision horizons. |
 | `agents/heuristic_agent.py` | supported | Supported stage heuristics and threat-aware baseline. |
 | `agents/policy.py` | supported | Model-independent policy interface. |
@@ -37,7 +37,7 @@ evidence of live BG3 behavior. The checker reads three purpose prefixes:
 | `bg3/h0/Mods/BaldurRL_H0/ScriptExtender/Lua/Wire.lua` | supported | Versioned JSON wire representation and ready-marker publication. |
 | `bg3/h0/Mods/BaldurRL_H0/meta.lsx` | supported | config: BG3 module identity. |
 | `combat/__init__.py` | supported | Package marker; no entry point. |
-| `combat/abilities.py` | supported | Immutable ability costs and target kinds. |
+| `combat/abilities.py` | supported | Immutable tables of the resources each ability spends. |
 | `combat/actions.py` | supported | Semantic action identities; no execution. |
 | `combat/actors.py` | supported | Stable actor addresses and roster sides. |
 | `combat/characters.py` | supported | Character state and presets; no turn orchestration. |
@@ -56,20 +56,19 @@ evidence of live BG3 behavior. The checker reads three purpose prefixes:
 | `combat/tactics.py` | supported | M5/M6 conditions, reach, enemy policies and turn lifecycle. |
 | `combat/transitions.py` | supported | Planner protocol, registry and M0–M4 exact dynamics. |
 | `combat/turns.py` | supported | Deterministic turn order, dead-actor skipping and rounds. |
-| `evaluation/__init__.py` | supported | Existing evaluation API re-exports; no CLI. |
+| `evaluation/__init__.py` | supported | Package marker; no entry point. |
 | `evaluation/compare.py` | supported | CLI: python -m evaluation.compare; outcome/trace comparison. |
 | `evaluation/evaluate.py` | supported | CLI: python -m evaluation.evaluate; seeded episodes, run cards and traces. |
 | `evaluation/paired.py` | supported | CLI: python -m evaluation.paired; paired run-card statistics. |
 | `evaluation/planning_eval.py` | supported | CLI: python -m evaluation.planning_eval; parallel planner evaluation. |
 | `evaluation/seeds.py` | supported | CLI: python -m evaluation.seeds; seed reservations and frozen-set enforcement. |
 | `evaluation/tactical_behavior.py` | supported | CLI: python -m evaluation.tactical_behavior; trace behavior summaries. |
-| `evaluation/tactical_transition_audit.py` | verification-only | CLI: python -m evaluation.tactical_transition_audit; adversarial oracle comparison. |
-| `evaluation/tactical_transition_benchmark.py` | verification-only | CLI: python -m evaluation.tactical_transition_benchmark; exactness and timing. |
 | `integration/__init__.py` | supported | Package marker; no entry point. |
 | `integration/command_transport.py` | supported | Atomic session command publication, freshness and feedback validation. |
 | `integration/commands.py` | supported | Model-independent commands, targets, legality evidence and result states. |
 | `integration/encounter_trial.py` | supported | CLI: python -m integration.encounter_trial; evidence analysis; missing live facts remain inconclusive. |
-| `integration/inspect.py` | supported | CLI: python -m integration.inspect; passive record inspection. |
+| `integration/inspect_records.py` | supported | CLI: python -m integration.inspect_records; passive record inspection. |
+| `integration/intervals.py` | supported | Snapshot intervals from ordered records and the single controlled action in each; ambiguity raises. |
 | `integration/mock_executor.py` | verification-only | CLI: python -m integration.mock_executor; synthetic command acknowledgements. |
 | `integration/mock_h0.py` | verification-only | CLI: python -m integration.mock_h0; synthetic passive collector. |
 | `integration/publish.py` | supported | CLI: python -m integration.publish; ready-marker record publication. |
@@ -77,7 +76,6 @@ evidence of live BG3 behavior. The checker reads three purpose prefixes:
 | `integration/schema.py` | supported | Versioned passive GameSnapshot/GameEvent records; preserve compatibility. |
 | `integration/serialization.py` | supported | Strict passive-record JSON decoding/encoding. |
 | `integration/session_runner.py` | supported | CLI: python -m integration.session_runner; isolated capture archival and health. |
-| `integration/trace.py` | supported | Candidate decisions from passive observations; UNKNOWN stays unknown. |
 | `integration/windows_preflight.py` | supported | CLI: python -m integration.windows_preflight; read-only installation checks. |
 | `pyproject.toml` | supported | Pinned-tool lint configuration; no packaging framework. |
 | `pytest.ini` | supported | Puts the repository root on the test import path. |
@@ -97,14 +95,14 @@ evidence of live BG3 behavior. The checker reads three purpose prefixes:
 | `tests/test_evaluation.py` | verification-only | pytest verification: evaluation. |
 | `tests/test_expectimax_agent.py` | verification-only | pytest verification: expectimax agent. |
 | `tests/test_heuristic.py` | verification-only | pytest verification: heuristic. |
-| `tests/test_integration_command_review_regressions.py` | verification-only | pytest verification: integration command review regressions. |
 | `tests/test_integration_command_transport.py` | verification-only | pytest verification: integration command transport. |
 | `tests/test_integration_commands.py` | verification-only | pytest verification: integration commands. |
+| `tests/test_integration_intervals.py` | verification-only | pytest verification: integration intervals. |
+| `tests/test_integration_post_execution_fence.py` | verification-only | pytest verification: integration post execution fence. |
 | `tests/test_integration_publish.py` | verification-only | pytest verification: integration publish. |
 | `tests/test_integration_reader.py` | verification-only | pytest verification: integration reader. |
 | `tests/test_integration_schema.py` | verification-only | pytest verification: integration schema. |
 | `tests/test_integration_serialization.py` | verification-only | pytest verification: integration serialization. |
-| `tests/test_integration_trace.py` | verification-only | pytest verification: integration trace. |
 | `tests/test_legality.py` | verification-only | pytest verification: legality. |
 | `tests/test_m3.py` | verification-only | pytest verification: m3. |
 | `tests/test_m4.py` | verification-only | pytest verification: m4. |
@@ -152,8 +150,8 @@ matter. Findings and uncertainty live in [RESULTS.md](RESULTS.md).
 
 `actions/resources/damage → abilities/characters → mechanics → environments → policies/evaluation`
 
-Characters store state and refresh mappings; immutable ability catalogs describe
-costs and targets. Mechanics resolve effects using supplied RNGs. Environments
+Characters store state and refresh mappings; immutable ability cost tables give
+each ability's resource costs. Mechanics resolve effects using supplied RNGs. Environments
 own turns, legality gating, rewards and termination. Policies only select actions.
 Legality is turn-agnostic; environments expose masks only for controlled turns.
 Models reconstruct observations without reading the live simulator's RNG.
@@ -161,8 +159,7 @@ Models reconstruct observations without reading the live simulator's RNG.
 M0–M4 exact transitions share rule/distribution primitives with sampling. M5/M6
 table transitions are the fast default and retain the independent environment
 replay oracle for verification. Oracle agreement detects implementation drift,
-not an incorrect shared rule or a mismatch with BG3. The transition audit and
-benchmark remain verification tools; their commands are in module --help.
+not an incorrect shared rule or a mismatch with BG3.
 
 Expectimax depends on the TransitionModel protocol and a pluggable frontier
 value. It contains no combat rules. The sampling planner remains a verification
@@ -176,9 +173,8 @@ bundles are retained through tags cited in RESULTS.md.
 The integration package is independent of combat, Gymnasium and ML models.
 Snapshots preserve original game IDs and unknown facts; a future adapter chooses
 policy features. Commands require current evidence, and acceptance is distinct
-from execution and post-execution observation. The passive H0 collector and
-Windows capture tools exist with offline tests. No real action executor or
-BG3-backed policy environment is implemented; game loading and IO require live
-verification. The [integration contract](BG3_INTEGRATION.md) owns wire/recovery
-semantics; [the H0 runbook](../bg3/h0/README.md#first-windows-session) is the sole
-Windows installation/capture/verification procedure.
+from execution and post-execution observation. The
+[integration contract](BG3_INTEGRATION.md) owns wire and recovery semantics and
+says what is implemented and what still needs live verification;
+[the H0 runbook](../bg3/h0/README.md#first-windows-session) is the Windows
+procedure.

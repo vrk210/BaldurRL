@@ -4,17 +4,16 @@ Why this exists: the replay oracle (`tactical_transitions.TacticalTransitionMode
 runs real environment code for every random path. A three-target Cleave or a
 three-enemy END_TURN took seconds, which made full-turn and enemy-phase search
 impractical. This model computes the same distributions from cached HP tables;
-measured speed and audit results are in docs/RESULTS.md.
+its measured speed and audit are in docs/RESULTS.md.
 
 HP tables merge capped damage/healing before expanding successor states. Costs,
 reach, roll modes, target selection, and lifecycle updates come from the shared
 rules. Only turn coordination and compact-state writes live here.
 
-Correctness contract: it must equal the oracle exactly. This is checked by
-`tests/test_table_tactical_transitions.py`, by
-`python -m evaluation.tactical_transition_benchmark`, and by
-`python -m evaluation.tactical_transition_audit`. The audit includes constructed edge states. Rerun it after any change to M5/M6 rules. Both checks compare against the
-environment's own code, so neither can catch a rule that is wrong in `tactics.py`.
+Correctness contract: it must equal the oracle exactly, which
+`tests/test_table_tactical_transitions.py` checks. The oracle is the
+environment's own code, so the check can't catch a rule that is wrong in
+`tactics.py`.
 """
 from collections import defaultdict
 from collections.abc import Sequence
@@ -67,10 +66,10 @@ def _damage(attack: int, ac: int, spec: DamageSpec, mode: RollMode, divisor: int
 class TableTacticalTransitionModel(TacticalTransitionModel):
     """Same state encoding and interface as the independent replay oracle.
 
-    Inherit its validated observation decoder: live input is decoded once per
-    decision (about 0.2 ms), while search uses compact states. A direct decoder
-    here was 20–40x faster but skipped `simulation_from_observation`'s checks,
-    so a reused model planned from 2.5 HP as 2 HP (PR #11 review, 2026-10-15).
+    It inherits the oracle's validated observation decoder. Decoding runs once
+    per live decision, so its cost is small beside search, and a direct decoder
+    would skip `simulation_from_observation`'s checks and truncate fractional
+    HP; `test_planner_reusing_its_model_rejects_fractional_hp` checks this.
     """
 
     def __init__(self, env: TacticalCombatEnv) -> None:

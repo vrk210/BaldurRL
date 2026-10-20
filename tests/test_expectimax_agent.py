@@ -33,6 +33,12 @@ def m2_obs(base, f, e0, e1, sw, su, cl, a, b, round_number=1):
     return obs
 
 
+def legal_mask(model, observation):
+    mask = np.zeros(len(model.decisions), dtype=np.bool_)
+    mask[list(model.legal_actions(model.state_from_observation(observation)))] = True
+    return mask
+
+
 def oracle_index(obs):
     o = obs.astype(int)
     return (o[0], o[6], o[12], o[3], o[4], o[5], o[1], o[2])
@@ -49,9 +55,9 @@ def test_unbounded_search_reproduces_independent_m2_optimum(m2_solution, state):
     base, V, _ = m2_solution
     f, e0, e1, sw, su, cl, a, b = state
     obs = m2_obs(base, f, e0, e1, sw, su, cl, a, b)
-    agent = ExpectimaxAgent("m2", depth=None)
-    model = agent.model_for(obs)
-    assert agent.state_value(model.state_from_observation(obs)) == pytest.approx(V[oracle_index(obs)], abs=1e-12)
+    agent = ExpectimaxAgent("m2", depth=None, always_search=True)
+    agent.choose_action(obs, legal_mask(agent.model_for(obs), obs))
+    assert agent.last_diagnostics.value == pytest.approx(V[oracle_index(obs)], abs=1e-12)
 
 
 def test_exact_leaf_gives_exact_root_q_values(m2_solution):
@@ -127,7 +133,7 @@ def test_terminal_values_are_exact():
     obs, _ = env.reset(seed=5)
     obs[13], obs[19] = 0, 1  # one enemy left at 1 HP: any hit wins
     model = agent.model_for(obs)
-    agent.choose_action(obs, model.legal_mask(model.state_from_observation(obs)))
+    agent.choose_action(obs, legal_mask(model, obs))
     q = dict(agent.last_diagnostics.q_values)
     hit_probability = sum(p for p, s in model.outcomes(model.state_from_observation(obs), 1)
                           if model.status(s) is Status.WIN)
@@ -161,7 +167,7 @@ def test_node_budget_falls_back_to_shallower_depth():
     late[[13, 19, 25]] = (0, 0, 2)
     roomy = ExpectimaxAgent("m4", depth=2, leaf_value=leaf, node_budget=50_000)
     model = roomy.model_for(late)
-    roomy.choose_action(late, model.legal_mask(model.state_from_observation(late)))
+    roomy.choose_action(late, legal_mask(model, late))
     assert roomy.last_diagnostics.depth_used == 2
     with pytest.raises(ValueError):
         ExpectimaxAgent("m4", depth=None, node_budget=10)

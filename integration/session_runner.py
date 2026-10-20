@@ -209,7 +209,7 @@ def _collector_hashes(repository: Path) -> dict[str, str]:
 
 
 def _health(records: tuple[GameSnapshot | GameEvent, ...]) -> dict[str, Any]:
-    sequence = validate_sequence(records, start_sequence=1)
+    sequence = validate_sequence(records)
     snapshots = tuple(record for record in records if isinstance(record, GameSnapshot))
     events = tuple(record for record in records if isinstance(record, GameEvent))
     latest = records[-1] if records else None

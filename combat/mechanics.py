@@ -9,9 +9,9 @@ from dataclasses import dataclass
 
 from numpy.random import Generator
 
-from .abilities import M2_ABILITIES
+from .abilities import ABILITY_COSTS
 from .actions import Action
-from .characters import Character, Fighter, Goblin
+from .characters import Character
 from .damage import DamageSpec
 from .resources import Resource
 
@@ -64,14 +64,14 @@ def roll_damage(attacker: Character, rng: Generator, critical: bool = False) -> 
 
 def can_use_ability(actor: Character, action: Action) -> bool:
     """Check known ability and shared resource costs, not effect-specific rules."""
-    spec = M2_ABILITIES.get(action)
-    return spec is not None and action in actor.known_abilities and actor.resources.has(spec.costs)
+    costs = ABILITY_COSTS.get(action)
+    return costs is not None and action in actor.known_abilities and actor.resources.has(costs)
 
 
 def _spend_ability(actor: Character, action: Action) -> None:
     if not can_use_ability(actor, action):
         raise ValueError(f"{action.name} is not legal")
-    actor.resources.spend(M2_ABILITIES[action].costs)
+    actor.resources.spend(ABILITY_COSTS[action])
 
 
 def resolve_attack(
@@ -95,11 +95,6 @@ def use_attack(attacker: Character, defender: Character, rng: Generator) -> Atta
         raise ValueError("ATTACK is not legal")
     _spend_ability(attacker, Action.ATTACK)
     return resolve_attack(attacker, defender, rng)
-
-
-def use_fighter_attack(fighter: Fighter, goblin: Goblin, rng: Generator) -> AttackResult:
-    """Retain the M0 Fighter attack entry point."""
-    return use_attack(fighter, goblin, rng)
 
 
 def use_second_wind(character: Character, rng: Generator) -> int:

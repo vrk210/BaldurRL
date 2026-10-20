@@ -12,7 +12,7 @@ later attack or turn refresh. The Goblin has no alternative policy.
 
 OBSERVATION_FIELDS fixes the seven unnormalized float32 fields. Constant preset
 stats are omitted; action masks are separate. Masks combine known ability,
-catalog affordability and effect-specific legality. Terminal/truncated masks
+affordable ability costs and effect-specific legality. Terminal/truncated masks
 are all false. Masked/invalid actions raise ValueError; ended episodes require
 reset. No reward penalty substitutes for validation.
 

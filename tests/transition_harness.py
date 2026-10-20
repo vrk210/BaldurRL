@@ -8,7 +8,7 @@ import numpy as np
 from combat.actors import ActorRef, Side
 from combat.resources import Resource
 from combat.stages import make_env
-from combat.transitions import RosterTransitionModel, State
+from combat.transitions import RosterTransitionModel, State, Status
 from combat.turns import TurnManager
 
 
@@ -20,6 +20,27 @@ def model_for(stage: str, seed: int) -> tuple:
         env.reset(seed=seed)
         envs.append(env)
     return envs[0], RosterTransitionModel(envs[1])
+
+
+def env_state(env) -> State:
+    """Compact state of a live M0–M4 environment, including terminal states."""
+    roster = env._roster()
+    if roster.side_defeated(Side.ALLY):
+        status = Status.LOSS
+    elif roster.side_defeated(Side.ENEMY):
+        status = Status.WIN
+    elif env._truncated:
+        status = Status.TRUNCATED
+    else:
+        status = Status.ONGOING
+    current = env._turns().current
+    assert status is not Status.ONGOING or current in env._controlled_refs
+    values = [int(status), current.slot if status is Status.ONGOING else 0, env.round_number]
+    for ally in roster.allies:
+        values.append(ally.hp)
+        values.extend(ally.resources.get(resource) for resource in Resource)
+    values.extend(enemy.hp for enemy in roster.enemies)
+    return tuple(values)
 
 
 def load_state(env, state: State) -> None:
@@ -64,7 +85,7 @@ def exhaustive_distribution(env, model: RosterTransitionModel, state: State, act
         rng = ScriptedRng(prefix)
         env.np_random = rng
         env.step(action)
-        results[model.state_from_env(env)] += prod(1.0 / (high - low) for _, low, high in rng.draws)
+        results[env_state(env)] += prod(1.0 / (high - low) for _, low, high in rng.draws)
         draws = rng.draws
         position = len(draws) - 1
         while position >= 0 and draws[position][0] == draws[position][2] - 1:
@@ -81,7 +102,7 @@ def sampled_counts(env, model: RosterTransitionModel, state: State, action: int,
         load_state(env, state)
         env.np_random = rng
         env.step(action)
-        counts[model.state_from_env(env)] += 1
+        counts[env_state(env)] += 1
     return dict(counts)
 
 

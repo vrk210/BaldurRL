@@ -124,11 +124,6 @@ class CommandAcknowledgement:
                 raise ValueError("observation_boundary_sequence requires resolved or failed status")
 
     @property
-    def confirmed_resolved(self) -> bool:
-        """Acceptance is never evidence that execution completed."""
-        return self.status is AcknowledgementStatus.RESOLVED
-
-    @property
     def releases_in_flight(self) -> bool:
         # Uncertainty requires external reconciliation, not an automatic retry.
         return self.status in (AcknowledgementStatus.REJECTED, AcknowledgementStatus.RESOLVED, AcknowledgementStatus.FAILED)

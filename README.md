@@ -2,9 +2,9 @@
 
 BaldurRL is building toward an agent that plays Baldur's Gate 3. The maintained
 system is a frozen M0–M6 simulator, policy/evaluation tools, and a passive BG3
-collector with a Python semantic command protocol and mock executor. There is
-no real BG3 action executor. The collector has offline tests; game loading and
-live capture remain unverified.
+collector with a Python semantic command protocol and mock executor. Nothing
+has run against the game yet; the [integration contract](docs/BG3_INTEGRATION.md#python-use)
+lists what is implemented and what still needs live verification.
 
 [Architecture and module inventory](docs/ARCHITECTURE.md) explain ownership and
 supported entry points. Simulator contracts live in the owning modules' docstrings
@@ -61,10 +61,9 @@ python -m evaluation.compare runs/a/run_card.json runs/b/run_card.json --output 
 python -m integration.mock_executor runs/mock-session
 ```
 
-The mock demonstration prints observation → command → acceptance → synthetic
-result and post-result capture. It does not simulate BG3 effects. Reuse requires
-a fresh session directory. The [integration contract](docs/BG3_INTEGRATION.md)
-defines records, legality, feedback and recovery limits.
+The last command runs the synthetic command handshake and needs a fresh, empty
+directory; the [integration contract](docs/BG3_INTEGRATION.md#synthetic-cli-demonstration)
+says what it shows and what it doesn't.
 
 Training remains available through `python train.py --help`; value collection
 and fitting through `python value_training.py --help`; exact planner evaluation

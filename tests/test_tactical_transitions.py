@@ -95,7 +95,7 @@ def test_observation_round_trip_and_legality(stage):
         env = make_env(stage)
         model = transition_model(stage, obs)
         state = model.state_from_observation(obs)
-        np.testing.assert_array_equal(model.observation(state), obs)
+        np.testing.assert_array_equal(model.observations([state])[0], obs)
         assert model.same_encounter(obs)
         assert model.status(state) is Status.ONGOING
 
@@ -127,8 +127,8 @@ def test_enemy_phase_matches_sampling(stage):
     model = transition_model(stage, obs)
     # Ally 0 ends its turn, then ally 1 ends its turn: the second hand-over runs all enemies.
     state = model.state_from_observation(obs)
-    (_, state), = model.outcomes(state, model.action_count - 1)
-    expected = {successor: p for p, successor in model.outcomes(state, model.action_count - 1)}
+    (_, state), = model.outcomes(state, len(model.decisions) - 1)
+    expected = {successor: p for p, successor in model.outcomes(state, len(model.decisions) - 1)}
     assert sum(expected.values()) == pytest.approx(1.0, abs=1e-12)
     rng = np.random.default_rng(7)
     counts = defaultdict(int)
@@ -136,7 +136,7 @@ def test_enemy_phase_matches_sampling(stage):
     for _ in range(samples):
         live = model.load(state)
         live.np_random = rng
-        live.step(model.action_count - 1)
+        live.step(len(model.decisions) - 1)
         counts[model.state_from_env(live)] += 1
     assert set(counts) <= set(expected)
     for successor, p in expected.items():
@@ -185,4 +185,4 @@ def test_lethal_advance_passes_the_turn():
     assert passed and kept
     for p, successor in outcomes:
         if model.turn_passed(state, advance, successor):
-            assert model.observation(successor)[env.observation_fields.index("ally_0_hp")] == 0
+            assert model.observations([successor])[0][env.observation_fields.index("ally_0_hp")] == 0

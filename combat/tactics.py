@@ -39,7 +39,7 @@ from types import MappingProxyType
 
 from numpy.random import Generator
 
-from .abilities import TACTICAL_ABILITIES
+from .abilities import TACTICAL_ABILITY_COSTS
 from .actions import Action
 from .characters import (
     Character,
@@ -109,16 +109,16 @@ class EnemyTurnResult:
 
 
 def can_use_tactical(actor: Character, action: Action) -> bool:
-    """Known ability and ``TACTICAL_ABILITIES`` costs, not effect-specific rules."""
-    spec = TACTICAL_ABILITIES.get(action)
-    return spec is not None and action in actor.known_abilities and actor.resources.has(spec.costs)
+    """Known ability and affordable ``TACTICAL_ABILITY_COSTS`` entry, not effect-specific rules."""
+    costs = TACTICAL_ABILITY_COSTS.get(action)
+    return costs is not None and action in actor.known_abilities and actor.resources.has(costs)
 
 
 def spend_tactical(actor: Character, action: Action) -> None:
-    """Spend an M5/M6 ability's catalog costs, refusing unknown or unaffordable ones."""
+    """Spend an M5/M6 ability's costs, refusing unknown or unaffordable ones."""
     if not can_use_tactical(actor, action):
         raise ValueError(f"{action.name} is not legal")
-    actor.resources.spend(TACTICAL_ABILITIES[action].costs)
+    actor.resources.spend(TACTICAL_ABILITY_COSTS[action])
 
 
 def heal_character(character: Character, amount: int) -> int:
@@ -356,7 +356,7 @@ def use_heal(healer: TacticalEnemy, target: TacticalEnemy, heal: DamageSpec, rng
 
 
 def enemy_heal_target(enemy: TacticalEnemy, enemies: Sequence[TacticalEnemy]) -> int | None:
-    """Choose healing before attacking when the catalog and HP conditions permit it."""
+    """Choose healing before attacking when the heal is known and affordable and HP conditions permit it."""
     return heal_target(enemies) if can_use_tactical(enemy, Action.HEAL) else None
 
 

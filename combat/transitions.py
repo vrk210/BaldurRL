@@ -7,7 +7,7 @@ Identical successors are merged, so HP outcomes collapse into few states.
 
 Rules are not re-derived here: dice, hit/critical, damage halving, and healing
 come from the distribution helpers in `distributions.py`; costs from the ability
-catalog; legality and the automatic enemy policy from `legality.py`; turn order
+cost table; legality and the automatic enemy policy from `legality.py`; turn order
 and refresh from the environment's `TurnManager` order and `turn_refresh`.
 
 New stages plug in by registering a factory (`register_transition_model`) that
@@ -35,7 +35,7 @@ from typing import Protocol
 
 import numpy as np
 
-from .abilities import M2_ABILITIES
+from .abilities import ABILITY_COSTS
 from .actions import Action
 from .actors import ActorRef, Side
 from .characters import refresh_turn_resources
@@ -61,9 +61,6 @@ _STATUSES = tuple(Status)
 
 class TransitionModel(Protocol):
     """Exact one-decision dynamics for one encounter, as used by planners."""
-
-    stage: str
-    action_count: int
 
     def state_from_observation(self, observation: np.ndarray) -> State: ...
 
@@ -119,12 +116,9 @@ class RosterTransitionModel:
     """Exact transitions for the M0–M4 environments (fixed-policy enemies)."""
 
     def __init__(self, env: BaldurCombatEnv | StagedCombatEnv) -> None:
-        self.stage = env.stage
         self.decisions = tuple(env.decisions)
-        self.action_count = len(self.decisions)
         self.max_rounds = MAX_ROUNDS
         # A private roster used only as scratch input to the shared legality rules.
-        self._env = env
         self._roster = env._roster()
         self._allies = self._roster.allies
         self._enemies = self._roster.enemies
@@ -137,9 +131,9 @@ class RosterTransitionModel:
         self._enemy_base = _HEADER + _ALLY_WIDTH * self.n_allies
         self._costs = {
             action: tuple(
-                (1 + _RESOURCES.index(resource), amount) for resource, amount in spec.costs.items()
+                (1 + _RESOURCES.index(resource), amount) for resource, amount in costs.items()
             )
-            for action, spec in M2_ABILITIES.items()
+            for action, costs in ABILITY_COSTS.items()
         }
         self._refresh = tuple(
             tuple((1 + _RESOURCES.index(resource), amount) for resource, amount in ally.turn_refresh.items())
@@ -160,30 +154,6 @@ class RosterTransitionModel:
     @classmethod
     def from_observation(cls, stage: str, observation: np.ndarray) -> "RosterTransitionModel":
         return cls(simulation_from_observation(stage, observation, seed=0))
-
-    def state_from_env(self, env: BaldurCombatEnv | StagedCombatEnv) -> State:
-        """Compact state of a live environment with the same encounter statistics."""
-        roster = env._roster()
-        allies_down = roster.side_defeated(Side.ALLY)
-        enemies_down = roster.side_defeated(Side.ENEMY)
-        if allies_down:
-            status = Status.LOSS
-        elif enemies_down:
-            status = Status.WIN
-        elif env._truncated:
-            status = Status.TRUNCATED
-        else:
-            status = Status.ONGOING
-        current = env._turns().current
-        actor = current.slot if status is Status.ONGOING else 0
-        if status is Status.ONGOING and current not in self._controlled:
-            raise ValueError("Ongoing states must be at a controlled decision")
-        values = [int(status), actor, env.round_number]
-        for ally in roster.allies:
-            values.append(ally.hp)
-            values.extend(ally.resources.get(resource) for resource in _RESOURCES)
-        values.extend(enemy.hp for enemy in roster.enemies)
-        return tuple(values)
 
     def state_from_observation(self, observation: np.ndarray) -> State:
         """Compact ongoing state for a live allied decision observation."""
@@ -227,11 +197,6 @@ class RosterTransitionModel:
             legal = tuple(index for index, allowed in enumerate(mask) if allowed)
             self._legal_cache[key] = legal
         return legal
-
-    def legal_mask(self, state: State) -> np.ndarray:
-        mask = np.zeros(self.action_count, dtype=np.bool_)
-        mask[list(self.legal_actions(state))] = True
-        return mask
 
     # ------------------------------------------------------------------ transitions
     def outcomes(self, state: State, action: int) -> tuple[Outcome, ...]:
@@ -475,9 +440,6 @@ class RosterTransitionModel:
                 actor[ended] = first[ended]
             out[:, self._actor_col] = actor
         return out
-
-    def observation(self, state: State) -> np.ndarray:
-        return self.observations([state])[0]
 
 
 TransitionModelFactory = Callable[[str, np.ndarray], TransitionModel]

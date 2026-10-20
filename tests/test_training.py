@@ -93,7 +93,7 @@ def test_eval_callback_saves_best_model(tmp_path) -> None:
     model.learn(total_timesteps=128, callback=callback)
     vec_env.close()
     assert best_path.exists()
-    assert 0.0 <= callback.last_win_rate <= 1.0
+    assert 0.0 <= callback.best_win_rate <= 1.0  # -1 until an evaluation runs
 
 
 def test_train_smoke_writes_artifacts(tmp_path) -> None:

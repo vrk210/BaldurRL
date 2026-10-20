@@ -229,9 +229,12 @@ preserved under tag `archive/simulator-research-2026-10-15`, paths
   - matched raw path enumeration through the unmodified `env.step` to about
     1e-16 (241 cases);
   - had no unseen successor in 20,000 real samples per case (288 cases).
-- **Table model** (`combat/table_tactical_transitions.py`, its docstring has the
-  details): the default since 2026-10-15. It is 16× faster on M5 and 53× faster
-  on M6, with no mismatches in 118,089 audited cases.
+- **Table model** (`combat/table_tactical_transitions.py`): the default since
+  2026-10-15. It is 16× faster on M5 and 53× faster on M6 (benchmark seeds
+  210000–210009), with no mismatches in 118,089 audited cases, constructed edge
+  states included. The audit and benchmark scripts were retired with the
+  simulator phase: `git show bff5f88:evaluation/tactical_transition_audit.py`
+  and `git show bff5f88:evaluation/tactical_transition_benchmark.py`.
 
 **Planner pilots (2026-10-10, selection seeds from 122000).** Value networks
 were trained on outcomes.
