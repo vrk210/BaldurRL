@@ -10,8 +10,8 @@ to the decisions they inform:
 
 This file replaces the per-experiment reports that were in `reports/` until
 2026-10-15. Those reports have the full tables, reproduction commands and
-artifact paths; read them with `git show b082262:reports/<name>`, using the names
-listed at the end. Raw artifacts live in git-ignored `runs/` directories. Seed
+artifact paths. List them with `git ls-tree --name-only b082262:reports` and
+read one with `git show b082262:reports/<name>`. Raw artifacts live in git-ignored `runs/` directories. Seed
 ranges are recorded in `evaluation/seeds.py`.
 
 ## Overview
@@ -164,7 +164,7 @@ Paired differences (points, with SE):
 **Tactics that won in these rules.** These are hypotheses for BG3. The 2026-10-15
 mining study tested them further with 13 paired contrasts on seeds
 232000–235999; see [GAME_KNOWLEDGE.md](GAME_KNOWLEDGE.md#simulator-tactical-evidence-hypotheses-for-bg3)
-and `evaluation/sim_mining.py`.
+and the tagged mining bundle described below.
 
 - **Kill priority.** Focus the lowest-HP target. Healer-first loses 2.8 points
   because the Healer's self-heal absorbs focus fire.
@@ -217,10 +217,9 @@ The probe changed 421/28,557 M5 decisions and 387/28,615 M6 decisions, affecting
 32.6% and 29.4% of fights. Fresh 1,024-pair rescoring of 12 deviations per
 stage found mean local gains of +4.96 and +3.17 pp, with conditional Monte
 Carlo SE 0.45 pp each; these checks exclude state-sampling uncertainty.
-Full method, limitations and interpretation are beside the
-[agent implementation](../agents/improved_heuristic_agent.py); all action-pair
-counts, estimated gains and reproduction references are in the
-[evidence fixture](../evaluation/headroom_probe_results.json).
+Full method, action-pair counts, limitations and reproduction references are
+preserved under tag `archive/simulator-research-2026-10-15`, paths
+`agents/improved_heuristic_agent.py` and `evaluation/headroom_probe_results.json`.
 
 ## M5/M6: exact transitions and planners
 
@@ -268,18 +267,49 @@ reasons:
 The conclusion is "this configuration loses", not "expert iteration can't work".
 The code and full review are on branch `archive/m5-m6-guided-planning`.
 
-## Removed reports
+## Retired simulator experiments
 
-These were removed on 2026-10-15; read them with `git show b082262:reports/<name>`.
+Annotated tag `archive/simulator-research-2026-10-15` preserves the code,
+tests and committed evidence before deletion. Recover any file with
+`git show archive/simulator-research-2026-10-15:<path>`. The earlier individual
+reports remain in commit `b082262` under `reports/`.
 
-- **Held-out evaluations:** `m0_heldout_3000_3999.md`, `m1a_heldout_3000_3999.md`,
-  `m1b_heldout_3000_3999.md`, `m2_heldout_3000_3999.md`, `m3_heldout_3000_3999.md`,
-  `m4_heldout_3000_3999.md`.
-- **M2 follow-ups:** `m2_ppo_1m_followup.md`, `m2_reward_shaping.md`.
-- **M4 search:** `m4_expectimax.md`, `m4_rollout_pilot_18000_18099.json`.
-- **M5/M6 stages and their review:** `m5_m6_decision_stages.md`,
-  `m5_m6_adversarial_review.txt`.
-- **M5/M6 planning:** `m5_m6_planning.md`.
-- **Phase summary:** `sim_phase_summary.md`.
-- **Review scripts:** `audit_m5_m6.py`, `review_m5_m6.py`, `review_m6_ablation.py`,
-  `review_ppo_interventions.py`.
+- **Tactics mining:** 13 fixed paired contrasts, 4,000 encounters per contrast,
+  seeds 232000–235999; plan `e2e25d3`, source `b082262`. Compared tuned M5 or
+  adaptive M6 against targeted changes, using paired differences, Bonferroni
+  simultaneous intervals and adjusted exact McNemar tests. Concentrated damage,
+  early Surge and coordinated positioning helped these simulator policies;
+  evidence and uncertainty are summarized in GAME_KNOWLEDGE.md. The Cleave
+  threshold, earlier Advance timing, and an optimal-policy ceiling remain
+  unresolved. These are BG3 hypotheses, not verified game tactics. The bundle
+  contains historical trace summaries as well as confirmation results; they are
+  not interchangeable samples. The retired CLI depends on historical worktree
+  paths and is not a supported clean-checkout tool.
+- **Headroom probe:** predeclared revision `6c2162e`, alpha .05 with 32/128/1,024
+  sampling looks; once-only confirmation on 223000–223999, 1,000 encounters per
+  stage. The results and conservative uncertainty are above. No established
+  whole-fight improvement or general ceiling follows from this configuration.
+  Local rechecks suggest useful exceptions worth revisiting only when real BG3
+  observations support the action/value interface. The per-decision statistical
+  gate is not a whole-episode guarantee. Do not rerun the confirmation as fresh
+  evidence or select another configuration on these encounters.
+- **PPO disagreement diagnostics:** completed stratified local-repair study,
+  summarized above under PPO diagnostics. The tagged script documents its
+  reservoir sampling and continuation-policy assumptions. Positive local
+  counterfactuals did not explain most of the whole-fight performance gap.
+
+Retirement inspection found no non-finite values in either committed JSON
+bundle. The mining inventory's 22 machine-specific historical trace paths all
+exist locally; headroom audit counters report reconciled rollout counts and no
+outcome mismatches when the policies never switched. These are consistency
+checks, not an independent rerun of the studies. Raw local captures/traces were
+not deleted; they remain evidence while the questions above are unresolved.
+Before relocating or deleting them, use the tagged inventory/hashes to inspect
+and retain the smallest useful reproducer.
+
+Committed bundle SHA-256 values (files recoverable from the tag):
+
+- `evaluation/sim_mining_summary.json`:
+  `ee8f8840b949c1632a921d239dc72004d2b336468d30cd803a9ab628c6c2fe75`
+- `evaluation/headroom_probe_results.json`:
+  `9ec50f42ecd9ca228546f7014e3098a83af55d739b7e8af32e261a8dbaa1cbcd`
