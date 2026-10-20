@@ -546,6 +546,11 @@ def run_workers(script: str, trees: dict[str, tuple[Path, set[str]]], directory:
     return reports
 
 
+def files_to_trace(changes: dict[str, set[Statement]]) -> set[str]:
+    """Files holding a changed statement the verdict checks; import-time statements are listed, not traced."""
+    return {path for path, changed in changes.items() if any(not statement.runs_at_import for statement in changed)}
+
+
 @dataclasses.dataclass(frozen=True)
 class Verdict:
     """The comparison report. The last three lists are for the PR to explain, not failures."""
@@ -649,11 +654,11 @@ def main() -> int:
         for path, lines in sorted(base_lines.items()):
             names, base_changes[path] = split_removed_definitions((base_tree / path).read_text(encoding="utf-8"), lines)
             removed += [f"{path}::{name}" for name in names]
-        traced = {path for path, changed in base_changes.items() if changed}
+        head_changes = {path: changed_statements((root / path).read_text(encoding="utf-8"), lines)
+                        for path, lines in head_lines.items()}
         workers = run_workers(str(Path(__file__).resolve()),
-                              {"base": (base_tree, traced), "head": (root, set(head_lines))}, Path(directory))
-    head_changes = {path: changed_statements((root / path).read_text(encoding="utf-8"), lines)
-                    for path, lines in head_lines.items()}
+                              {"base": (base_tree, files_to_trace(base_changes)),
+                               "head": (root, files_to_trace(head_changes))}, Path(directory))
     result = verdict(base=workers["base"], head=workers["head"], base_changes=base_changes,
                      head_changes=head_changes, removed=removed, not_compared=not_compared)
     print(json.dumps({"base": revision, "fingerprints": workers["head"].fingerprints, **dataclasses.asdict(result)},
