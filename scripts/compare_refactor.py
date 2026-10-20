@@ -410,8 +410,6 @@ def statements(source: str) -> list[Statement]:
             if not isinstance(child, ast.stmt):
                 visit(child, prefix, owner, at_import)
                 continue
-            if is_string_only(child):
-                continue
             first = min([child.lineno, *(item.lineno for item in getattr(child, "decorator_list", ()))])
             if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                 name = prefix + child.name
@@ -482,13 +480,13 @@ def split_removed_definitions(source: str, lines: set[int], surviving: set[str])
                if statement.defines and statement.runs_at_import and statement.owner not in surviving
                and all(line in lines for line in range(statement.first, statement.last + 1))]
 
-    def inside(statement: Statement, others: list[Statement]) -> bool:
-        return any(other is not statement and other.first <= statement.first and statement.last <= other.last
-                   for other in others)
+    def within(statement: Statement, outer: Statement) -> bool:
+        return outer.first <= statement.first and statement.last <= outer.last
 
-    outermost = sorted(statement.owner for statement in removed if not inside(statement, removed))
+    outermost = sorted(statement.owner for statement in removed
+                       if not any(other != statement and within(statement, other) for other in removed))
     remaining = {statement for statement in changed_statements(source, lines)
-                 if statement not in removed and not inside(statement, removed)}
+                 if not any(within(statement, other) for other in removed)}
     return outermost, remaining
 
 
