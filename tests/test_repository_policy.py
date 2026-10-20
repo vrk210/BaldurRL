@@ -43,7 +43,7 @@ def test_extra_document_needs_explicit_retirement(tmp_path):
 def test_relative_links_must_exist_and_stay_inside_repository(tmp_path):
     (tmp_path / "outside.md").write_text("", encoding="utf-8")
     root = tmp_path / "repo"
-    tracked = repository(root, row("a.py"), {"a.py": "", "README.md": "[bad](missing.py) [outside](../outside.md) [web](https://example.com)\n```\nhandlers[kind](event)\n```\n"})
+    tracked = repository(root, row("a.py"), {"a.py": "", "README.md": "[bad](missing.py) [outside](../outside.md) [web](https://example.com)\n```\nhandlers[kind](event)\n```\n1. Step:\n   ```\n   [int]($count)\n   ```\n"})
     errors = check(root, tracked)
     assert len(errors) == 2
     assert all("Broken/outside-repository link" in error for error in errors)
