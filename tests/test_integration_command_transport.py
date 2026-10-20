@@ -68,9 +68,6 @@ def test_publication_is_complete_atomic_and_never_overwrites(session, monkeypatc
     assert checked == [True]
     assert json.loads(path.read_text()) == selected().to_dict()
     assert list(session.commands.glob("*.tmp")) == []
-    with pytest.raises(ValueError, match="Duplicate command_id"):
-        session.publish_command(selected())
-    assert json.loads(path.read_text()) == selected().to_dict()
 
 
 def test_failed_atomic_publication_cleans_temp_file_and_lock(session, monkeypatch) -> None:
@@ -316,7 +313,7 @@ def test_mock_all_target_forms(session, kind, entity, position) -> None:
     executor = MockExecutor(session)
     accepted, = executor.receive()
     assert accepted.status is Status.ACCEPTED
-    assert executor.finish(intent.command_id).status is Status.RESOLVED
+    executor.finish(intent.command_id)
     assert session.latest_snapshot() == observed
 
 

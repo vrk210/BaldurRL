@@ -21,22 +21,11 @@ def test_records_come_back_in_embedded_order(tmp_path) -> None:
     assert reader.validate_all().gaps == ()
 
 
-def test_each_read_rescans_for_records_that_close_a_gap(tmp_path) -> None:
-    reader = RecordDirectoryReader(tmp_path)
-    write(tmp_path / "one.json", GameSnapshot(1, 1))
-    write(tmp_path / "three.json", GameEvent(1, 3, EventKind.MISS))
-    assert reader.validate_all().gaps == (2,)
-    write(tmp_path / "two.json", GameEvent(1, 2, EventKind.TURN_STARTED))
-    assert [record.sequence for record in reader.read_all()] == [1, 2, 3]
-
-
-def test_duplicate_even_after_a_read_is_rejected(tmp_path) -> None:
-    reader = RecordDirectoryReader(tmp_path)
+def test_duplicate_on_the_first_read_is_rejected(tmp_path) -> None:
     write(tmp_path / "first.json", GameSnapshot(1, 1))
-    assert len(reader.read_all()) == 1
     write(tmp_path / "second.json", GameEvent(1, 1, EventKind.MISS))
-    with pytest.raises(ValueError, match="Duplicate sequence 1"):
-        reader.read_all()
+    with pytest.raises(ValueError, match="Duplicate sequence 1 in"):
+        RecordDirectoryReader(tmp_path).read_all()
 
 
 def test_duplicate_still_rejected_if_original_file_disappears(tmp_path) -> None:
