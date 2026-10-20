@@ -1,11 +1,14 @@
 """Compare semantic fingerprints of the maintained code against a Git base.
 
-Usage: python scripts/compare_refactor.py --base COMMIT [--event GITHUB_EVENT_JSON]
+Usage: python scripts/compare_refactor.py --base COMMIT
+       python scripts/compare_refactor.py --check-marker GITHUB_EVENT_JSON
 
-With --event, as in CI, it runs only if the PR body has a line that is exactly
-`Behavior: preserve`, outside code blocks and comments. A body that merely
+CI compares only when the PR body has a line that is exactly
+`Behavior: preserve`, outside code blocks and comments; --check-marker prints
+true or false for that, using only the standard library. A body that merely
 mentions the marker does not count; a line that is the marker with other
-spelling or formatting fails, so a mistyped declaration is not silently skipped.
+spelling, punctuation or formatting fails, so a mistyped declaration is not
+silently skipped.
 
 Why: a PR that declares `Behavior: preserve` may rewrite tests that checked
 implementation, so its tests alone cannot show that behavior is unchanged. This
@@ -27,16 +30,19 @@ smoke seeds 0..99, never research or final-test encounters, and run no trained
 model. This checks regression equivalence, not agreement with BG3.
 
 A comparison covers only what its scenarios run, so each side traces the lines
-it runs in the files the diff touches. Every statement the diff removes must
-have run on the base, and every statement it adds or changes must run on the
-working tree; otherwise the check fails and names the statement. Three kinds of
-change are listed instead, for the PR to say how each was verified:
+it runs in the files the diff touches (renames are followed). Every statement
+the diff removes must have run on the base, and every statement it adds or
+changes must run on the working tree; otherwise the check fails and names the
+statement. Three kinds of change are listed instead, for the PR to say how each
+was verified:
 - statements that run at import (module and class bodies, def and class lines
   with their decorators and defaults), which run whether or not their effect
   is observed;
-- definitions removed entirely, whose removal changes nothing the scenarios
-  run; whether anything else called them is a question for `git grep`;
-- changed files outside the maintained Python code.
+- definitions and files the diff removes whole, whose removal changes nothing
+  the scenarios run; whether anything else called them is a question for
+  `git grep`;
+- changed files other than tests, Markdown and the maintained Python code
+  (MAINTAINED_CODE).
 
 Running a line is not testing it: a changed condition that no scenario input
 tells apart still passes. Prefer adding a scenario to accepting a gap. A
@@ -336,9 +342,15 @@ def fingerprints(root: Path) -> tuple[dict[str, str], dict[str, str]]:
 
 
 def with_executed_lines(root: Path, paths: set[str], run: Callable[[], Any]) -> tuple[Any, dict[str, set[int]]]:
-    """Run and record which lines execute in the given repository-relative files."""
-    wanted = {os.path.normcase(str(root / path)): path for path in paths}
+    """Run and record which lines execute in the given repository-relative files.
+
+    With no files to trace no hook is installed: Python 3.11 runs every frame
+    slower while one is.
+    """
     executed: dict[str, set[int]] = {path: set() for path in paths}
+    if not paths:
+        return run(), executed
+    wanted = {os.path.normcase(str(root / path)): path for path in paths}
     files: dict[str, str | None] = {}
 
     def trace(frame: Any, event: str, _: Any) -> Any:
@@ -367,15 +379,17 @@ def with_executed_lines(root: Path, paths: set[str], run: Callable[[], Any]) -> 
 class Statement:
     """One executable statement: its lines, what it belongs to, and whether it runs at import.
 
-    A def or class statement is named after what it defines and runs where it is
-    defined. Any other statement is named after its innermost def or class, or
-    "<module>".
+    A def or class statement (defines=True) is named after what it defines and
+    runs where it is defined. An except clause or match case counts as its own
+    statement, since it runs only when reached. Any other statement is named
+    after its innermost def or class, or "<module>".
     """
 
     first: int
     last: int
     owner: str
     runs_at_import: bool
+    defines: bool = False
 
 
 def is_string_only(node: ast.AST) -> bool:
@@ -389,15 +403,19 @@ def statements(source: str) -> list[Statement]:
 
     def visit(node: ast.AST, prefix: str, owner: str, at_import: bool) -> None:
         for child in ast.iter_child_nodes(node):
+            if isinstance(child, ast.excepthandler):
+                found.append(Statement(child.lineno, child.end_lineno, owner, at_import))
+            elif isinstance(child, ast.match_case):
+                found.append(Statement(child.pattern.lineno, child.body[-1].end_lineno, owner, at_import))
             if not isinstance(child, ast.stmt):
-                visit(child, prefix, owner, at_import)  # except handlers and match cases hold statements
+                visit(child, prefix, owner, at_import)
                 continue
             if is_string_only(child):
                 continue
             first = min([child.lineno, *(item.lineno for item in getattr(child, "decorator_list", ()))])
             if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                 name = prefix + child.name
-                found.append(Statement(first, child.end_lineno, name, at_import))
+                found.append(Statement(first, child.end_lineno, name, at_import, defines=True))
                 if isinstance(child, ast.ClassDef):
                     visit(child, name + ".", name, at_import)
                 else:
@@ -428,17 +446,52 @@ def changed_statements(source: str, lines: set[int]) -> set[Statement]:
     return changed
 
 
-def changed_lines(diff: str) -> tuple[dict[str, set[int]], dict[str, set[int]]]:
-    """Base-side and working-tree-side line numbers each Python file's diff hunks touch."""
+def removed_definitions(source: str, lines: set[int]) -> tuple[list[str], set[Statement]]:
+    """Base-side definitions the diff removes whole, and the changed statements outside them.
+
+    Statements inside a definition removed whole are part of that removal, not
+    behavior to compare; every other base-side statement is.
+    """
+    removed = [statement for statement in statements(source)
+               if statement.defines and all(line in lines for line in range(statement.first, statement.last + 1))]
+
+    def inside(statement: Statement, others: list[Statement]) -> bool:
+        return any(other is not statement and other.first <= statement.first and statement.last <= other.last
+                   for other in others)
+
+    outermost = sorted(statement.owner for statement in removed if not inside(statement, removed))
+    remaining = {statement for statement in changed_statements(source, lines)
+                 if statement not in removed and not inside(statement, removed)}
+    return outermost, remaining
+
+
+@dataclasses.dataclass(frozen=True)
+class ChangedLines:
+    """Line numbers a diff touches in Python files, per path on each side, and the files it deletes."""
+
+    base: dict[str, set[int]]
+    head: dict[str, set[int]]
+    deleted: set[str]
+
+
+def changed_lines(diff: str) -> ChangedLines:
+    """Read a `git diff --unified=0` of Python files; file names count only in each file's header."""
     base: dict[str, set[int]] = {}
     head: dict[str, set[int]] = {}
+    deleted: set[str] = set()
     old = new = None
+    in_header = False
     for line in diff.splitlines():
-        if line.startswith("--- "):
+        if line.startswith("diff --git "):
+            in_header, old, new = True, None, None
+        elif in_header and line.startswith("--- "):
             old = line[6:] if line.startswith("--- a/") and line.endswith(".py") else None
-        elif line.startswith("+++ "):
+        elif in_header and line.startswith("+++ "):
             new = line[6:] if line.startswith("+++ b/") and line.endswith(".py") else None
-        elif line.startswith("@@"):
+            if line == "+++ /dev/null" and old:
+                deleted.add(old)
+            in_header = False
+        elif line.startswith("@@") and not in_header:
             hunk = re.match(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", line)
             if hunk is None:
                 raise ValueError(f"Unexpected diff hunk header: {line}")
@@ -446,7 +499,7 @@ def changed_lines(diff: str) -> tuple[dict[str, set[int]], dict[str, set[int]]]:
                 count = 1 if length is None else int(length)
                 if path and count:
                     sides.setdefault(path, set()).update(range(int(start), int(start) + count))
-    return base, head
+    return ChangedLines(base, head, deleted)
 
 
 def git(root: Path, *arguments: str) -> str:
@@ -456,17 +509,20 @@ def git(root: Path, *arguments: str) -> str:
 def declares_behavior_preserved(body: str | None) -> bool:
     """True if the PR body has a line that is exactly `Behavior: preserve`, outside code blocks and comments.
 
-    Raises ValueError for a line that is the marker with other spelling or
-    formatting, such as `**Behavior:** preserve`.
+    Raises ValueError for a line that is the marker with other spelling,
+    punctuation or formatting, such as `**Behavior:** preserve` or
+    `- Behavior: preserve.`
     """
     text = re.sub(r"<!--.*?-->", "", body or "", flags=re.S)
-    text = re.sub(r"^(```|~~~).*?^\1", "", text, flags=re.M | re.S)
+    text = re.sub(r"^[ \t]*(```|~~~).*?^[ \t]*\1", "", text, flags=re.M | re.S)
     declared = False
     for line in text.splitlines():
+        if line.startswith(("    ", "\t")):
+            continue  # indented code block
         if re.fullmatch(r"Behavior: preserve\s*", line):
             declared = True
-        elif re.sub(r"[*_`\s]", "", line).lower() == "behavior:preserve":
-            raise ValueError(f"PR body line {line.strip()!r} is not exactly 'Behavior: preserve'")
+        elif re.sub(r"[^a-z:]", "", line.lower()) == "behavior:preserve":
+            raise ValueError(f"PR body line {line!r} is not exactly 'Behavior: preserve'")
     return declared
 
 
@@ -500,51 +556,81 @@ def run_workers(script: str, trees: dict[str, tuple[Path, set[str]]], directory:
     return reports
 
 
-def verdict(*, before: WorkerReport, after: WorkerReport, removed: dict[str, set[Statement]],
-            added: dict[str, set[Statement]], surviving: dict[str, set[str]], not_compared: list[str]) -> dict[str, Any]:
-    """The comparison report; it fails on a scenario error, a mismatch, or a changed statement that never ran.
+@dataclasses.dataclass(frozen=True)
+class Verdict:
+    """The comparison report. The last three lists are for the PR to explain, not failures."""
 
-    removed holds base-side statements, which must have run on the base unless
-    their whole definition is gone from the working tree; surviving holds the
-    working tree's def, class and module names per path. added holds
-    working-tree statements, which must run there.
+    passed: bool
+    scenario_errors: dict[str, str]
+    mismatches: list[str]
+    unexecuted_statements: list[str]
+    import_time_changes: list[str]
+    removed_definitions: list[str]
+    not_compared: list[str]
+
+
+def verdict(*, base: WorkerReport, head: WorkerReport, base_changes: dict[str, set[Statement]],
+            head_changes: dict[str, set[Statement]], removed: list[str], not_compared: list[str]) -> Verdict:
+    """Fail on a scenario error, a mismatch, or a changed statement that never ran on its side.
+
+    base_changes must have run on the base and head_changes on the head, except
+    statements that run at import, which are listed.
     """
-    errors = {f"{side}/{name}": message for side, worker in (("base", before), ("head", after))
+    errors = {f"{side}/{name}": message for side, worker in (("base", base), ("head", head))
               for name, message in worker.errors.items()}
-    mismatches = sorted(name for name in before.fingerprints.keys() | after.fingerprints.keys()
-                        if before.fingerprints.get(name) != after.fingerprints.get(name))
-    unexercised: dict[str, list[int]] = {}
-    at_import, removed_definitions = set(), set()
-    for side, changes, worker in (("base", removed, before), ("head", added, after)):
+    mismatches = sorted(name for name in base.fingerprints.keys() | head.fingerprints.keys()
+                        if base.fingerprints.get(name) != head.fingerprints.get(name))
+    unexecuted: dict[str, list[int]] = {}
+    at_import = set()
+    for side, changes, worker in (("base", base_changes, base), ("head", head_changes, head)):
         for path, changed in sorted(changes.items()):
             ran = worker.executed.get(path, set())
             for statement in changed:
-                if side == "base" and statement.owner not in surviving.get(path, set()):
-                    removed_definitions.add(f"{path}::{statement.owner}")
-                elif statement.runs_at_import:
+                if statement.runs_at_import:
                     at_import.add(f"{path}::{statement.owner}")
                 elif not any(statement.first <= line <= statement.last for line in ran):
-                    unexercised.setdefault(f"{side} {path}::{statement.owner}", []).append(statement.first)
-    return {
-        "passed": not (errors or mismatches or unexercised),
-        "scenario_errors": errors,
-        "mismatches": mismatches,
-        "unexercised_statements": [f"{name} (line {', '.join(map(str, sorted(lines)))})"
-                                   for name, lines in sorted(unexercised.items())],
-        "import_time_changes": sorted(at_import),
-        "removed_definitions": sorted(removed_definitions),
-        "not_compared": not_compared,
-    }
+                    unexecuted.setdefault(f"{side} {path}::{statement.owner}", []).append(statement.first)
+    return Verdict(
+        passed=not (errors or mismatches or unexecuted),
+        scenario_errors=errors,
+        mismatches=mismatches,
+        unexecuted_statements=[f"{name} (line {', '.join(map(str, sorted(lines)))})"
+                               for name, lines in sorted(unexecuted.items())],
+        import_time_changes=sorted(at_import),
+        removed_definitions=sorted(removed),
+        not_compared=not_compared,
+    )
+
+
+def outcome_message(result: Verdict) -> str:
+    """One line saying why the comparison failed, or what the PR must still explain."""
+    if not result.passed:
+        reasons = [f"{len(items)} {label}" for label, items in (
+            ("scenario errors", result.scenario_errors), ("fingerprint mismatches", result.mismatches),
+            ("changed statements that never ran", result.unexecuted_statements)) if items]
+        return f"Comparison failed: {', '.join(reasons)}; see the report above."
+    if result.import_time_changes or result.removed_definitions or result.not_compared:
+        return "Comparison passed. Say in the PR how each listed import-time change, removed definition and file was verified."
+    return "Comparison passed."
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--base", help="Git commit whose runtime behavior must be preserved")
-    parser.add_argument("--event", type=Path, help="GitHub event JSON; compare only if its PR body declares preservation")
+    parser.add_argument("--check-marker", type=Path, metavar="GITHUB_EVENT_JSON",
+                        help="print true if the event's PR body declares Behavior: preserve, else false")
     parser.add_argument("--worker", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--trace", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--output", type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if args.check_marker:
+        event = json.loads(args.check_marker.read_text(encoding="utf-8"))
+        try:
+            print(str(declares_behavior_preserved(event.get("pull_request", {}).get("body"))).lower())
+        except ValueError as error:
+            print(error, file=sys.stderr)
+            return 1
+        return 0
     if args.worker:
         root = args.worker.resolve()
         traced = set(json.loads(args.trace.read_text(encoding="utf-8")))
@@ -554,43 +640,35 @@ def main() -> int:
         args.output.write_text(json.dumps(report, sort_keys=True), encoding="utf-8")
         return 0
     if not args.base:
-        parser.error("--base is required")
-    if args.event:
-        event = json.loads(args.event.read_text(encoding="utf-8"))
-        try:
-            declared = declares_behavior_preserved(event.get("pull_request", {}).get("body"))
-        except ValueError as error:
-            print(error)
-            return 1
-        if not declared:
-            print("The PR body has no 'Behavior: preserve' line; comparison skipped.")
-            return 0
+        parser.error("--base or --check-marker is required")
     root = Path(__file__).resolve().parents[1]
     revision = git(root, "rev-parse", "--verify", "--end-of-options", f"{args.base}^{{commit}}").strip()
-    diff_options = ("--no-color", "--no-ext-diff", "--src-prefix=a/", "--dst-prefix=b/", revision)
-    base_lines, head_lines = changed_lines(git(root, "diff", "--unified=0", *diff_options, "--", *MAINTAINED_CODE))
+    diff_options = ("--no-color", "--no-ext-diff", "--find-renames", "--src-prefix=a/", "--dst-prefix=b/", revision)
+    changes = changed_lines(git(root, "diff", "--unified=0", *diff_options, "--", *MAINTAINED_CODE))
     not_compared = [path for path in git(root, "diff", "--name-only", *diff_options).splitlines()
                     if not path.endswith(".md") and not path.startswith("tests/")
                     and not (path.endswith(".py") and path.startswith(MAINTAINED_CODE))]
     archive = subprocess.check_output(["git", "archive", "--format=zip", revision], cwd=root)
+    removed, base_changes = [f"{path}::<module>" for path in sorted(changes.deleted)], {}
     with tempfile.TemporaryDirectory(prefix="baldurrl-refactor-") as directory:
-        baseline = Path(directory) / "base"
+        base_tree = Path(directory) / "base"
         with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
-            bundle.extractall(baseline)
+            bundle.extractall(base_tree)
+        for path, lines in changes.base.items():
+            if path not in changes.deleted:
+                names, base_changes[path] = removed_definitions((base_tree / path).read_text(encoding="utf-8"), lines)
+                removed += [f"{path}::{name}" for name in names]
         workers = run_workers(str(Path(__file__).resolve()),
-                              {"base": (baseline, set(base_lines)), "head": (root, set(head_lines))}, Path(directory))
-        removed = {path: changed_statements((baseline / path).read_text(encoding="utf-8"), lines)
-                   for path, lines in base_lines.items()}
-    added = {path: changed_statements((root / path).read_text(encoding="utf-8"), lines)
-             for path, lines in head_lines.items()}
-    surviving = {path: {"<module>", *(statement.owner for statement in statements((root / path).read_text(encoding="utf-8")))}
-                 for path in base_lines if (root / path).exists()}
-    report = verdict(before=workers["base"], after=workers["head"], removed=removed, added=added,
-                     surviving=surviving, not_compared=not_compared)
-    print(json.dumps({"base": revision, "fingerprints": workers["head"].fingerprints, **report}, indent=2))
-    if not report["passed"]:
-        print("Behavior differs, a scenario errored, or a changed statement never ran; see the report above.")
-    return int(not report["passed"])
+                              {"base": (base_tree, set(base_changes)), "head": (root, set(changes.head))},
+                              Path(directory))
+    head_changes = {path: changed_statements((root / path).read_text(encoding="utf-8"), lines)
+                    for path, lines in changes.head.items()}
+    result = verdict(base=workers["base"], head=workers["head"], base_changes=base_changes,
+                     head_changes=head_changes, removed=removed, not_compared=not_compared)
+    print(json.dumps({"base": revision, "fingerprints": workers["head"].fingerprints, **dataclasses.asdict(result)},
+                     indent=2))
+    print(outcome_message(result))
+    return int(not result.passed)
 
 
 if __name__ == "__main__":
