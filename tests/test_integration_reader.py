@@ -64,3 +64,5 @@ def test_sequence_validation() -> None:
         validate_sequence((records[0], records[0]))
     with pytest.raises(ValueError, match="schema versions"):
         validate_sequence((GameSnapshot(1, 1), GameSnapshot(2, 2)))
+    with pytest.raises(ValueError, match="positive"):
+        validate_sequence((GameSnapshot(1, 0),))

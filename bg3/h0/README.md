@@ -244,8 +244,7 @@ Lua. No tests emulate engine timing or prove an installed SE version works.
 - [ ] For future command trials, establish capture-after-terminal-result timing,
   excluding queued old snapshots. Acceptance and callback start are insufficient.
 
-Resource, ability, participant and legality enrichment remains separate
-verified work. Keep unique live captures under one ignored/external session archive; record its
+Keep unique live captures under one ignored/external session archive; record its
 location, game/SE/code versions and retention condition in the results summary.
 Inspect anomalies before summarizing or retiring evidence; preserve unresolved
 examples rather than retaining duplicate raw bundles indefinitely.

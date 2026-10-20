@@ -44,6 +44,7 @@ def test_heuristic_second_wind_threshold_boundary() -> None:
     assert (
         agent.choose_action(_obs(fighter_hp=11.0), _mask((True, True, False, True))) == 0
     )
+    assert agent.choose_action(_obs(fighter_hp=1.0), _mask((True, True, False, True))) == 1
 
 
 def test_heuristic_uses_action_surge_without_actions_when_attack_illegal() -> None:

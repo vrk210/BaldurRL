@@ -24,8 +24,8 @@ from combat.tactical_env import (
 _FIGHTER_AC = 16
 _FIGHTER_ATTACK = 5
 _PRIORITIES = ("lowest_hp", "role")
-# The adaptive variant dives once the sturdiest front-rank enemy's HP divided by
-# our hit chance falls below this.
+# The adaptive variant holds while the sturdiest front-rank enemy's HP divided by
+# our hit chance is below this, and dives once it reaches it.
 _ADAPTIVE_DIVE_DURABILITY = 42.0
 _ADVANCE_MODES = ("never", "all", "adaptive")
 
@@ -50,10 +50,8 @@ class TacticalHeuristicConfig:
 
 @dataclass(frozen=True)
 class _Ally:
-    slot: int
     hp: int
     action: int
-    bonus: int
     deep: bool
 
     @property
@@ -109,7 +107,7 @@ class TacticalHeuristicAgent:
     def _ally(self, observation: np.ndarray, slot: int) -> _Ally:
         get = lambda field: self._value(observation, f"ally_{slot}_{field}")  # noqa: E731
         return _Ally(
-            slot=slot, hp=get("hp"), action=get("action_count"), bonus=get("bonus_action_count"),
+            hp=get("hp"), action=get("action_count"),
             deep=bool(get("deep")) if self.ranks else False,
         )
 

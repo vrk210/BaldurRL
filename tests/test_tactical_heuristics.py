@@ -80,9 +80,9 @@ def test_m6_hold_dive_and_adaptive_movement() -> None:
     assert choose(make_tactical_heuristic("m6", "hold"), env).startswith("TRIP_ENEMY_0")
     assert choose(make_tactical_heuristic("m6", "dive_all"), env) == "ADVANCE"
     adaptive = make_tactical_heuristic("m6", "adaptive")
-    brute.armor_class, brute.hp = 16, 26  # 26 / 0.5 = 52 hits-equivalent >= 42: dive
+    brute.armor_class, brute.hp = 16, 21  # 21 / 0.5 = 42, the threshold: dive
     assert choose(adaptive, env) == "ADVANCE"
-    brute.armor_class, brute.hp = 14, 20  # 20 / 0.6 = 33: hold
+    brute.hp = 20  # 40: hold
     assert choose(adaptive, env) != "ADVANCE"
     env.allies[1].deep = True  # commit: follow a partner who already dove
     assert choose(adaptive, env) == "ADVANCE"
