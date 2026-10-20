@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 from numpy.random import Generator
 
-from combat.abilities import M0_ABILITIES, TargetType
+from combat.abilities import ABILITY_COSTS
 from combat.actions import Action
 from combat.characters import Fighter, Goblin
 from combat.damage import DamageSpec
@@ -92,24 +92,19 @@ def test_damage_and_alive_boundaries() -> None:
 
 
 @pytest.mark.parametrize(
-    ("action", "costs", "target"),
+    ("action", "costs"),
     [
-        (Action.ATTACK, {Resource.ACTION: 1}, TargetType.ENEMY),
-        (Action.SECOND_WIND, {Resource.BONUS_ACTION: 1, Resource.SECOND_WIND: 1}, TargetType.SELF),
-        (Action.ACTION_SURGE, {Resource.ACTION_SURGE: 1}, TargetType.SELF),
+        (Action.ATTACK, {Resource.ACTION: 1}),
+        (Action.SECOND_WIND, {Resource.BONUS_ACTION: 1, Resource.SECOND_WIND: 1}),
+        (Action.ACTION_SURGE, {Resource.ACTION_SURGE: 1}),
     ],
 )
-def test_known_abilities_and_shared_costs(
-    action: Action, costs: dict[Resource, int], target: TargetType
-) -> None:
+def test_known_abilities_and_shared_costs(action: Action, costs: dict[Resource, int]) -> None:
     actor = fighter(hp=10)
-    spec = M0_ABILITIES[action]
-    assert spec.action is action
-    assert dict(spec.costs) == costs
-    assert spec.target is target
+    assert dict(ABILITY_COSTS[action]) == costs
     assert can_use_ability(actor, action)
     before = {resource: actor.resources.get(resource) for resource in costs}
-    actor.resources.spend(spec.costs)
+    actor.resources.spend(ABILITY_COSTS[action])
     assert all(actor.resources.get(resource) == before[resource] - amount for resource, amount in costs.items())
     assert not can_use_ability(actor, action)
 
@@ -119,9 +114,9 @@ def test_known_abilities_and_shared_costs(
     enemy.resources.set(Resource.BONUS_ACTION, 1)
     enemy.resources.set(Resource.SECOND_WIND, 1)
     assert not can_use_ability(enemy, Action.SECOND_WIND)
-    assert Action.END_TURN not in M0_ABILITIES
+    assert Action.END_TURN not in ABILITY_COSTS
     with pytest.raises(TypeError):
-        spec.costs[Resource.ACTION] = 2
+        ABILITY_COSTS[action][Resource.ACTION] = 2
 
 
 @pytest.mark.parametrize(

@@ -185,7 +185,6 @@ class TacticalTransitionModel:
         self.stage = env.stage
         self.env = env
         self.decisions = tuple(env.decisions)
-        self.action_count = len(self.decisions)
         self._end_turn = next(i for i, d in enumerate(self.decisions) if d.action is Action.END_TURN)
         self._order = env._turns().order
         self._ally_resources = [tuple(sorted(a.resources._amounts, key=lambda r: r.value)) for a in env.allies]

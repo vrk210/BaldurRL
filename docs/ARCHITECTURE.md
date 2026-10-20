@@ -37,7 +37,7 @@ evidence of live BG3 behavior. The checker reads three purpose prefixes:
 | `bg3/h0/Mods/BaldurRL_H0/ScriptExtender/Lua/Wire.lua` | supported | Versioned JSON wire representation and ready-marker publication. |
 | `bg3/h0/Mods/BaldurRL_H0/meta.lsx` | supported | config: BG3 module identity. |
 | `combat/__init__.py` | supported | Package marker; no entry point. |
-| `combat/abilities.py` | supported | Immutable ability costs and target kinds. |
+| `combat/abilities.py` | supported | Immutable tables of the resources each ability spends. |
 | `combat/actions.py` | supported | Semantic action identities; no execution. |
 | `combat/actors.py` | supported | Stable actor addresses and roster sides. |
 | `combat/characters.py` | supported | Character state and presets; no turn orchestration. |

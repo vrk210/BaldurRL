@@ -34,7 +34,7 @@ def m2_obs(base, f, e0, e1, sw, su, cl, a, b, round_number=1):
 
 
 def legal_mask(model, observation):
-    mask = np.zeros(model.action_count, dtype=np.bool_)
+    mask = np.zeros(len(model.decisions), dtype=np.bool_)
     mask[list(model.legal_actions(model.state_from_observation(observation)))] = True
     return mask
 

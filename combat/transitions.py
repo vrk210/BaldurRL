@@ -35,7 +35,7 @@ from typing import Protocol
 
 import numpy as np
 
-from .abilities import M2_ABILITIES
+from .abilities import ABILITY_COSTS
 from .actions import Action
 from .actors import ActorRef, Side
 from .characters import refresh_turn_resources
@@ -61,9 +61,6 @@ _STATUSES = tuple(Status)
 
 class TransitionModel(Protocol):
     """Exact one-decision dynamics for one encounter, as used by planners."""
-
-    stage: str
-    action_count: int
 
     def state_from_observation(self, observation: np.ndarray) -> State: ...
 
@@ -119,9 +116,7 @@ class RosterTransitionModel:
     """Exact transitions for the M0–M4 environments (fixed-policy enemies)."""
 
     def __init__(self, env: BaldurCombatEnv | StagedCombatEnv) -> None:
-        self.stage = env.stage
         self.decisions = tuple(env.decisions)
-        self.action_count = len(self.decisions)
         self.max_rounds = MAX_ROUNDS
         # A private roster used only as scratch input to the shared legality rules.
         self._roster = env._roster()
@@ -136,9 +131,9 @@ class RosterTransitionModel:
         self._enemy_base = _HEADER + _ALLY_WIDTH * self.n_allies
         self._costs = {
             action: tuple(
-                (1 + _RESOURCES.index(resource), amount) for resource, amount in spec.costs.items()
+                (1 + _RESOURCES.index(resource), amount) for resource, amount in costs.items()
             )
-            for action, spec in M2_ABILITIES.items()
+            for action, costs in ABILITY_COSTS.items()
         }
         self._refresh = tuple(
             tuple((1 + _RESOURCES.index(resource), amount) for resource, amount in ally.turn_refresh.items())
