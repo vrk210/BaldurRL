@@ -21,7 +21,7 @@ DOCS = {
 }
 ARTIFACT_SUFFIXES = {".json", ".jsonl", ".npz", ".zip", ".log"}
 STATUSES = {"supported", "verification-only"}
-ROW = re.compile(r"^\| `([^`]+)` \| ([\w-]+) \| (.+) \|$", re.M)
+ROW = re.compile(r"^\| `([^`]+)` \| ([^|]+?) \| (.+) \|$", re.M)
 LINK = re.compile(r"\[[^\]]*\]\(([^\s)]+)(?:\s+[^)]*)?\)")
 
 
