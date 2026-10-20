@@ -198,5 +198,6 @@ Resource effects assume fresh encounter-start pools.
 
 Sources, per-policy audits, full kill orders, inventory and provenance:
 tag `archive/simulator-research-2026-10-15`, paths `evaluation/sim_mining.py`
-and `evaluation/sim_mining_summary.json`. The findings and unresolved questions
-are retained in [RESULTS.md](RESULTS.md).
+and `evaluation/sim_mining_summary.json`. The study's full record, with its
+unresolved questions, is history entry H17
+(`git show origin/history:HISTORY.md`).

@@ -12,7 +12,7 @@ fields: those fields reset before the ally next acts. Afterstate values zero
 all allies' per-turn fields and train only on END_TURN rows. EnsembleValue
 averages logits. These are frontier estimates, not exact combat values; lower
 validation loss alone does not establish better play. Evaluation must use fresh
-paired encounters. Measured comparisons belong in docs/RESULTS.md.
+paired encounters. Measured comparisons are cached in docs/RESULTS.md.
 
 """
 
