@@ -605,10 +605,10 @@ def verdict(*, base: WorkerReport, head: WorkerReport, base_changes: dict[str, s
 def outcome_message(result: Verdict) -> str:
     """One line saying why the comparison failed, or what the PR must still explain."""
     if not result.passed:
-        reasons = [f"{len(items)} {label}" for label, items in (
+        reasons = [f"{label}: {len(items)}" for label, items in (
             ("scenario errors", result.scenario_errors), ("fingerprint mismatches", result.mismatches),
             ("changed statements that never ran", result.unexecuted_statements)) if items]
-        return f"Comparison failed: {', '.join(reasons)}; see the report above."
+        return f"Comparison failed ({'; '.join(reasons)}); see the report above."
     if result.import_time_changes or result.removed_definitions or result.not_compared:
         return "Comparison passed. Say in the PR how each listed import-time change, removed definition and file was verified."
     return "Comparison passed."
