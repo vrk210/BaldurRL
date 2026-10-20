@@ -8,21 +8,20 @@ This is the single inventory of tracked files. CI checks that every tracked
 file except the agreed documents has exactly one row and that every row names a
 tracked file. `supported` means an ongoing operational or research interface.
 `verification-only` means a test, mock, or independent oracle; it is not
-evidence of live BG3 behavior. The checker reads four purpose prefixes:
+evidence of live BG3 behavior. The checker reads three purpose prefixes:
 - `CLI:` on every Python file outside `tests/` with a `__main__` block;
 - `fixture: tests/<reader>.py` or `fixture: scripts/<reader>.py`, naming the
   test or script that reads it, or
-  `config:` on every committed `.json`, `.jsonl`, `.npz`, `.zip` or `.log` file;
-- `private:<name>` for a recorded private-name import that a later PR removes.
+  `config:` on every committed `.json`, `.jsonl`, `.npz`, `.zip` or `.log` file.
 
 | Path | Status | Entry point / responsibility |
 | --- | --- | --- |
 | `.gitignore` | supported | Keeps generated output, virtual environments and editor settings out of Git. |
-| `.github/workflows/repository.yml` | supported | Inventory/lint checks and the full Windows test suite. |
+| `.github/workflows/repository.yml` | supported | Inventory/lint checks, the full Windows test suite, and the behavior comparison for `Behavior: preserve` PRs. |
 | `.github/workflows/windows-harness.yml` | supported | Offline Windows harness verification; no game execution. |
 | `agents/__init__.py` | supported | Public baseline-policy re-exports; no CLI. |
 | `agents/expectimax_agent.py` | supported | Exact chance search with bounded turn/decision horizons. |
-| `agents/heuristic_agent.py` | supported | Supported stage heuristics and threat-aware baseline. Cleanup debt until simplification: private:_new_fighter. |
+| `agents/heuristic_agent.py` | supported | Supported stage heuristics and threat-aware baseline. |
 | `agents/policy.py` | supported | Model-independent policy interface. |
 | `agents/random_agent.py` | supported | Seeded random legal-action baseline. |
 | `agents/rollout_agent.py` | verification-only | Sampling planner reference and reconstruction/isolation baseline; exposed by evaluation.evaluate. |
@@ -48,10 +47,10 @@ evidence of live BG3 behavior. The checker reads four purpose prefixes:
 | `combat/mechanics.py` | supported | Shared attack, damage, healing and resource effects. |
 | `combat/resources.py` | supported | Nonnegative resource pools and atomic affordability/spending. |
 | `combat/rolls.py` | supported | Advantage/disadvantage roll mechanics. |
-| `combat/simulation.py` | supported | Validated reconstruction without access to live RNG. Cleanup debt until simplification: private:_enemy_profile. |
-| `combat/stages.py` | supported | M1A–M4 coordinators and M0–M6 factory/metadata. Cleanup debt until simplification: private:_advance_to_next_turn, private:_new_fighter. |
-| `combat/table_tactical_transitions.py` | supported | Default M5/M6 exact planner dynamics; checked against replay. Cleanup debt until simplification: private:_dice_sum_distribution. |
-| `combat/tactical_env.py` | supported | M5/M6 sampling, turns, observations and episode outcomes. Cleanup debt until simplification: private:_new_fighter. |
+| `combat/simulation.py` | supported | Validated reconstruction without access to live RNG. |
+| `combat/stages.py` | supported | M1A–M4 coordinators and M0–M6 factory/metadata. |
+| `combat/table_tactical_transitions.py` | supported | Default M5/M6 exact planner dynamics; checked against replay. |
+| `combat/tactical_env.py` | supported | M5/M6 sampling, turns, observations and episode outcomes. |
 | `combat/tactical_transitions.py` | supported | Validated observation decoding used by the production table model; independent replay dynamics retained for verification. |
 | `combat/tactics.py` | supported | M5/M6 conditions, reach, enemy policies and turn lifecycle. |
 | `combat/transitions.py` | supported | Planner protocol, registry and M0–M4 exact dynamics. |
@@ -70,7 +69,7 @@ evidence of live BG3 behavior. The checker reads four purpose prefixes:
 | `integration/commands.py` | supported | Model-independent commands, targets, legality evidence and result states. |
 | `integration/encounter_trial.py` | supported | CLI: python -m integration.encounter_trial; evidence analysis; missing live facts remain inconclusive. |
 | `integration/inspect.py` | supported | CLI: python -m integration.inspect; passive record inspection. |
-| `integration/mock_executor.py` | verification-only | CLI: python -m integration.mock_executor; synthetic command acknowledgements. Cleanup debt until simplification: private:_publish, private:_read. |
+| `integration/mock_executor.py` | verification-only | CLI: python -m integration.mock_executor; synthetic command acknowledgements. |
 | `integration/mock_h0.py` | verification-only | CLI: python -m integration.mock_h0; synthetic passive collector. |
 | `integration/publish.py` | supported | CLI: python -m integration.publish; ready-marker record publication. |
 | `integration/reader.py` | supported | Ordered passive-record reader; preserve compatibility. |
@@ -85,6 +84,7 @@ evidence of live BG3 behavior. The checker reads four purpose prefixes:
 | `requirements-harness-test.txt` | supported | Pinned minimal dependencies for harness capture and its offline tests. |
 | `requirements-quality.txt` | supported | Pinned lint tool used by repository CI. |
 | `scripts/check_repository.py` | supported | CLI: python scripts/check_repository.py; inventory, docs and artifact checks. |
+| `scripts/compare_refactor.py` | verification-only | CLI: python scripts/compare_refactor.py --base COMMIT; fixed-seed semantic equivalence across revisions. |
 | `scripts/windows/bootstrap-harness.ps1` | supported | CLI: scripts/windows/bootstrap-harness.ps1; isolated harness environment. |
 | `scripts/windows/package-h0.ps1` | supported | CLI: scripts/windows/package-h0.ps1; Divine packaging and source manifest. |
 | `tests/m2_oracle.py` | verification-only | pytest verification: m2 oracle. |

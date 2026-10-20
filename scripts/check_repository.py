@@ -73,7 +73,7 @@ def check(root: Path, tracked: set[str]) -> list[str]:
             for node in ast.walk(tree):
                 if isinstance(node, ast.ImportFrom):
                     for alias in node.names:
-                        if alias.name.startswith("_") and f"private:{alias.name}" not in purpose:
+                        if alias.name.startswith("_"):
                             errors.append(f"Private-name import {alias.name} in {name}:{node.lineno}")
             cli = any(isinstance(node, ast.If) and "__main__" in ast.unparse(node.test) for node in tree.body)
             if cli and "CLI:" not in purpose:

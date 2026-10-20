@@ -7,7 +7,7 @@ from .characters import Rank, Role, TacticalEnemy, TacticalFighter
 from .damage import DamageSpec
 from .env import BaldurCombatEnv
 from .resources import Resource
-from .stages import StagedCombatEnv, _enemy_profile, make_env
+from .stages import StagedCombatEnv, enemy_profile, make_env
 from .tactical_env import (
     N_ALLIES,
     N_ENEMIES,
@@ -77,7 +77,7 @@ def simulation_from_observation(
         enemy.armor_class = fields[prefix + "ac"]
         enemy.attack_bonus = fields[prefix + "attack_bonus"]
         die = fields[prefix + "damage_die_size"]
-        profile = _enemy_profile(stage)
+        profile = enemy_profile(stage)
         stats = (
             (enemy.max_hp, profile["hp"]),
             (enemy.armor_class, profile["ac"]),

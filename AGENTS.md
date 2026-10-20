@@ -107,8 +107,8 @@ def run_chunk(stage: str, spec: dict, seeds: list[int]) -> list[dict]: ...  # wh
   silently catch programming errors; catch broad exceptions only at process
   boundaries, and record the failure there.
 - **Imports and output:** production code doesn't import `_private` names
-  from other modules; CI checks this outside `tests/`, apart from the
-  exemptions the inventory intro lists. Library code doesn't print.
+  from other modules; CI checks this outside `tests/`. Library code doesn't
+  print.
 - **Determinism:** randomness comes from a caller-supplied
   `numpy.random.Generator`.
 - **Paths** come from arguments and default to `runs/`.
@@ -134,7 +134,10 @@ Test behavior in practice, not implementation:
 
 For each behavior, keep the fewest tests that would catch a plausible
 regression. Don't test structure, mocks, constants or argument wiring. A
-behavior-preserving refactor leaves the tests unchanged.
+behavior-preserving refactor puts a `Behavior: preserve` line in the PR body,
+and CI then compares fixed-seed fingerprints against the base commit with
+`scripts/compare_refactor.py`. The refactor may then delete or rewrite tests
+that checked implementation, with the reason stated in the PR.
 
 ## Evidence
 
