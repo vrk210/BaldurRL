@@ -139,7 +139,7 @@ A behavior-preserving refactor puts a line reading exactly `Behavior: preserve`
 in the PR body. CI then runs `scripts/compare_refactor.py` against the base
 commit. It fails if a scenario's result changes or errors, or if a changed
 statement never ran in the scenarios. It lists what it can't check: import-time
-changes, definitions and files removed whole, and changed files other than
+changes, definitions and files removed whole whose code never ran, and changed files other than
 tests, Markdown and the Python in `agents/`, `combat/`, `evaluation/`,
 `integration/`, `train.py` and `value_training.py`. Say in the PR how each was
 verified. The refactor may then delete or rewrite tests that checked

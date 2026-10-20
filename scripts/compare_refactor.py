@@ -36,9 +36,10 @@ changes must run on the working tree; otherwise the check fails and names the
 statement. Three kinds of change are listed instead, for the PR to say how each
 was verified:
 - statements that run at import (module and class bodies, def and class lines
-  with their decorators and defaults), which run whether or not their effect
-  is observed;
-- definitions and files the diff removes whole whose code never ran on the base,
+  with their decorators and defaults, and a whole function whose body starts
+  on its def line), which run whether or not their effect is observed;
+- definitions and files the diff removes whole whose code, apart from what
+  runs at import, never ran on the base,
   so their removal changes nothing the scenarios run; whether anything else
   called them is a question for `git grep`. Removed code that did run, for
   example a function moved elsewhere, is checked like any other change;
@@ -290,9 +291,11 @@ def integration(*, scratch: Path, root: Path) -> dict[str, Any]:
     reader = RecordDirectoryReader(scratch / "records")
     records = reader.read_all()
     # A fixed collector tree, so runbook or Lua edits don't change what this scenario observes.
-    collector = scratch / "collector" / "bg3" / "h0" / "BootstrapServer.lua"
-    collector.parent.mkdir(parents=True)
-    collector.write_text("-- fixed collector source\n", encoding="utf-8")
+    # It holds a Lua and a non-Lua file, so a change to which files are hashed still shows.
+    collector = scratch / "collector" / "bg3" / "h0"
+    collector.mkdir(parents=True)
+    (collector / "BootstrapServer.lua").write_text("-- fixed collector source\n", encoding="utf-8")
+    (collector / "README.md").write_text("Fixed runbook.\n", encoding="utf-8")
     with SessionRunner(scratch / "capture", scratch / "archive", code_revision="fixed",
                        repository=scratch / "collector") as runner:
         sessions = runner.poll()
@@ -402,9 +405,20 @@ def is_string_only(node: ast.AST) -> bool:
     return isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)
 
 
+def shares_def_line(function: ast.FunctionDef | ast.AsyncFunctionDef, text: list[str]) -> bool:
+    """True if the body starts on the line its header ends on, as in `def f(x): return x`."""
+    body = function.body[0]
+    line = text[body.lineno - 1]
+    return body.col_offset != len(line) - len(line.lstrip())
+
+
 def statements(source: str) -> list[Statement]:
-    """Every executable statement in source."""
-    found = []
+    """Every executable statement in source.
+
+    A function whose body starts on its def line is one statement: line tracing
+    can't tell its body running from its definition.
+    """
+    text, found = source.splitlines(), []
 
     def visit(node: ast.AST, prefix: str, owner: str, at_import: bool) -> None:
         for child in ast.iter_child_nodes(node):
@@ -416,7 +430,9 @@ def statements(source: str) -> list[Statement]:
                 visit(child, prefix, owner, at_import)
                 continue
             first = min([child.lineno, *(item.lineno for item in getattr(child, "decorator_list", ()))])
-            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)) and shares_def_line(child, text):
+                found.append(Statement(first, child.end_lineno, prefix + child.name, at_import))
+            elif isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                 name = prefix + child.name
                 found.append(Statement(first, child.end_lineno, name, at_import, defines=True))
                 if isinstance(child, ast.ClassDef):
@@ -450,7 +466,7 @@ def changed_statements(source: str, lines: set[int]) -> set[Statement]:
 
 
 def split_removed_definitions(source: str, lines: set[int], executed: set[int]) -> tuple[list[str], set[Statement]]:
-    """Base-side definitions the diff removes as dead code, and the changed statements outside them.
+    """Base-side definitions the diff removes whose code the scenarios never ran, and the changed statements outside them.
 
     A definition that runs at import (the module, a module-level def or class,
     a method) counts as removed when the diff changes every line of it and none
@@ -566,7 +582,7 @@ def run_workers(script: str, trees: dict[str, tuple[Path, set[str]]], directory:
 
 def base_side_changes(sources: dict[str, str], lines: dict[str, set[int]],
                       base: WorkerReport) -> tuple[list[str], dict[str, set[Statement]]]:
-    """Per base file, the definitions removed as dead code and the changed statements to check on the base."""
+    """Per base file, the definitions removed whose code never ran, and the changed statements to check on the base."""
     removed, changes = [], {}
     for path in sorted(lines):
         names, changes[path] = split_removed_definitions(sources[path], lines[path], base.executed.get(path, set()))
@@ -574,8 +590,16 @@ def base_side_changes(sources: dict[str, str], lines: dict[str, set[int]],
     return removed, changes
 
 
+def base_files_to_trace(sources: dict[str, str], lines: dict[str, set[int]]) -> set[str]:
+    """Base files to trace, including those whose changes all sit in definitions the diff removes whole.
+
+    Whether that code ran decides whether it counts as removed.
+    """
+    return files_to_trace({path: changed_statements(sources[path], lines[path]) for path in lines})
+
+
 def files_to_trace(changes: dict[str, set[Statement]]) -> set[str]:
-    """Files holding a changed statement the verdict checks; import-time statements are listed, not traced."""
+    """Files holding a changed statement that runs after import; import-time statements are listed, not traced."""
     return {path for path, changed in changes.items() if any(not statement.runs_at_import for statement in changed)}
 
 
@@ -683,9 +707,8 @@ def main() -> int:
         base_sources = {path: (base_tree / path).read_text(encoding="utf-8") for path in base_lines}
         head_changes = {path: changed_statements((root / path).read_text(encoding="utf-8"), lines)
                         for path, lines in head_lines.items()}
-        traced = {path: changed_statements(base_sources[path], lines) for path, lines in base_lines.items()}
         workers = run_workers(str(Path(__file__).resolve()),
-                              {"base": (base_tree, files_to_trace(traced)),
+                              {"base": (base_tree, base_files_to_trace(base_sources, base_lines)),
                                "head": (root, files_to_trace(head_changes))}, Path(directory))
     removed, base_changes = base_side_changes(base_sources, base_lines, workers["base"])
     result = verdict(base=workers["base"], head=workers["head"], base_changes=base_changes,

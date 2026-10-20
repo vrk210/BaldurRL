@@ -5,7 +5,7 @@ import textwrap
 import pytest
 
 from scripts.compare_refactor import (
-    Statement, WorkerReport, base_side_changes, changed_lines, changed_statements, declares_behavior_preserved, outcome_message,
+    Statement, WorkerReport, base_files_to_trace, base_side_changes, changed_lines, changed_statements, declares_behavior_preserved, outcome_message,
     run_workers, split_removed_definitions, verdict, with_executed_lines,
 )
 
@@ -91,7 +91,8 @@ def test_comments_and_blank_lines_inside_a_function_change_nothing():
 
 def test_a_definition_is_removed_only_when_all_of_it_goes_and_none_of_it_ran():
     method = set(range(15, 19))  # all of Thing.method, nested def included
-    assert split_removed_definitions(SOURCE, method, executed=set()) == (["Thing.method"], set())
+    import_time = {12, 13, 15}  # the class line, its body and the def line run when the module loads
+    assert split_removed_definitions(SOURCE, method, executed=import_time) == (["Thing.method"], set())
     names, remaining = split_removed_definitions(SOURCE, method, executed={18})  # it ran: removing it is a change
     assert names == [] and {statement.owner for statement in remaining} >= {"Thing.method"}
     names, remaining = split_removed_definitions(SOURCE, {17}, executed=set())  # one line of inner
@@ -102,19 +103,27 @@ def test_a_definition_is_removed_only_when_all_of_it_goes_and_none_of_it_ran():
     assert names == []
 
 
+def test_a_body_on_its_def_line_is_an_import_time_change_not_a_removal():
+    source = "def pick(x): return x * 2\n\n\ndef go():\n    return pick(3)\n"
+    assert base_files_to_trace({"m.py": source}, {"m.py": {1}}) == set()  # line 1 runs at import either way
+    names, remaining = split_removed_definitions(source, {1}, executed=set())
+    assert names == [] and {(statement.owner, statement.runs_at_import) for statement in remaining} == {("pick", True)}
+
+
 def test_a_deleted_file_is_removed_whole_only_if_none_of_it_ran():
     every_line = set(range(1, len(SOURCE.splitlines()) + 1))
     assert split_removed_definitions(SOURCE, every_line, executed=set()) == (["<module>"], set())
-    names, _ = split_removed_definitions(SOURCE, every_line, executed={7})  # top ran: only dead code is removed
+    names, _ = split_removed_definitions(SOURCE, every_line, executed={7})  # top ran: only what never ran is removed
     assert names == ["Documented", "Thing", "guarded"]
 
 
-def test_each_file_is_judged_by_the_lines_its_base_worker_ran():
+def test_each_file_is_judged_by_its_own_executed_lines():
     lines = {"a.py": set(range(15, 19)), "b.py": set(range(15, 19))}  # Thing.method removed from both
-    base = WorkerReport({}, {}, {"a.py": {18}})  # it ran in a.py only
+    assert base_files_to_trace({"a.py": SOURCE, "b.py": SOURCE}, lines) == {"a.py", "b.py"}  # to see whether it ran
+    base = WorkerReport({}, {}, {"b.py": {18}})  # it ran in b.py only
     removed, changes = base_side_changes({"a.py": SOURCE, "b.py": SOURCE}, lines, base)
-    assert removed == ["b.py::Thing.method"]
-    assert changes["b.py"] == set() and {statement.owner for statement in changes["a.py"]} >= {"Thing.method"}
+    assert removed == ["a.py::Thing.method"]
+    assert changes["a.py"] == set() and {statement.owner for statement in changes["b.py"]} >= {"Thing.method"}
 
 
 def test_hunks_map_to_lines_on_each_side_with_renames_deletions_and_additions():
@@ -140,6 +149,7 @@ rename to combat/new.py
 +++ b/combat/new.py
 @@ -5 +5 @@
 diff --git a/combat/created.py b/combat/created.py
+new file mode 100644
 --- /dev/null
 +++ b/combat/created.py
 @@ -0,0 +1,2 @@
@@ -153,7 +163,7 @@ diff --git a/combat/notes.txt b/combat/notes.txt
 """
     base, head = changed_lines(diff)
     assert base == {"combat/a.py": {3, 10, 11, 30}, "combat/removed.py": {1, 2}, "combat/old.py": {5},
-                    "combat/__init__.py": set()}  # an emptied file has no hunk but is still deleted
+                    "combat/__init__.py": set()}  # an empty file's deletion has no hunk
     assert head == {"combat/a.py": {3, 19, 20, 21, 32}, "combat/new.py": {5}, "combat/created.py": {1, 2}}
 
 
