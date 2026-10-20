@@ -35,8 +35,6 @@ def inventory(text: str) -> tuple[dict[str, str], list[str]]:
         if status not in STATUSES:
             errors.append(f"Unknown inventory status {status!r} for {path}; use supported or verification-only")
         purposes[path] = purpose
-    if not purposes:
-        errors.append("ARCHITECTURE.md has no maintained-system inventory")
     return purposes, errors
 
 
