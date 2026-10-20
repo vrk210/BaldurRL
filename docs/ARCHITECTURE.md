@@ -10,7 +10,8 @@ tracked file. `supported` means an ongoing operational or research interface.
 `verification-only` means a test, mock, or independent oracle; it is not
 evidence of live BG3 behavior. The checker reads four purpose prefixes:
 - `CLI:` on every Python file outside `tests/` with a `__main__` block;
-- `fixture: <reader>.py`, naming the test or script that reads it, or
+- `fixture: tests/<reader>.py` or `fixture: scripts/<reader>.py`, naming the
+  test or script that reads it, or
   `config:` on every committed `.json`, `.jsonl`, `.npz`, `.zip` or `.log` file;
 - `private:<name>` for a recorded private-name import that a later PR removes.
 
