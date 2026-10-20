@@ -1,4 +1,9 @@
-"""Counts for the resources used by M0 abilities."""
+"""Shared resource counts, independent of ability effects and turn scheduling.
+
+Missing resources read as zero. Counts/costs/gains are nonnegative; an
+unaffordable spend changes no count. Per-turn refresh sets the configured
+resources rather than accumulating them. Encounter charges do not refresh.
+"""
 
 from dataclasses import dataclass, field
 from enum import Enum, auto

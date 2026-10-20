@@ -1,10 +1,10 @@
 # Simulator results, M0–M6
 
-Measured results of the simulator stages. Conclusions drawn from them live next
-to the decisions they inform:
+Measured results of the simulator stages, with the planning conclusions drawn
+from them [below](#planning-conclusions). Conclusions that a current decision
+rests on live next to that decision:
 
 - The simulator's role: [ARCHITECTURE.md](ARCHITECTURE.md#stage-progression).
-- Planning conclusions: [EXPECTIMAX_PLANNING.md](EXPECTIMAX_PLANNING.md#conclusions-and-when-to-revisit).
 - Evaluation rules: `AGENTS.md` and `evaluation/seeds.py`.
 - BG3 tactical hypotheses: [GAME_KNOWLEDGE.md](GAME_KNOWLEDGE.md#simulator-tactical-evidence-hypotheses-for-bg3).
 
@@ -86,7 +86,7 @@ deterministic masked prediction. Results are on held-out seeds 3000–3999
 
 ### M4: expectimax with exact chance nodes
 
-Method details are in [EXPECTIMAX_PLANNING.md](EXPECTIMAX_PLANNING.md). Test
+Method details are in [the planner contract](../agents/expectimax_agent.py). Test
 seeds 10000–14999 were used only for these final runs (n=5,000 each). Paired
 differences are against the threat-aware heuristic.
 
@@ -114,7 +114,7 @@ differences are against the threat-aware heuristic.
 
 ## M5/M6: decision-rich stages
 
-The rules are specified in [STAGES_SPEC.md](STAGES_SPEC.md). They are simulator
+The rules are specified in [the stage contracts](../combat/tactical_env.py). They are simulator
 choices, not BG3 rules.
 
 **Tuning.** The first design (v1) made M5 too easy: naive 75.9%, and Trip every
@@ -266,6 +266,26 @@ reasons:
 
 The conclusion is "this configuration loses", not "expert iteration can't work".
 The code and full review are on branch `archive/m5-m6-guided-planning`.
+
+### Planning conclusions
+
+- **Search helped only where exact enumeration came before the leaf.** On M4,
+  exact enemy phases plus a learned leaf beat every baseline (+3.0 points at
+  depth 2). On M5/M6 the replay model made enemy-phase search too slow; the
+  table model removes most of the per-transition cost but not the branching.
+- **Search exploits value errors.** The race leaf on M4 (48%), 32-rollout
+  estimates on M5 (−21 points) and learned M5/M6 leaves with a fixed 3-point
+  deviation margin (−15 and −19 points) all lost to the policy they extended.
+  When a planner extends a baseline policy, gate deviations on statistical
+  evidence, not a fixed margin.
+- **Select on paired play, not validation loss.** Lower-loss M4 value networks
+  played worse, and search-value or λ-return targets never beat outcome targets.
+- **Revisit M5/M6 learned-leaf planning** only with these fixes: one planner
+  configuration for collection and evaluation, pooled training data,
+  significance-gated deviations, and breadth-first budget use before horizons
+  beyond one decision.
+- **For BG3**, planning needs a transition model of the real game, which needs
+  logged fights first.
 
 ## Retired simulator experiments
 

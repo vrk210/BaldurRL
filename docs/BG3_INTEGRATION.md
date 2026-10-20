@@ -108,7 +108,7 @@ One record directory represents one collector session / sequence namespace. For 
 
 `reconstruct_intervals()` creates a `SnapshotInterval(before, events, after)` between consecutive snapshots. An interval is **not necessarily one decision**. Trailing events after the last snapshot remain in the raw stream and are not placed in a completed interval. `controlled_action()` checks only ability-use events whose `actor_id` matches the requested entity. Multiple events with the same non-null `story_action_id` are treated as one attempted action; a targeted event is preferred over a position event, which is preferred over a generic event. Distinct IDs, multiple events without an ID, or conflicting target and position events raise `AmbiguousActionError`; no match returns `None`. Raw interval events are preserved. This correlation rule needs live verification. It does not infer rewards, legal actions, or policy labels.
 
-**IMPLEMENTED (offline H0):** schema, serialization/parser, sequence-aware directory reader, interval reconstruction, inspection CLI, synthetic fixture, passive Script Extender Lua source mod, documented Osiris subscriptions, conservative snapshot probes, and completion-aware file publisher. **LIVE-UNVERIFIED / WINDOWS:** mod packaging/loading, actual API signatures/availability, output paths, event ordering, and snapshot completeness. Resource/owned-ability/participant enumeration, legality, and action execution remain unimplemented. Spell IDs are captured only from callbacks. See the [collector installation/run guide and concise live checklist](../bg3/h0/README.md); all live-verification checklist items below remain open.
+**IMPLEMENTED (offline H0):** schema, serialization/parser, sequence-aware directory reader, interval reconstruction, inspection CLI, synthetic fixture, passive Script Extender Lua source mod, documented Osiris subscriptions, conservative snapshot probes, and completion-aware file publisher. **LIVE-UNVERIFIED / WINDOWS:** mod packaging/loading, actual API signatures/availability, output paths, event ordering, and snapshot completeness. Resource/owned-ability/participant enumeration, legality, and action execution remain unimplemented. Spell IDs are captured only from callbacks. See the [collector installation/run guide and concise live checklist](../bg3/h0/README.md); the runbook records all pending live-verification work.
 
 ## Python semantic command protocol
 
@@ -333,67 +333,46 @@ confirmation is clearly labeled and is not evidence of actual game execution.
 
 The [Windows first-session runbook](../bg3/h0/README.md#first-windows-session) connects static preflight, session capture/archival, read-only actor probes, and bounded encounter-trial analysis. These tools preserve this v1 contract and do not establish live legality or execute actions. Real traces should become conformance fixtures for supported simulator mechanics; new invented mechanics and open-ended PPO sweeps are not prerequisites for validating the live interface.
 
-## Windows live-verification checklist
+## Windows verification and future execution path
 
-### Entity/state
+The sole installation, capture and live-verification checklist is in the
+[H0 runbook](../bg3/h0/README.md#first-windows-session). It includes entity,
+resource, ability, ordering, legality and file-bridge checks. Unknown facts stay
+unknown until those checks establish their meaning; static/offline success does
+not establish game behavior.
 
-- [ ] Dump host character component names.
-- [ ] Dump one Goblin/enemy component names.
-- [ ] Compare Osiris HP/max HP with ECS values.
-- [ ] Locate runtime armor class.
-- [ ] Verify alive/dead/downed representation.
+Decision (2026-10-09): the first execution experiment uses the normal client
+UI. Script Extender client keyboard injection is used where it reproduces the
+human interaction, and Windows keyboard/mouse input is the fallback for
+targeting and confirmation. Neither path has been demonstrated, and no
+executor exists. Revisit if a live input trial or a documented,
+rule-respecting public submission API supplies new evidence.
 
-### Resources
+- [Osi.UseSpell][exec-use-spell] bypasses player preconditions, including spell
+  ownership/resource availability. It is unsuitable as the ordinary-action
+  executor. This does not prove all casts are free or all targets are accepted.
+- Internal cast-request arrays are exposed and [Brawl][exec-brawl] shows queue
+  writes; that is not a supported, validated public action API. Do not fabricate
+  requests or infer safe lifetimes/validation from mapped structure names.
+- [SE client input][exec-input] exposes key injection; focus, bindings, UI routing,
+  target selection and observed completion still require live tests.
+  [Windows SendInput][exec-windows] is the fallback, with the same evidence needs.
+- Noesis UI command wrappers and native AI delegation remain research leads;
+  no verified semantic ability/target executor was identified.
 
-- [ ] Discover exact Action resource identifier.
-- [ ] Discover exact Bonus Action identifier.
-- [ ] Inspect movement resource.
-- [ ] Inspect spell-slot representation.
-- [ ] Determine how Second Wind availability is represented.
-- [ ] Determine how Action Surge availability is represented.
+The inspected SE revision was `91abbf230d02faa2b093d0a458d9caf6d1494901`.
+Record the installed game/SE versions; pinned source is not evidence about a
+particular binary. Before starting execution work, read
+`docs/BG3_ACTION_EXECUTION.md` in tag `archive/simulator-research-2026-10-15`.
+It holds:
 
-### Abilities
-
-- [ ] Dump Fighter SpellBook.
-- [ ] Identify Basic Attack ability ID.
-- [ ] Identify Second Wind ability ID.
-- [ ] Identify Action Surge ability ID.
-- [ ] Compare HasSpell / SpellBook / visible UI abilities.
-
-### Combat/event ordering
-
-- [ ] Record CombatStarted.
-- [ ] Record EnteredCombat.
-- [ ] Record TurnStarted / TurnEnded.
-- [ ] Record CombatRoundStarted.
-- [ ] Record UsingSpell.
-- [ ] Record UsingSpellOnTarget.
-- [ ] Record AttackedBy.
-- [ ] Record MissedBy.
-- [ ] Record CriticalHitBy.
-- [ ] Record Died.
-- [ ] Record CombatEnded.
-- [ ] Inspect event ordering.
-- [ ] Inspect StoryActionID correlation.
-
-### Legality
-
-- [ ] Compare candidate actions to actual enabled UI actions.
-- [ ] Test CanCastSpellOnEnemyInSameCombat.
-- [ ] Identify range restrictions.
-- [ ] Identify line-of-sight restrictions.
-- [ ] Identify status restrictions.
-
-### File bridge
-
-- [ ] Write a test JSON file with Ext.IO.SaveFile.
-- [ ] Read it from Python.
-- [ ] Determine actual Script Extender output path.
-- [ ] Test repeated writes.
-- [ ] Test sequence numbering.
-- [ ] Test whether temp-file + rename is needed for safe reads.
-- [ ] Measure reasonable polling latency for a turn-based game.
-- [ ] Verify capture-after-terminal-result coordination, including queued old snapshots.
+- the seven-step live trial plan and its pass/fail criteria: one valid
+  autonomous attack, the same resource cost as a human attack, rejection of an
+  invalid attack, and no blind retries;
+- read-only Lua console snippets for tracing cast requests on the server and
+  input bindings on the client, which `!baldurrl_inspect` doesn't cover;
+- the open questions only the game can answer;
+- the request-layout analysis and the reference index.
 
 ## Harness milestones
 
@@ -420,3 +399,11 @@ Later stages, described here only:
 - **H4 — BG3-backed Gymnasium adapter.**
 
 The schema is designed so a future demonstration record can be assembled as `snapshot_before + candidate/legal decisions + human chosen action + outcome events + snapshot_after`. This can support behavior cloning, DAgger-style human correction, and simulator/BG3 validation later. The Python H0 tools do not assemble demonstrations or verify live event semantics.
+
+[exec-use-spell]: https://docs.baldursgate3.game/index.php?title=UseSpell&oldid=2261
+
+[exec-brawl]: https://github.com/tinybike/Brawl/blob/1ac3c7c1a6bc01cdc21cb9ec8a0f857210f0ef31/Brawl/Mods/Brawl/ScriptExtender/Lua/Server/Actions.lua#L218-L315
+
+[exec-input]: https://github.com/Norbyte/bg3se/blob/91abbf230d02faa2b093d0a458d9caf6d1494901/BG3Extender/Lua/Libs/ClientInput.inl#L6-L53
+
+[exec-windows]: https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendinput

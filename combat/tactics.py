@@ -1,8 +1,36 @@
-"""M5/M6 combat rules: roles, conditions, reach, enemy behavior, opportunity attacks.
+"""Shared M5/M6 simulator rules; tactical_env coordinates episodes.
 
-Every rule here is a SIMULATOR CHOICE specified in docs/STAGES_SPEC.md (M5 and
-M6 sections), not a verified BG3 rule. Callers supply all randomness, decide
-legality through ``combat.legality.tactical_legal_mask``, and coordinate turns.
+Every number, trigger and duration here is a simulator choice. Prone gives
+all allied melee attacks advantage and the prone enemy's own attacks (including
+opportunity attacks) disadvantage; healing ignores it. It ends after that
+enemy's next turn. Dodge gives attacks against that ally disadvantage until
+its next turn starts. Multiple sources do not stack; advantage and disadvantage
+cancel to one normal d20. roll helpers retain every drawn die in diagnostics.
+Trip always rolls NORMAL against AC, with natural 1/20 rules, no damage and no
+extra critical effect. Attack, Cleave and Trip record last_attacker even on a
+miss; opportunity attacks do not. Dead entities have no condition effects.
+
+A Healer with charges heals a living enemy (including itself) at <= half max
+HP, choosing most missing HP then lowest slot; healing is capped. Otherwise it
+attacks. WEAKEST chooses lowest current ally HP then slot; RETALIATE chooses its
+living last attacker or WEAKEST; RANDOM draws once among living allies only if
+more than one survives. Targeting draw precedes d20(s) and damage, or heal dice.
+All enemy roles can attack any ally regardless of rank.
+
+M6 enemies have fixed front Brute/back Archer+Healer ranks. Allies start at LINE
+and may move one-way to DEEP. A living target is reachable if front, ally deep,
+or no living front enemy remains. Cleave fixes its reachable target set before
+its first roll; killing the front mid-Cleave does not add back targets. An
+Archer has disadvantage while any ally is deep or the front is broken.
+
+ADVANCE requires Movement, line position, a living front and back enemy. Unless
+Disengaged, living front enemies with Reaction attack the mover in slot order,
+spending Reaction and ignoring targeting policy; stop once the mover dies. A
+survivor becomes deep. DISENGAGE costs Action, needs Movement and the same
+geometry, and cannot repeat while active. It suppresses Advance reactions and
+ends at turn end. Ally turn start refreshes Action/Bonus Action and M6 Movement,
+ends Dodge and Disengaged; enemy turn start refreshes Action and M6 Reaction.
+Own-turn death is a turn boundary; the environment advances or ends combat.
 """
 
 from collections.abc import Mapping, Sequence

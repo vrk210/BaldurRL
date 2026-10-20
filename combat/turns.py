@@ -1,4 +1,12 @@
-"""Deterministic turn ordering without dice, HP, rewards, or policies."""
+"""Deterministic turn ordering without dice, HP, rewards, or policies.
+
+ActorRef(side, slot) is a stable roster address, not a Character pointer.
+TurnManager answers whose turn and whether advancing wraps; the environment
+owns resource refresh, automatic turns and outcome/truncation checks. Its
+current= constructor argument restores a partial turn without advancing or
+refreshing. Do not fold legality into this scheduler: masks answer what an
+actor could do on its turn; the caller gates whether that turn is controlled.
+"""
 
 from collections.abc import Callable, Sequence
 
