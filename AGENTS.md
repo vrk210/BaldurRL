@@ -138,10 +138,12 @@ regression. Don't test structure, mocks, constants or argument wiring.
 A behavior-preserving refactor puts a line reading exactly `Behavior: preserve`
 in the PR body. CI then runs `scripts/compare_refactor.py` against the base
 commit. It fails if a scenario's result changes or errors, or if a changed
-statement never ran in the scenarios. It lists what it can't check (import-time
-changes, removed definitions, files outside the maintained Python code); say in
-the PR how each was verified. The refactor may then delete or rewrite tests
-that checked implementation, with the reason stated in the PR.
+statement never ran in the scenarios. It lists what it can't check: import-time
+changes, definitions and files removed whole, and changed files other than
+tests, Markdown and the Python in `agents/`, `combat/`, `evaluation/`,
+`integration/`, `train.py` and `value_training.py`. Say in the PR how each was
+verified. The refactor may then delete or rewrite tests that checked
+implementation, with the reason stated in the PR.
 
 ## Evidence
 

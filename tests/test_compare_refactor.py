@@ -3,7 +3,8 @@
 import pytest
 
 from scripts.compare_refactor import (
-    Statement, WorkerReport, changed_lines, changed_statements, declares_behavior_preserved, verdict,
+    Statement, WorkerReport, changed_lines, changed_statements, declares_behavior_preserved, removed_definitions,
+    verdict,
 )
 
 SOURCE = """\
@@ -33,6 +34,16 @@ class Documented:
     More text.
     \"\"\"
     flag = True
+
+
+def guarded(key, table):
+    try:
+        return table[key]
+    except KeyError:
+        return None
+    match key:
+        case "a":
+            return 1
 """
 
 
@@ -51,32 +62,55 @@ class Documented:
     (18, {("Thing.method", False)}),
     (24, set()),  # inside a multi-line docstring
     (26, {("Documented", True)}),
+    (32, {("guarded", False)}),  # an except clause is its own statement, run only when reached
+    (35, {("guarded", False)}),  # so is a match case
 ])
 def test_changed_line_maps_to_innermost_statement(line, changed):
     statements = changed_statements(SOURCE, {line})
     assert {(statement.owner, statement.runs_at_import) for statement in statements} == changed
 
 
-def test_hunks_map_to_base_and_working_tree_lines_of_python_files():
+def test_except_clause_spans_only_its_handler():
+    (handler,) = changed_statements(SOURCE, {32})
+    assert (handler.first, handler.last) == (32, 33)
+
+
+def test_only_definitions_removed_whole_are_removals():
+    names, remaining = removed_definitions(SOURCE, set(range(15, 19)))  # all of method, nested def included
+    assert (names, remaining) == (["Thing.method"], set())
+    names, remaining = removed_definitions(SOURCE, {17})  # one line of inner
+    assert names == [] and {statement.owner for statement in remaining} == {"Thing.method.<locals>.inner"}
+
+
+def test_hunks_map_to_base_and_working_tree_lines_and_deleted_files():
     diff = """\
+diff --git a/combat/a.py b/combat/a.py
 --- a/combat/a.py
 +++ b/combat/a.py
 @@ -3 +3 @@ def f():
 @@ -10,2 +9,0 @@ def g():
+--- removed line that looks like a header
 @@ -20,0 +19,3 @@
+diff --git a/combat/removed.py b/combat/removed.py
 --- a/combat/removed.py
 +++ /dev/null
 @@ -1,2 +0,0 @@
---- /dev/null
-+++ b/combat/added.py
-@@ -0,0 +1 @@
+diff --git a/combat/old.py b/combat/new.py
+similarity index 90%
+rename from combat/old.py
+rename to combat/new.py
+--- a/combat/old.py
++++ b/combat/new.py
+@@ -5 +5 @@
+diff --git a/combat/notes.txt b/combat/notes.txt
 --- a/combat/notes.txt
 +++ b/combat/notes.txt
 @@ -1 +1 @@
 """
-    base, head = changed_lines(diff)
-    assert base == {"combat/a.py": {3, 10, 11}, "combat/removed.py": {1, 2}}
-    assert head == {"combat/a.py": {3, 19, 20, 21}, "combat/added.py": {1}}
+    changes = changed_lines(diff)
+    assert changes.base == {"combat/a.py": {3, 10, 11}, "combat/removed.py": {1, 2}, "combat/old.py": {5}}
+    assert changes.head == {"combat/a.py": {3, 19, 20, 21}, "combat/new.py": {5}}
+    assert changes.deleted == {"combat/removed.py"}
 
 
 @pytest.mark.parametrize("body, declared", [
@@ -84,6 +118,8 @@ def test_hunks_map_to_base_and_working_tree_lines_of_python_files():
     ("Outcome: tidy\r\nBehavior: preserve\r\n", True),
     ("There is no `Behavior: preserve` line here.", False),
     ("```\nBehavior: preserve\n```\n", False),
+    ("1. Example:\n   ```\n   - Behavior: preserve\n   ```\n", False),
+    ("    Behavior: preserve.\n", False),  # indented code block
     ("<!--\nBehavior: preserve\n-->", False),
     (None, False),
 ])
@@ -91,7 +127,10 @@ def test_only_a_marker_line_declares_preserved_behavior(body, declared):
     assert declares_behavior_preserved(body) is declared
 
 
-@pytest.mark.parametrize("line", ["**Behavior:** preserve", "behavior: preserve", "  Behavior: preserve"])
+@pytest.mark.parametrize("line", [
+    "**Behavior:** preserve", "behavior: preserve", "  Behavior: preserve", "- Behavior: preserve",
+    "## Behavior: preserve", "> Behavior: preserve", "Behavior: preserve.",
+])
 def test_a_misspelled_marker_line_fails_instead_of_skipping(line):
     with pytest.raises(ValueError, match="not exactly"):
         declares_behavior_preserved(f"Outcome: tidy\n{line}\n")
@@ -105,24 +144,23 @@ def report(*, fingerprint="same", errors=None, executed=()):
     return WorkerReport({"scenario": fingerprint}, errors or {}, {"a.py": set(executed)})
 
 
-@pytest.mark.parametrize("before, after, removed, added, passed", [
+@pytest.mark.parametrize("base, head, base_changes, head_changes, passed", [
     (report(), report(fingerprint="other"), {}, {}, False),  # mismatch
     (report(), report(errors={"scenario": "ValueError: x"}), {}, {}, False),
     (report(), report(executed={8}), {}, {"a.py": {RUNTIME}}, True),  # ran on the working tree
     (report(), report(), {}, {"a.py": {RUNTIME}}, False),  # never ran
-    (report(), report(executed={8}), {"a.py": {RUNTIME}}, {}, False),  # removed from a surviving def, never ran
+    (report(), report(executed={8}), {"a.py": {RUNTIME}}, {}, False),  # removed or changed code never ran on the base
     (report(executed={7}), report(), {"a.py": {RUNTIME}}, {}, True),
 ])
-def test_verdict_fails_on_mismatch_error_or_unexercised_statement(before, after, removed, added, passed):
-    result = verdict(before=before, after=after, removed=removed, added=added,
-                     surviving={"a.py": {"<module>", "top"}}, not_compared=[])
-    assert result["passed"] is passed
+def test_verdict_fails_on_mismatch_error_or_unexecuted_statement(base, head, base_changes, head_changes, passed):
+    result = verdict(base=base, head=head, base_changes=base_changes, head_changes=head_changes,
+                     removed=[], not_compared=[])
+    assert result.passed is passed
 
 
-def test_removed_definitions_import_time_and_non_python_changes_are_listed_without_failing():
-    result = verdict(before=report(), after=report(), removed={"a.py": {RUNTIME}}, added={"a.py": {AT_IMPORT}},
-                     surviving={"a.py": {"<module>", "Thing"}}, not_compared=["bg3/x.lua"])
-    assert result["passed"]
-    assert result["removed_definitions"] == ["a.py::top"]
-    assert result["import_time_changes"] == ["a.py::Thing"]
-    assert result["not_compared"] == ["bg3/x.lua"]
+def test_import_time_changes_removed_definitions_and_other_files_are_listed_without_failing():
+    result = verdict(base=report(), head=report(), base_changes={}, head_changes={"a.py": {AT_IMPORT}},
+                     removed=["a.py::top"], not_compared=["bg3/x.lua"])
+    assert result.passed
+    assert (result.import_time_changes, result.removed_definitions, result.not_compared) == (
+        ["a.py::Thing"], ["a.py::top"], ["bg3/x.lua"])
