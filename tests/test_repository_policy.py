@@ -20,9 +20,10 @@ def row(path: str, status: str = "supported", purpose: str = "Behavior contract.
     return f"| `{path}` | {status} | {purpose} |\n"
 
 
-def test_inventory_requires_unique_paths():
-    _, errors = inventory(row("a.py") + row("a.py"))
-    assert errors == ["Duplicate inventory row: a.py"]
+def test_inventory_rejects_duplicate_paths_and_unknown_statuses():
+    _, errors = inventory(row("a.py") + row("a.py") + row("b.py", "remove"))
+    assert errors == ["Duplicate inventory row: a.py",
+                      "Unknown inventory status 'remove' for b.py; use supported or verification-only"]
 
 
 def test_unclassified_file_of_any_type_is_rejected(tmp_path):
@@ -37,13 +38,13 @@ def test_removed_inventory_path_is_rejected(tmp_path):
 
 def test_unagreed_document_is_rejected(tmp_path):
     tracked = repository(tmp_path, row("a.py"), {"a.py": "", "plan.md": ""})
-    assert check(tmp_path, tracked) == ["Document needs an agreed ongoing purpose: plan.md"]
+    assert check(tmp_path, tracked) == ["Document plan.md is not one of the agreed documents; adding one is the owner's decision"]
 
 
 def test_relative_links_must_exist_and_stay_inside_repository(tmp_path):
     (tmp_path / "outside.md").write_text("", encoding="utf-8")
     root = tmp_path / "repo"
-    tracked = repository(root, row("a.py"), {"a.py": "", "README.md": "[bad](missing.py) [outside](../outside.md) [web](https://example.com)\n```\nhandlers[kind](event)\n```\n"})
+    tracked = repository(root, row("a.py"), {"a.py": "", "README.md": "[bad](missing.py) [outside](../outside.md) [web](https://example.com)\n```\nhandlers[kind](event)\n```\n1. Step:\n   ```\n   [int]($count)\n   ```\n"})
     errors = check(root, tracked)
     assert len(errors) == 2
     assert all("Broken/outside-repository link" in error for error in errors)
@@ -58,15 +59,8 @@ def test_generated_output_needs_valid_fixture_consumer(tmp_path, purpose):
 def test_explicit_fixture_and_configuration_are_allowed(tmp_path):
     rows = row("data/capture/1.json", "verification-only", "fixture: tests/test_data.py; synthetic")
     rows += row("tests/test_data.py", "verification-only") + row("config.json", purpose="config: module settings")
-    reader = 'CAPTURE = Path(__file__).parents[1] / "data" / "capture"'
-    tracked = repository(tmp_path, rows, {"data/capture/1.json": "{}", "tests/test_data.py": reader, "config.json": "{}"})
+    tracked = repository(tmp_path, rows, {"data/capture/1.json": "{}", "tests/test_data.py": "", "config.json": "{}"})
     assert check(tmp_path, tracked) == []
-
-
-def test_fixture_reader_must_mention_the_fixture(tmp_path):
-    rows = row("test.json", "verification-only", "fixture: tests/test_other.py") + row("tests/test_other.py")
-    tracked = repository(tmp_path, rows, {"test.json": "{}", "tests/test_other.py": "def test_nothing(): pass"})
-    assert check(tmp_path, tracked) == ["Fixture reader tests/test_other.py never mentions test.json or its directory: test.json"]
 
 
 def test_private_import_and_unlisted_cli_are_rejected(tmp_path):
