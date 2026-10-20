@@ -564,6 +564,16 @@ def run_workers(script: str, trees: dict[str, tuple[Path, set[str]]], directory:
     return reports
 
 
+def base_side_changes(sources: dict[str, str], lines: dict[str, set[int]],
+                      base: WorkerReport) -> tuple[list[str], dict[str, set[Statement]]]:
+    """Per base file, the definitions removed as dead code and the changed statements to check on the base."""
+    removed, changes = [], {}
+    for path in sorted(lines):
+        names, changes[path] = split_removed_definitions(sources[path], lines[path], base.executed.get(path, set()))
+        removed += [f"{path}::{name}" for name in names]
+    return removed, changes
+
+
 def files_to_trace(changes: dict[str, set[Statement]]) -> set[str]:
     """Files holding a changed statement the verdict checks; import-time statements are listed, not traced."""
     return {path for path, changed in changes.items() if any(not statement.runs_at_import for statement in changed)}
@@ -677,11 +687,7 @@ def main() -> int:
         workers = run_workers(str(Path(__file__).resolve()),
                               {"base": (base_tree, files_to_trace(traced)),
                                "head": (root, files_to_trace(head_changes))}, Path(directory))
-    removed, base_changes = [], {}
-    for path, lines in sorted(base_lines.items()):
-        names, base_changes[path] = split_removed_definitions(
-            base_sources[path], lines, workers["base"].executed.get(path, set()))
-        removed += [f"{path}::{name}" for name in names]
+    removed, base_changes = base_side_changes(base_sources, base_lines, workers["base"])
     result = verdict(base=workers["base"], head=workers["head"], base_changes=base_changes,
                      head_changes=head_changes, removed=removed, not_compared=not_compared)
     print(json.dumps({"base": revision, "fingerprints": workers["head"].fingerprints, **dataclasses.asdict(result)},
