@@ -3,7 +3,7 @@
 import pytest
 
 from scripts.compare_refactor import (
-    Statement, WorkerReport, changed_lines, changed_statements, declares_behavior_preserved, removed_definitions,
+    Statement, WorkerReport, changed_lines, changed_statements, declares_behavior_preserved, split_removed_definitions,
     verdict,
 )
 
@@ -76,13 +76,14 @@ def test_except_clause_spans_only_its_handler():
 
 
 def test_only_definitions_removed_whole_are_removals():
-    names, remaining = removed_definitions(SOURCE, set(range(15, 19)))  # all of method, nested def included
+    names, remaining = split_removed_definitions(SOURCE, set(range(15, 19)))  # all of method, nested def included
     assert (names, remaining) == (["Thing.method"], set())
-    names, remaining = removed_definitions(SOURCE, {17})  # one line of inner
+    names, remaining = split_removed_definitions(SOURCE, {17})  # one line of inner
     assert names == [] and {statement.owner for statement in remaining} == {"Thing.method.<locals>.inner"}
+    assert split_removed_definitions(SOURCE, set(range(1, 48))) == (["<module>"], set())  # a deleted file
 
 
-def test_hunks_map_to_base_and_working_tree_lines_and_deleted_files():
+def test_hunks_map_to_base_and_working_tree_lines():
     diff = """\
 diff --git a/combat/a.py b/combat/a.py
 --- a/combat/a.py
@@ -107,10 +108,8 @@ diff --git a/combat/notes.txt b/combat/notes.txt
 +++ b/combat/notes.txt
 @@ -1 +1 @@
 """
-    changes = changed_lines(diff)
-    assert changes.base == {"combat/a.py": {3, 10, 11}, "combat/removed.py": {1, 2}, "combat/old.py": {5}}
-    assert changes.head == {"combat/a.py": {3, 19, 20, 21}, "combat/new.py": {5}}
-    assert changes.deleted == {"combat/removed.py"}
+    assert changed_lines(diff) == ({"combat/a.py": {3, 10, 11}, "combat/removed.py": {1, 2}, "combat/old.py": {5}},
+                                   {"combat/a.py": {3, 19, 20, 21}, "combat/new.py": {5}})
 
 
 @pytest.mark.parametrize("body, declared", [
