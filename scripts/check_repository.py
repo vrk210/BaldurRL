@@ -52,7 +52,7 @@ def check(root: Path, tracked: set[str]) -> list[str]:
         if path.suffix == ".md":
             if name not in DOCS:
                 errors.append(f"Document {name} is not one of the agreed documents; adding one is the owner's decision")
-            prose = re.sub(r"^(```|~~~).*?^\1", "", path.read_text(encoding="utf-8"), flags=re.M | re.S)
+            prose = re.sub(r"^[ \t]*(```|~~~).*?^[ \t]*\1", "", path.read_text(encoding="utf-8"), flags=re.M | re.S)
             for target in LINK.findall(prose):
                 if re.match(r"[a-zA-Z][a-zA-Z0-9+.-]*:", target):
                     continue
