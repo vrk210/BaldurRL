@@ -43,10 +43,11 @@ def test_extra_document_needs_explicit_retirement(tmp_path):
 def test_relative_links_must_exist_and_stay_inside_repository(tmp_path):
     (tmp_path / "outside.md").write_text("", encoding="utf-8")
     root = tmp_path / "repo"
-    tracked = repository(root, row("a.py"), {"a.py": "", "README.md": "[bad](missing.py) [outside](../outside.md) [web](https://example.com)\n```\nhandlers[kind](event)\n```\n1. Step:\n   ```\n   [int]($count)\n   ```\n"})
-    errors = check(root, tracked)
-    assert len(errors) == 2
-    assert all("Broken/outside-repository link" in error for error in errors)
+    readme = ("[outside](../outside.md) [web](https://example.com)\n```\nhandlers[kind](event)\n```\n"
+              "[bad](missing.py)\n1. Step:\n   ```\n   [int]($count)\n   ```\n")  # code in fences is not a link
+    tracked = repository(root, row("a.py"), {"a.py": "", "README.md": readme})
+    assert check(root, tracked) == ["Broken/outside-repository link in README.md: ../outside.md",
+                                    "Broken/outside-repository link in README.md: missing.py"]
 
 
 @pytest.mark.parametrize("purpose", ["Generated output.", "fixture: tests/missing.py; synthetic"])
@@ -64,7 +65,7 @@ def test_explicit_fixture_and_configuration_are_allowed(tmp_path):
 
 def test_private_import_and_unlisted_cli_are_rejected(tmp_path):
     tracked = repository(tmp_path, row("a.py"), {"a.py": "from other import _hidden\nif __name__ == '__main__':\n    pass\n"})
-    assert len(check(tmp_path, tracked)) == 2
+    assert check(tmp_path, tracked) == ["Private-name import _hidden in a.py:1", "Inventory must identify the CLI: a.py"]
 
 
 def test_retiring_experiment_may_exist_until_removal(tmp_path):
