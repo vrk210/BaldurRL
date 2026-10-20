@@ -1,10 +1,10 @@
 # Simulator results, M0–M6
 
-Measured results of the simulator stages. Conclusions drawn from them live next
-to the decisions they inform:
+Measured results of the simulator stages, with the planning conclusions drawn
+from them [below](#planning-conclusions). Conclusions that a current decision
+rests on live next to that decision:
 
 - The simulator's role: [ARCHITECTURE.md](ARCHITECTURE.md#stage-progression).
-- Planning conclusions: [below](#planning-conclusions).
 - Evaluation rules: `AGENTS.md` and `evaluation/seeds.py`.
 - BG3 tactical hypotheses: [GAME_KNOWLEDGE.md](GAME_KNOWLEDGE.md#simulator-tactical-evidence-hypotheses-for-bg3).
 
