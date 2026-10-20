@@ -1,0 +1,50 @@
+name: Behavior comparison
+
+# Edited is included because the PR body, not the code, declares preservation.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+# A newer event for the same PR supersedes a running comparison.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      # The marker check needs only the standard library, so it runs before the install.
+      - name: Read whether the PR body says Behavior preserve
+        id: marker
+        shell: bash
+        run: |
+          declared=$(python scripts/compare_refactor.py --check-marker "$GITHUB_EVENT_PATH")
+          declared=${declared%$'\r'}  # Windows Python ends the line with CRLF
+          if [ "$declared" != true ]; then
+            echo "::notice::The PR body has no 'Behavior: preserve' line, so the comparison is skipped."
+          fi
+          echo "preserve=$declared" >> "$GITHUB_OUTPUT"
+      - if: steps.marker.outputs.preserve == 'true'
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-harness-test.txt
+            requirements-quality.txt
+      - if: steps.marker.outputs.preserve == 'true'
+        run: python -m pip install -r requirements.txt
+      - name: Compare with the base
+        if: steps.marker.outputs.preserve == 'true'
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: python scripts/compare_refactor.py --base "$PR_BASE_SHA"

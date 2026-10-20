@@ -17,7 +17,8 @@ evidence of live BG3 behavior. The checker reads three purpose prefixes:
 | Path | Status | Entry point / responsibility |
 | --- | --- | --- |
 | `.gitignore` | supported | Keeps generated output, virtual environments and editor settings out of Git. |
-| `.github/workflows/repository.yml` | supported | Inventory/lint checks, the full Windows test suite, and the behavior comparison for `Behavior: preserve` PRs. |
+| `.github/workflows/behavior.yml` | supported | The behavior comparison for PRs whose body says `Behavior: preserve`. |
+| `.github/workflows/repository.yml` | supported | Inventory/lint checks and the full Windows test suite. |
 | `.github/workflows/windows-harness.yml` | supported | Offline Windows harness verification; no game execution. |
 | `agents/__init__.py` | supported | Public baseline-policy re-exports; no CLI. |
 | `agents/expectimax_agent.py` | supported | Exact chance search with bounded turn/decision horizons. |
@@ -84,12 +85,13 @@ evidence of live BG3 behavior. The checker reads three purpose prefixes:
 | `requirements-harness-test.txt` | supported | Pinned minimal dependencies for harness capture and its offline tests. |
 | `requirements-quality.txt` | supported | Pinned lint tool used by repository CI. |
 | `scripts/check_repository.py` | supported | CLI: python scripts/check_repository.py; inventory, docs and artifact checks. |
-| `scripts/compare_refactor.py` | verification-only | CLI: python scripts/compare_refactor.py --base COMMIT; fixed-seed semantic equivalence across revisions. |
+| `scripts/compare_refactor.py` | verification-only | CLI: python scripts/compare_refactor.py --base COMMIT; fingerprints simulator, planner, evaluation and integration scenarios on two revisions and checks that every changed statement ran. |
 | `scripts/windows/bootstrap-harness.ps1` | supported | CLI: scripts/windows/bootstrap-harness.ps1; isolated harness environment. |
 | `scripts/windows/package-h0.ps1` | supported | CLI: scripts/windows/package-h0.ps1; Divine packaging and source manifest. |
 | `tests/m2_oracle.py` | verification-only | pytest verification: m2 oracle. |
 | `tests/test_bg3_h0_lua.py` | verification-only | pytest verification: bg3 h0 lua. |
 | `tests/test_combat_regression.py` | verification-only | pytest verification: combat regression. |
+| `tests/test_compare_refactor.py` | verification-only | pytest verification: compare refactor. |
 | `tests/test_encounter_trial.py` | verification-only | pytest verification: encounter trial. |
 | `tests/test_env.py` | verification-only | pytest verification: env. |
 | `tests/test_evaluation.py` | verification-only | pytest verification: evaluation. |
