@@ -1,10 +1,12 @@
 """How the refactor comparison maps a diff to statements and decides pass or fail."""
 
+import textwrap
+
 import pytest
 
 from scripts.compare_refactor import (
-    Statement, WorkerReport, changed_lines, changed_statements, declares_behavior_preserved, split_removed_definitions,
-    surviving_names, verdict,
+    Statement, WorkerReport, changed_lines, changed_statements, declares_behavior_preserved, outcome_message,
+    run_workers, split_removed_definitions, surviving_names, verdict, with_executed_lines,
 )
 
 SOURCE = """\
@@ -70,9 +72,21 @@ def test_changed_line_maps_to_innermost_statement(line, changed):
     assert {(statement.owner, statement.runs_at_import) for statement in statements} == changed
 
 
-def test_except_clause_spans_only_its_handler():
-    (handler,) = changed_statements(SOURCE, {32})
-    assert (handler.first, handler.last) == (32, 33)
+@pytest.mark.parametrize("line, span", [
+    (8, (8, 8)),  # a line in an if body is that statement, which runs only when the branch does
+    (32, (32, 33)),  # an except clause spans only its handler
+    (33, (33, 33)),
+    (35, (35, 36)),  # a match case spans its pattern and body
+    (36, (36, 36)),
+])
+def test_changed_line_resolves_to_the_smallest_statement_that_must_run(line, span):
+    (statement,) = changed_statements(SOURCE, {line})
+    assert (statement.first, statement.last) == span
+
+
+def test_comments_and_blank_lines_inside_a_function_change_nothing():
+    source = SOURCE.replace("    if x:\n        return 1\n", "    if x:\n        # note\n\n        return 1\n")
+    assert changed_statements(source, {8, 9}) == set()
 
 
 def test_a_definition_is_removed_only_when_all_of_it_goes_and_its_name_does_not_survive():
@@ -82,6 +96,10 @@ def test_a_definition_is_removed_only_when_all_of_it_goes_and_its_name_does_not_
     assert names == [] and {statement.owner for statement in remaining} >= {"Thing.method"}
     names, remaining = split_removed_definitions(SOURCE, {17}, surviving={"<module>"})  # one line of inner
     assert names == [] and {statement.owner for statement in remaining} == {"Thing.method.<locals>.inner"}
+    names, _ = split_removed_definitions(SOURCE, set(range(15, 18)), surviving={"<module>"})  # method keeps a line
+    assert names == []  # a def nested in a function is part of the function, not a definition of its own
+    names, _ = split_removed_definitions(SOURCE, {15}, surviving={"<module>"})  # header only
+    assert names == []
     assert split_removed_definitions(SOURCE, set(range(1, 48)), surviving=set()) == (["<module>"], set())  # deleted
 
 
@@ -103,7 +121,9 @@ diff --git a/combat/a.py b/combat/a.py
 @@ -3 +3 @@ def f():
 @@ -10,2 +9,0 @@ def g():
 --- removed line that looks like a header
++++ added line that looks like a header
 @@ -20,0 +19,3 @@
+@@ -30 +32 @@
 diff --git a/combat/removed.py b/combat/removed.py
 --- a/combat/removed.py
 +++ /dev/null
@@ -125,8 +145,8 @@ diff --git a/combat/notes.txt b/combat/notes.txt
 @@ -1 +1 @@
 """
     changes = changed_lines(diff)
-    assert changes.base == {"combat/a.py": {3, 10, 11}, "combat/removed.py": {1, 2}, "combat/old.py": {5}}
-    assert changes.head == {"combat/a.py": {3, 19, 20, 21}, "combat/new.py": {5}, "combat/created.py": {1, 2}}
+    assert changes.base == {"combat/a.py": {3, 10, 11, 30}, "combat/removed.py": {1, 2}, "combat/old.py": {5}}
+    assert changes.head == {"combat/a.py": {3, 19, 20, 21, 32}, "combat/new.py": {5}, "combat/created.py": {1, 2}}
     assert (changes.moved, changes.added) == ({"combat/removed.py": None, "combat/old.py": "combat/new.py"},
                                               {"combat/created.py"})
 
@@ -177,9 +197,51 @@ def test_verdict_fails_on_mismatch_error_or_unexecuted_statement(base, head, bas
     assert result.passed is passed
 
 
+def test_failure_names_the_statement_and_side_that_never_ran():
+    result = verdict(base=report(errors={"scenario": "ValueError: x"}), head=report(), base_changes={},
+                     head_changes={"a.py": {RUNTIME}}, removed=[], not_compared=[])
+    assert result.scenario_errors == {"base/scenario": "ValueError: x"}
+    assert result.unexecuted_statements == ["head a.py::top (line 7)"]
+    assert outcome_message(result) == ("Comparison failed (scenario errors: 1; changed statements that never ran: 1); "
+                                       "see the report above.")
+
+
 def test_import_time_changes_removed_definitions_and_other_files_are_listed_without_failing():
     result = verdict(base=report(), head=report(), base_changes={}, head_changes={"a.py": {AT_IMPORT}},
                      removed=["a.py::top"], not_compared=["bg3/x.lua"])
     assert result.passed
     assert (result.import_time_changes, result.removed_definitions, result.not_compared) == (
         ["a.py::Thing"], ["a.py::top"], ["bg3/x.lua"])
+    assert outcome_message(result) == ("Comparison passed. Say in the PR how each entry in import_time_changes, "
+                                       "removed_definitions, not_compared was verified.")
+
+
+def test_traced_lines_are_the_ones_that_ran(tmp_path):
+    module = tmp_path / "module.py"
+    module.write_text(textwrap.dedent("""\
+        def f(x):
+            if x:
+                return 1
+            y = 2
+            return y
+        """))
+    namespace: dict = {}
+    exec(compile(module.read_text(), str(module), "exec"), namespace)
+    _, executed = with_executed_lines(tmp_path, {"module.py"}, lambda: namespace["f"](False))
+    assert executed == {"module.py": {2, 4, 5}}
+
+
+def test_each_worker_reports_on_its_own_tree(tmp_path):
+    stub = tmp_path / "stub.py"  # stands in for the comparison script's --worker mode
+    stub.write_text(textwrap.dedent("""\
+        import json, sys
+        args = dict(zip(sys.argv[1::2], sys.argv[2::2]))
+        traced = json.load(open(args["--trace"]))
+        json.dump({"fingerprints": {"tree": args["--worker"]}, "errors": {}, "executed": {p: [1] for p in traced}},
+                  open(args["--output"], "w"))
+        """))
+    base, head = tmp_path / "base", tmp_path / "head"
+    base.mkdir(), head.mkdir()
+    reports = run_workers(str(stub), {"base": (base, {"a.py"}), "head": (head, set())}, tmp_path)
+    assert reports["base"].fingerprints == {"tree": str(base)} and reports["head"].fingerprints == {"tree": str(head)}
+    assert reports["base"].executed == {"a.py": {1}} and reports["head"].executed == {}
