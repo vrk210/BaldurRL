@@ -9,8 +9,8 @@ file except the agreed documents has exactly one row and that every row names a
 tracked file. `supported` means an ongoing operational or research interface.
 `verification-only` means a test, mock, or independent oracle; it is not
 evidence of live BG3 behavior. `remove` means retirement is decided, with the
-prerequisite stated below; the checker skips the prefix and import rules for
-those files until they are gone. The checker reads four purpose prefixes:
+prerequisite stated below; the checker skips the agreed-document, prefix and
+import rules for those files until they are gone. The checker reads four purpose prefixes:
 - `CLI:` on every Python file outside `tests/` with a `__main__` block;
 - `fixture: tests/<reader>.py` or `fixture: scripts/<reader>.py`, naming the
   test or script that reads it, or

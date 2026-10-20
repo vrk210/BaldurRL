@@ -6,10 +6,10 @@ on:
     branches: [main]
   pull_request:
 
-# A newer event for the same PR supersedes its running check; every main commit keeps its own run.
+# A newer event for the same PR supersedes its running check; each main commit is its own group.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
