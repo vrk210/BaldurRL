@@ -274,9 +274,6 @@ class TacticalTransitionModel:
             (0,) + self._template.shape, dtype=np.float32
         )
 
-    def observation(self, state: State) -> np.ndarray:
-        return self.observations([state])[0]
-
     # ------------------------------------------------------------------ queries
     def status(self, state: State) -> Status:
         return _STATUSES[state[0]]

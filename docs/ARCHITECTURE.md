@@ -150,8 +150,8 @@ matter. Findings and uncertainty live in [RESULTS.md](RESULTS.md).
 
 `actions/resources/damage → abilities/characters → mechanics → environments → policies/evaluation`
 
-Characters store state and refresh mappings; immutable ability catalogs describe
-costs and targets. Mechanics resolve effects using supplied RNGs. Environments
+Characters store state and refresh mappings; immutable ability cost tables give
+each ability's resource costs. Mechanics resolve effects using supplied RNGs. Environments
 own turns, legality gating, rewards and termination. Policies only select actions.
 Legality is turn-agnostic; environments expose masks only for controlled turns.
 Models reconstruct observations without reading the live simulator's RNG.

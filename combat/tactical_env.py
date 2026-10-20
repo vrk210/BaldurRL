@@ -17,7 +17,7 @@ omitted because it refreshes before use. All sampling uses self.np_random.
 
 Decision indices 0–2 ATTACK_ENEMY_i, 3–5 TRIP_ENEMY_i, 6 CLEAVE, 7 DODGE,
 8 SECOND_WIND, 9 ACTION_SURGE. M5 ends with 10 END_TURN; M6 has 10 ADVANCE,
-11 DISENGAGE, 12 END_TURN. Costs come from the catalog. Trip and healing share
+11 DISENGAGE, 12 END_TURN. Costs come from the ability cost table. Trip and healing share
 the Bonus Action. Masks require a living controlled actor, living/reachable
 eligible targets, known abilities and affordable costs; invalid/masked indices
 raise ValueError. Trip cannot target Prone; Dodge cannot repeat while Dodging.

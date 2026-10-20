@@ -95,7 +95,7 @@ def test_observation_round_trip_and_legality(stage):
         env = make_env(stage)
         model = transition_model(stage, obs)
         state = model.state_from_observation(obs)
-        np.testing.assert_array_equal(model.observation(state), obs)
+        np.testing.assert_array_equal(model.observations([state])[0], obs)
         assert model.same_encounter(obs)
         assert model.status(state) is Status.ONGOING
 
@@ -185,4 +185,4 @@ def test_lethal_advance_passes_the_turn():
     assert passed and kept
     for p, successor in outcomes:
         if model.turn_passed(state, advance, successor):
-            assert model.observation(successor)[env.observation_fields.index("ally_0_hp")] == 0
+            assert model.observations([successor])[0][env.observation_fields.index("ally_0_hp")] == 0

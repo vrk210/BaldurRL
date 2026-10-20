@@ -15,7 +15,7 @@ from combat.transitions import (
     transition_model,
 )
 
-from transition_harness import exhaustive_distribution, load_state, max_abs_z, model_for, sampled_counts
+from transition_harness import env_state, exhaustive_distribution, load_state, max_abs_z, model_for, sampled_counts
 
 
 STAGES = ("m0", "m1a", "m1b", "m2", "m3", "m4")
@@ -74,9 +74,9 @@ def test_observation_round_trip_and_legality(stage):
     env, model = model_for(stage, 11)
     rng = np.random.default_rng(0)
     for _ in range(200):
-        state = model.state_from_env(env)
+        state = env_state(env)
         obs = env._get_observation() if stage == "m0" else env._observation()
-        assert np.array_equal(model.observation(state), obs)
+        assert np.array_equal(model.observations([state])[0], obs)
         if model.status(state) is Status.ONGOING:
             assert model.state_from_observation(obs) == state
             assert model.legal_actions(state) == tuple(np.flatnonzero(env.action_masks()))
@@ -129,7 +129,7 @@ def exhaustive_cases():
 def test_enumeration_equals_exhaustive_rng_paths(case):
     stage, seed, edits, _ = case
     env, model = model_for(stage, seed)
-    state = edit(model, model.state_from_env(env), **edits)
+    state = edit(model, env_state(env), **edits)
     load_state(env, state)
     legal = model.legal_actions(state)
     assert model.legal_actions(state) == tuple(np.flatnonzero(env.action_masks()))
@@ -143,7 +143,7 @@ def test_enumeration_equals_exhaustive_rng_paths(case):
 
 def test_terminal_and_truncation_states():
     env, model = model_for("m3", 5)
-    start = model.state_from_env(env)
+    start = env_state(env)
     # Killing the last enemy wins immediately, with no END_TURN.
     state = edit(model, start, enemies={0: 0, 1: 1})
     win = [s for p, s in model.outcomes(state, 1) if model.status(s) is Status.WIN]
@@ -179,7 +179,7 @@ def test_terminal_and_truncation_states():
 @pytest.mark.parametrize("action_name", ["CLEAVE", "END_TURN"])
 def test_three_enemy_steps_match_sampling(action_name):
     env, model = model_for("m4", 8)
-    state = edit(model, model.state_from_env(env), actor=1, allies={0: dict(hp=9), 1: dict(hp=14)})
+    state = edit(model, env_state(env), actor=1, allies={0: dict(hp=9), 1: dict(hp=14)})
     action = env.action_names.index(action_name)
     expected = dict((s, p) for p, s in model.outcomes(state, action))
     samples = 20_000

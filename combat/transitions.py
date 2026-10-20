@@ -7,7 +7,7 @@ Identical successors are merged, so HP outcomes collapse into few states.
 
 Rules are not re-derived here: dice, hit/critical, damage halving, and healing
 come from the distribution helpers in `distributions.py`; costs from the ability
-catalog; legality and the automatic enemy policy from `legality.py`; turn order
+cost table; legality and the automatic enemy policy from `legality.py`; turn order
 and refresh from the environment's `TurnManager` order and `turn_refresh`.
 
 New stages plug in by registering a factory (`register_transition_model`) that
@@ -154,30 +154,6 @@ class RosterTransitionModel:
     @classmethod
     def from_observation(cls, stage: str, observation: np.ndarray) -> "RosterTransitionModel":
         return cls(simulation_from_observation(stage, observation, seed=0))
-
-    def state_from_env(self, env: BaldurCombatEnv | StagedCombatEnv) -> State:
-        """Compact state of a live environment with the same encounter statistics."""
-        roster = env._roster()
-        allies_down = roster.side_defeated(Side.ALLY)
-        enemies_down = roster.side_defeated(Side.ENEMY)
-        if allies_down:
-            status = Status.LOSS
-        elif enemies_down:
-            status = Status.WIN
-        elif env._truncated:
-            status = Status.TRUNCATED
-        else:
-            status = Status.ONGOING
-        current = env._turns().current
-        actor = current.slot if status is Status.ONGOING else 0
-        if status is Status.ONGOING and current not in self._controlled:
-            raise ValueError("Ongoing states must be at a controlled decision")
-        values = [int(status), actor, env.round_number]
-        for ally in roster.allies:
-            values.append(ally.hp)
-            values.extend(ally.resources.get(resource) for resource in _RESOURCES)
-        values.extend(enemy.hp for enemy in roster.enemies)
-        return tuple(values)
 
     def state_from_observation(self, observation: np.ndarray) -> State:
         """Compact ongoing state for a live allied decision observation."""
@@ -464,9 +440,6 @@ class RosterTransitionModel:
                 actor[ended] = first[ended]
             out[:, self._actor_col] = actor
         return out
-
-    def observation(self, state: State) -> np.ndarray:
-        return self.observations([state])[0]
 
 
 TransitionModelFactory = Callable[[str, np.ndarray], TransitionModel]
