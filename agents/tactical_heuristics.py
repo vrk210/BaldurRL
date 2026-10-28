@@ -214,7 +214,7 @@ class TacticalHeuristicAgent:
         return max((hits_needed(e) for e in enemies if e.alive and not e.back_rank), default=0.0)
 
 
-# Named variants evaluated in docs/RESULTS.md (M5/M6 section). "naive" applies
+# Named variants evaluated in docs/RESULTS.md (Reference heuristics). "naive" applies
 # the M4 priorities and ignores every M5/M6 option; the others were developed on
 # development seeds 20000+ (never the held-out range).
 _TUNED = {"cleave_min_targets": 3, "second_wind_threshold": 12}

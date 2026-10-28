@@ -1,338 +1,106 @@
-# Simulator results, M0–M6
+# Results cache
 
-Measured results of the simulator stages, with the planning conclusions drawn
-from them [below](#planning-conclusions). Conclusions that a current decision
-rests on live next to that decision:
+Each entry holds the numbers that one current decision rests on, the code area
+concerned, and the experiment-history entries that record how they were
+measured. Read only the entries for the area you're touching. The full record
+of every experiment, with its method, irregularities and open leads, is
+`HISTORY.md` on the `history` branch:
+`git fetch origin history && git show origin/history:HISTORY.md`. How entries
+enter and leave this cache is in [AGENTS.md](../AGENTS.md#evidence).
 
-- The simulator's role: [ARCHITECTURE.md](ARCHITECTURE.md#stage-progression).
-- Evaluation rules: `AGENTS.md` and `evaluation/seeds.py`.
-- BG3 tactical hypotheses: [GAME_KNOWLEDGE.md](GAME_KNOWLEDGE.md#simulator-tactical-evidence-hypotheses-for-bg3).
+Seed ranges, including spent and frozen ones, are in `evaluation/seeds.py`.
 
-This file replaces the per-experiment reports that were in `reports/` until
-2026-10-15. Those reports have the full tables, reproduction commands and
-artifact paths. List them with `git ls-tree --name-only b082262:reports` and
-read one with `git show b082262:reports/<name>`. Raw artifacts live in git-ignored `runs/` directories. Seed
-ranges are recorded in `evaluation/seeds.py`.
+## Simulator scope
 
-## Overview
+**Area:** `combat/`, `agents/`. **History:** H9, H10, H11, H18, H19.
 
-Seed ranges and sample sizes differ between rows, so compare within a row only.
+**Decision:** M0–M6 are frozen as a test bed and a stand-in game; see
+[ARCHITECTURE.md](ARCHITECTURE.md#stage-progression). Only M4 expectimax beat
+the reference heuristics; both are in the entries below.
+- **PPO:** on M4 the best checkpoint won 63.22%, the highest of three on the
+  test seeds; the 5M-step mean was 61.79%. On M5/M6 pooled PPO trails the best
+  heuristic by 4.14 (SE 0.60) and 5.39 (SE 0.61) points, flat after about 500k
+  steps.
+- **Headroom probe**, a one-step improvement of the heuristic that deviates
+  only on strong evidence (seeds 223000–223999): 80.3% against the heuristic's
+  78.6% on M5 (+1.70, conservative 95% CI [−1.23, +4.61]) and 81.6% against
+  79.6% on M6 (+2.00, [−1.03, +5.02]).
 
-| Stage | Adds | Best hand heuristic | MaskablePPO | Best search or exact result |
-|---|---|---:|---:|---|
-| M0 | Fixed 1v1 | 97.5% | 98.0% (200k) | — |
-| M1A | Random opponent | 95.0% | 95.7–96.2% (200k) | — |
-| M1B | Two enemies, target choice | 67.5% | 66.0–69.3% (200k) | — |
-| M2 | One-use Cleave | 66.0% | 69.3% mean (1M) | Exact optimum 71.8% |
-| M3 | 2v2 | 99.2% | 98.8% (1M) | — |
-| M4 | 2v3, scaled enemies | 63.7% (threat-aware) | 62.3–63.2% (1M–5M) | Expectimax depth 2 with learned leaf: 66.6%, +3.0 points [+1.3, +4.6] |
-| M5 | Enemy roles, Trip/Prone, Dodge, advantage | 78.5% (tuned) | 74.4% (1M, 3 seeds) | Rollout and guided planners lost to the heuristic |
-| M6 | Front/back ranks, Advance, opportunity attacks | 80.6% (adaptive) | 75.2% (1M, 3 seeds) | Same |
+## Reference heuristics
 
-M0, M1A and M3 are at the ceiling. On M2, the heuristic and optimum figures are
-exact expected win rates on seeds 9000–13999, and the PPO figure is the
-three-seed mean of 5,000 played fights on the same seeds.
+**Area:** `agents/heuristic_agent.py`, `agents/tactical_heuristics.py`.
+**History:** H9, H11, H12.
 
-## M0–M4: PPO against hand heuristics
+**Decision:** new policies are compared against the hand heuristics:
+threat-aware on M4 (`threat` in `evaluation/planning_eval.py`), `tuned` on M5
+and `adaptive` on M6 (`--heuristic-variant`). The named variants are defined in
+`VARIANTS` in `agents/tactical_heuristics.py`.
 
-MaskablePPO with terminal ±1 reward, 4 environments, `train.py` defaults, and
-deterministic masked prediction. Results are on held-out seeds 3000–3999
-(n=1,000) unless noted.
+| Stage | Policy | Win rate | Seeds, n |
+|---|---|---:|---|
+| M4 | stage heuristic / threat-aware | 61.24% / 63.66% | 10000–14999, 5,000 |
+| M5 | naive / trip_focus / healer_first / tuned | 61.44 / 76.62 / 73.86 / 78.52% | 3000–7999, 5,000 |
+| M6 | naive / hold / dive_all / adaptive | 40.92 / 78.88 / 79.36 / 80.60% | 3000–7999, 5,000 |
+| M5 / M6 | tuned / adaptive, fresh seeds | 77.84 / 81.02% | 40000–44999, 5,000 |
 
-| Stage | Random | Heuristic | PPO seeds 0 / 1 / 2 | Fresh 5,000-seed check |
-|---|---:|---:|---|---|
-| M0 | 71.7% | 97.5% | 98.0% (200k); 97.1% at 50k | — |
-| M1A | 73.5% | 95.0% | 95.7 / 96.2 / 95.9% (200k) | 4000–8999: heuristic 96.00%, PPO 95.80 / 96.02 / 95.84% |
-| M1B | 23.7% | 67.5% | 66.0 / 67.7 / 69.3% (200k) | 4000–8999: heuristic 67.86%, PPO 67.90 / 68.42 / 69.92% |
-| M2 | 28.4% | 65.0% | 66.6 / 64.8 / 66.3% (200k) | 4000–8999: heuristic 66.32%, PPO 67.76 / 67.18 / 68.28% |
-| M3 | 86.3% | 99.2% | 99.0 / 98.7 / 98.8% (1M) | — |
-| M4 | 15.6% | 61.4% | 58.2 / 61.1 / 62.2% (1M) | — |
+On M6, adaptive − hold is +1.72 points (SE 0.59), but only +1.14 (SE 0.60) on
+the fresh seeds.
 
-- **M0–M1A:** saturated. PPO's differences from the heuristic, such as delaying
-  Action Surge, change behavior but not outcomes.
-- **M1B:** the target decision exposes variation between training seeds. One
-  seed's 2-point lead didn't reproduce in the other two.
-- **M3:** easy. PPO matches the heuristic while barely using Cleave (6–33% of
-  fights).
-- **M4:** a fair fight. Cleave and Second Wind matter: survivors keep about
-  14/40 HP.
+## M5/M6 transition model
 
-### M2: training budget, reward shaping and the exact optimum
+**Area:** `combat/table_tactical_transitions.py`, `combat/tactical_transitions.py`.
+**History:** H14, H15.
 
-- **Training budget.** 1M-step PPO beat the M2 heuristic on fresh seeds
-  9000–13999: 68.68 / 69.48 / 69.82% against 65.12%. The 200k models had left
-  win rate on the table. Checkpoint selection was not the cause of the earlier
-  gap.
-- **Cleave.** PPO's gain comes from avoiding the heuristic's automatic opening
-  Cleave, not from using Cleave well. The 1M models often Cleave against a
-  single enemy, which is dominated. A matched-start diagnostic (seeds 2000–2199)
-  shows opening with an attack beats opening with Cleave by +0.59 to +3.01
-  points. The same heuristic without Cleave wins 67.98%.
-- **Reward shaping.** A bounded damage-dealt term didn't improve sample
-  efficiency at 25k–200k steps or final win rate: terminal 65.90% vs shaped
-  66.03% mean on seeds 3000–3999.
-- **Exact optimum.** A dynamic-programming solver gives an expected optimal win
-  rate of 71.79% on seeds 9000–13999 (heuristic: 66.03%). On seeds 9000–9999:
+**Decision:** the table model is the registered default, and the replay model is
+its test oracle.
+- **Agreement:** on seeds 210000–210009 the two give the same successor sets,
+  with a largest probability difference of 1.0e-14.
+- **Speed:** 16× faster on M5 and 53× on M6.
+- **Audit:** no mismatches in 118,089 cases, constructed edge states included
+  (seeds 211000–211029).
+- **Oracle check:** the replay model matches raw path enumeration through
+  `env.step` to about 1e-16 (241 cases).
 
-  | Policy | Win rate | Regret per episode |
-  |---|---:|---:|
-  | Exact optimum (mean V*) | 71.16% | 0 |
-  | Depth-1 search + learned V0 | 70.13% | 0.0193 |
-  | Depth-1 search + race heuristic leaf | 60.14% | 0.0948 |
-  | M2 heuristic | 63.94% | 0.0594 |
+## Expectimax planner and value leaves
 
-  PPO 1M seed 2 had a regret of 0.0162 on seeds 9000–9399. Depth 2 cut the
-  learned leaf's regret about 3× (0.0130 → 0.0040).
+**Area:** `agents/expectimax_agent.py`, `agents/value_functions.py`,
+`value_training.py`, `combat/transitions.py`. **History:** H6, H10.
 
-### M4: expectimax with exact chance nodes
+**Decision:** exact chance-node expectimax over `RosterTransitionModel` is the
+maintained M0–M4 planner. Leaves are selected on paired play, not validation
+loss.
 
-Method details are in [the planner contract](../agents/expectimax_agent.py). Test
-seeds 10000–14999 were used only for these final runs (n=5,000 each). Paired
-differences are against the threat-aware heuristic.
+**The exact model:**
+- It matches exhaustive RNG-path enumeration through `env.step` to 1e-12 on 14
+  states.
+- In 65 cases × 200k samples, no sample fell outside its support.
+- Unbounded search matches the M2 dynamic-programming solver to 6e-16 and
+  `tests/m2_oracle.py` to 1e-12.
 
-| Policy | Win rate | Paired difference [95% CI] | ms per planned decision |
+**On M4** (test 10000–14999, n=5,000, paired against threat-aware 63.66%):
+- the race leaf is a hand-built damage-race estimate;
+- V0 is a value network trained on heuristic and PPO games;
+- V1 is V0's data plus 4,000 of the planner's own games.
+
+| Planner | Win rate | Points vs threat-aware [95% CI] | ms per planned decision |
 |---|---:|---:|---:|
-| Stage heuristic | 61.24% | −2.42 [−3.40, −1.44] | <0.01 |
-| Threat-aware heuristic | 63.66% | reference | <0.01 |
-| PPO 1M seed 2 | 62.26% | −1.40 [−2.88, +0.08] | 0.1 |
-| PPO 5M, best checkpoint | 63.22% | −0.44 [−2.11, +1.23] | 0.1 |
-| Expectimax depth 1 + race leaf | 48.08% | −15.58 [−17.32, −13.84] | 66 |
-| Expectimax depth 1 + V0 | 62.88% | −0.78 [−2.45, +0.89] | 39 |
-| **Expectimax depth 1 + V1** | 65.50% | **+1.84 [+0.19, +3.49]** | 42 |
-| **Expectimax depth 2 (10k-node budget) + V1** | 66.64% | **+2.98 [+1.34, +4.62]** | 299 |
+| Depth 1 + race leaf | 48.08% | −15.58 [−17.32, −13.84] | 66 |
+| Depth 1 + V0 | 62.88% | −0.78 [−2.45, +0.89] | 39 |
+| Depth 1 + V1 | 65.50% | +1.84 [+0.19, +3.49] | 42 |
+| Depth 2 (10k-node budget) + V1 | 66.64% | +2.98 [+1.34, +4.62] | 299 |
 
-- **Value learning.** V0 was trained on 22,000 episodes of heuristics and PPO
-  and only matched the baselines. V1 added 4,000 of the planner's own games and
-  produced the gain. Search-value and λ-return targets were never better than
-  outcomes. A third round and an ensemble didn't help.
-- **Failure modes:**
-  - Leaf exploitation.
-  - Lower validation loss with worse play.
-  - Winner's curse: V1's edge shrank from +2.90 points on selection seeds to
-    +1.84 on test.
-  - Worst-case latency around 4.6 s at depth 1.
+- **Validation loss misleads:** V0 had the lower validation loss (0.4135
+  against V1's 0.4159) but played 4.65 points worse on selection seeds.
+- **Depth 2 helps:** on M2 it cut the learned leaf's regret about 3× (0.0130 →
+  0.0040 per episode).
+- **Latency:** the worst-case decision is about 4.6 s, at depth 1.
 
-## M5/M6: decision-rich stages
+## Rollout planner
 
-The rules are specified in [the stage contracts](../combat/tactical_env.py). They are simulator
-choices, not BG3 rules.
+**Area:** `agents/rollout_agent.py`. **History:** H13.
 
-**Tuning.** The first design (v1) made M5 too easy: naive 75.9%, and Trip every
-turn was nearly always right. Version 2 changed four things, chosen on
-development seeds 20000–21999:
-
-1. Trip limited to 2 charges per ally.
-2. Healer heal of 2d6+2.
-3. +1 attack and +1 damage for the Brute and Archer.
-4. On M6, Brute HP 20–26 and 2 Healer charges.
-
-Held-out results, seeds 3000–7999, n=5,000 per policy:
-
-| M5 policy | Win rate | M6 policy | Win rate |
-|---|---:|---|---:|
-| random | 6.70% | random | 6.20% |
-| naive (M4 rules) | 61.44% | naive (M4 rules) | 40.92% |
-| trip_focus | 76.62% | hold | 78.88% |
-| healer_first | 73.86% | dive_all | 79.36% |
-| **tuned** | **78.52%** | **adaptive** | **80.60%** |
-| PPO 0 / 1 / 2 | 74.90 / 74.68 / 73.56% | PPO 0 / 1 / 2 | 75.74 / 75.36 / 74.52% |
-
-Paired differences (points, with SE):
-
-- **M5:**
-  - tuned − naive: +17.08 (0.86)
-  - Trip alone: +15.18 (0.88)
-  - lowest-HP focus − Healer-first: +2.76 (0.69)
-  - tuned − trip_focus: +1.90 (0.43)
-  - PPO pooled − tuned: −4.14 (0.60)
-- **M6:**
-  - adaptive − naive: +39.68 (0.87)
-  - dive_all − hold: +0.48 (0.81)
-  - adaptive − hold: +1.72 (0.59)
-  - PPO pooled − adaptive: −5.39 (0.61)
-
-**Review qualifications (2026-10-10):**
-
-- **Fresh-seed check.** On seeds 40000–44999, tuned scored 77.84% and adaptive
-  81.02%. The ranking held, but adaptive − hold was only +1.14 points (SE 0.60).
-- **The M6 headline is mostly two baseline fixes.** Counting only reachable
-  Cleave targets and using Trip take naive from 40.9% to 77.7%. That is 36.8 of
-  the 39.7 points.
-- **Seeds 3000–7999 aren't an untouched test set.** They also informed the
-  v1 → v2 retune.
-
-**Tactics that won in these rules.** These are hypotheses for BG3. The 2026-10-15
-mining study tested them further with 13 paired contrasts on seeds
-232000–235999; see [GAME_KNOWLEDGE.md](GAME_KNOWLEDGE.md#simulator-tactical-evidence-hypotheses-for-bg3)
-and the tagged mining bundle described below.
-
-- **Kill priority.** Focus the lowest-HP target. Healer-first loses 2.8 points
-  because the Healer's self-heal absorbs focus fire.
-- **Trip and attack in the same turn.** The competent policies follow about 90%
-  of their Trips with an attack on the Prone target the same turn. PPO does so
-  only 60–76% of the time.
-- **Dive or hold depending on the Brute (M6).** Diving wins against durable
-  Brutes, meaning Brute HP divided by our hit chance is at least 42. Holding wins
-  against soft ones. Sending a single diver was weak.
-- **Never Disengage.** Diving with Disengage won 51.4% on development seeds,
-  against 70.4% without it. No final heuristic Dodges.
-
-**PPO diagnostics.**
-
-- Training plateaued by about 500k steps, and best-checkpoint selection didn't
-  close the gap.
-- A stratified counterfactual check found two supported mistakes:
-  - Trip timing on M5: Trip → Attack +1.53 [+0.82, +2.23]; Trip → Cleave +2.70
-    [+1.82, +3.58].
-  - Trip → Attack on M6: +0.94 [+0.37, +1.51].
-- Whole-fight repair of the M5 Trip and Cleave choices recovers 1.05 of the
-  4.14-point gap.
-- Forcing adaptive's opening plan on M6 recovers +0.44 (SE 0.68).
-- Most of PPO's gap remains unexplained.
-
-**Rollout planner pilot** (32 rollouts per action, heuristic continuation):
-
-- M5: 58.0% against the heuristic's 78.8% (−20.8, SE 2.5).
-- M6: 65.3% against 81.3% (−16.0, SE 3.3).
-- Rescoring the deviations with 1,024 rollouts mostly favored the heuristic, so
-  this was finite-sample selection error, not evidence of a ceiling.
-
-### Paired headroom probe (2026-10-15)
-
-One predeclared configuration ran once on seeds 223000–223999 (1,000 paired
-encounters per stage), continuing with tuned M5 or adaptive M6. The probe used
-common rollout seeds and exact paired gates adjusted over all alternatives
-and three sampling looks (32/128/1,024).
-
-| Stage | Probe | Heuristic | Difference, pp | Conservative 95% CI, pp | Approximate paired-normal 95% CI, pp | Exact McNemar p |
-|---|---:|---:|---:|---|---|---:|
-| M5 | 80.3% | 78.6% | +1.70 | [−1.23, +4.61] | [−0.08, +3.48] | .07842 |
-| M6 | 81.6% | 79.6% | +2.00 | [−1.03, +5.02] | [+0.14, +3.86] | .04460 |
-
-Both conservative intervals include zero; their upper bounds apply to this
-tested policy. M6's exact test and approximate interval provide nominal
-pointwise evidence; p values are unadjusted for the two stage comparisons.
-The study measured 18.44 CPU-hours, excluding tests and process startup.
-The probe changed 421/28,557 M5 decisions and 387/28,615 M6 decisions, affecting
-32.6% and 29.4% of fights. Fresh 1,024-pair rescoring of 12 deviations per
-stage found mean local gains of +4.96 and +3.17 pp, with conditional Monte
-Carlo SE 0.45 pp each; these checks exclude state-sampling uncertainty.
-Full method, action-pair counts, limitations and reproduction references are
-preserved under tag `archive/simulator-research-2026-10-15`, paths
-`agents/improved_heuristic_agent.py` and `evaluation/headroom_probe_results.json`.
-
-## M5/M6: exact transitions and planners
-
-**Transition models.**
-
-- **Replay oracle** (`combat/tactical_transitions.py`):
-  - matched raw path enumeration through the unmodified `env.step` to about
-    1e-16 (241 cases);
-  - had no unseen successor in 20,000 real samples per case (288 cases).
-- **Table model** (`combat/table_tactical_transitions.py`): the default since
-  2026-10-15. It is 16× faster on M5 and 53× faster on M6 (benchmark seeds
-  210000–210009), with no mismatches in 118,089 audited cases, constructed edge
-  states included. The audit and benchmark scripts were retired with the
-  simulator phase: `git show bff5f88:evaluation/tactical_transition_audit.py`
-  and `git show bff5f88:evaluation/tactical_transition_benchmark.py`.
-
-**Planner pilots (2026-10-10, selection seeds from 122000).** Value networks
-were trained on outcomes.
-
-| Stage | Planner | Fights | Planner | Best heuristic |
-|---|---|---:|---:|---:|
-| M5 | One-decision lookahead, first networks | 1,000 | 45.3% | 79.4% |
-| M5 | Same, after one self-play round | 400 | 52.0% | 81.8% |
-| M5 | Exact rest-of-turn rollout, afterstate network | 100 | 54% | 81% |
-| M5 | Same, deviating only by more than 3 points | 100 | 80% | 81% |
-| M6 | Exact rest-of-turn rollout | 20 | 75% | 70% |
-
-The search chose actions the networks misjudged: Dodge instead of attacks, and
-ending turns with actions unused. The gaps behind those choices were within the
-networks' error.
-
-**Guided planning and expert iteration (shelved 2026-10-15).** The planner
-combined policy-prior proposals, the heuristic as an anchor, exact enemy phases
-and a 3-point deviation margin. On seeds 122000–122099 it lost to the anchor:
-
-- M5: 66 vs 81 of 100 (−15 [−25.9, −4.1]).
-- M6: 64 vs 83 of 100 (−19 [−29.7, −8.3]).
-
-The review found the pilot did not fairly test expert iteration, for three
-reasons:
-
-- **Teacher mismatch.** Data was collected with every action scored (37/100 on
-  M5) but evaluated with top-3 plus the anchor (70/100).
-- **Too little data.** The iterated network was trained on only 60 fights.
-- **Margin didn't hold.** The fixed margin still let it deviate at about 13% of
-  decisions.
-
-The conclusion is "this configuration loses", not "expert iteration can't work".
-The code and full review are on branch `archive/m5-m6-guided-planning`.
-
-### Planning conclusions
-
-- **Search helped only where exact enumeration came before the leaf.** On M4,
-  exact enemy phases plus a learned leaf beat every baseline (+3.0 points at
-  depth 2). On M5/M6 the replay model made enemy-phase search too slow; the
-  table model removes most of the per-transition cost but not the branching.
-- **Search exploits value errors.** The race leaf on M4 (48%), 32-rollout
-  estimates on M5 (−21 points) and learned M5/M6 leaves with a fixed 3-point
-  deviation margin (−15 and −19 points) all lost to the policy they extended.
-  When a planner extends a baseline policy, gate deviations on statistical
-  evidence, not a fixed margin.
-- **Select on paired play, not validation loss.** Lower-loss M4 value networks
-  played worse, and search-value or λ-return targets never beat outcome targets.
-- **Revisit M5/M6 learned-leaf planning** only with these fixes: one planner
-  configuration for collection and evaluation, pooled training data,
-  significance-gated deviations, and breadth-first budget use before horizons
-  beyond one decision.
-- **For BG3**, planning needs a transition model of the real game, which needs
-  logged fights first.
-
-## Retired simulator experiments
-
-Annotated tag `archive/simulator-research-2026-10-15` preserves the code,
-tests and committed evidence before deletion. Recover any file with
-`git show archive/simulator-research-2026-10-15:<path>`. The earlier individual
-reports remain in commit `b082262` under `reports/`.
-
-- **Tactics mining:** 13 fixed paired contrasts, 4,000 encounters per contrast,
-  seeds 232000–235999; plan `e2e25d3`, source `b082262`. Compared tuned M5 or
-  adaptive M6 against targeted changes, using paired differences, Bonferroni
-  simultaneous intervals and adjusted exact McNemar tests. Concentrated damage,
-  early Surge and coordinated positioning helped these simulator policies;
-  evidence and uncertainty are summarized in GAME_KNOWLEDGE.md. The Cleave
-  threshold, earlier Advance timing, and an optimal-policy ceiling remain
-  unresolved. These are BG3 hypotheses, not verified game tactics. The bundle
-  contains historical trace summaries as well as confirmation results; they are
-  not interchangeable samples. The retired CLI depends on historical worktree
-  paths and is not a supported clean-checkout tool.
-- **Headroom probe:** predeclared revision `6c2162e`, alpha .05 with 32/128/1,024
-  sampling looks; once-only confirmation on 223000–223999, 1,000 encounters per
-  stage. The results and conservative uncertainty are above. No established
-  whole-fight improvement or general ceiling follows from this configuration.
-  Local rechecks suggest useful exceptions worth revisiting only when real BG3
-  observations support the action/value interface. The per-decision statistical
-  gate is not a whole-episode guarantee. Do not rerun the confirmation as fresh
-  evidence or select another configuration on these encounters.
-- **PPO disagreement diagnostics:** completed stratified local-repair study,
-  summarized above under PPO diagnostics. The tagged script documents its
-  reservoir sampling and continuation-policy assumptions. Positive local
-  counterfactuals did not explain most of the whole-fight performance gap.
-
-Retirement inspection found no non-finite values in either committed JSON
-bundle. The mining inventory's 22 machine-specific historical trace paths all
-exist locally; headroom audit counters report reconciled rollout counts and no
-outcome mismatches when the policies never switched. These are consistency
-checks, not an independent rerun of the studies. Raw local captures/traces were
-not deleted; they remain evidence while the questions above are unresolved.
-Before relocating or deleting them, use the tagged inventory/hashes to inspect
-and retain the smallest useful reproducer.
-
-Committed bundle SHA-256 values (files recoverable from the tag):
-
-- `evaluation/sim_mining_summary.json`:
-  `ee8f8840b949c1632a921d239dc72004d2b336468d30cd803a9ab628c6c2fe75`
-- `evaluation/headroom_probe_results.json`:
-  `9ec50f42ecd9ca228546f7014e3098a83af55d739b7e8af32e261a8dbaa1cbcd`
+**Decision:** the sampling planner is kept as an independent verification
+reference for continuation and reconstruction, not as a policy; see
+[ARCHITECTURE.md](ARCHITECTURE.md#dependency-direction-and-verification). With
+32 rollouts per action it lost to its own continuation: −20.8 points (SE 2.5)
+on M5 and −16.0 (SE 3.3) on M6.
